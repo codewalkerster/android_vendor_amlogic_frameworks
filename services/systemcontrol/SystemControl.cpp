@@ -30,6 +30,7 @@
 #include <binder/PermissionCache.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <private/android_filesystem_config.h>
 
 #include "SystemControl.h"
 #include "ubootenv.h"
@@ -68,16 +69,18 @@ int SystemControl::permissionCheck(){
     IPCThreadState* ipc = IPCThreadState::self();
     const int pid = ipc->getCallingPid();
     const int uid = ipc->getCallingUid();
-    #if 0
+
     if ((uid != AID_MEDIA) &&
-            !PermissionCache::checkPermission("android.permission.SYSTEM_CONTROL", pid, uid)) {
+            !PermissionCache::checkPermission(String16("droidlogic.permission.SYSTEM_CONTROL"), pid, uid)) {
         ALOGE("Permission Denial: "
                 "can't use system control service pid=%d, uid=%d", pid, uid);
         return PERMISSION_DENIED;
     }
-    #endif
 
-    ALOGV("system_control service permissionCheck pid=%d, uid=%d", pid, uid);
+    if(mLogLevel > LOG_LEVEL_0){
+        ALOGI("system_control service permissionCheck pid=%d, uid=%d", pid, uid);
+    }
+
     return NO_ERROR;
 }
 
