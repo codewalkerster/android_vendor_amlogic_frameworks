@@ -1,12 +1,17 @@
 package com.droidlogic.app;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.UserHandle;
+import android.provider.Settings;
 import android.util.Log;
 
 public class OutputModeManager {
@@ -106,18 +111,18 @@ public class OutputModeManager {
     private final static String sel_4k2ksmpteoutput_width = "ubootenv.var.4k2ksmpte_width";
     private final static String sel_4k2ksmpteoutput_height = "ubootenv.var.4k2ksmpte_height";
 
-    private static final int OUTPUT480_FULL_WIDTH = 720;
-    private static final int OUTPUT480_FULL_HEIGHT = 480;
-    private static final int OUTPUT576_FULL_WIDTH = 720;
-    private static final int OUTPUT576_FULL_HEIGHT = 576;
-    private static final int OUTPUT720_FULL_WIDTH = 1280;
-    private static final int OUTPUT720_FULL_HEIGHT = 720;
-    private static final int OUTPUT1080_FULL_WIDTH = 1920;
-    private static final int OUTPUT1080_FULL_HEIGHT = 1080;
-    private static final int OUTPUT4k2k_FULL_WIDTH = 3840;
-    private static final int OUTPUT4k2k_FULL_HEIGHT = 2160;
-    private static final int OUTPUT4k2ksmpte_FULL_WIDTH = 4096;
-    private static final int OUTPUT4k2ksmpte_FULL_HEIGHT = 2160;
+    private static final String OUTPUT480_FULL_WIDTH = "720";
+    private static final String OUTPUT480_FULL_HEIGHT = "480";
+    private static final String OUTPUT576_FULL_WIDTH = "720";
+    private static final String OUTPUT576_FULL_HEIGHT = "576";
+    private static final String OUTPUT720_FULL_WIDTH = "1280";
+    private static final String OUTPUT720_FULL_HEIGHT = "720";
+    private static final String OUTPUT1080_FULL_WIDTH = "1920";
+    private static final String OUTPUT1080_FULL_HEIGHT = "1080";
+    private static final String OUTPUT4k2k_FULL_WIDTH = "3840";
+    private static final String OUTPUT4k2k_FULL_HEIGHT = "2160";
+    private static final String OUTPUT4k2ksmpte_FULL_WIDTH = "4096";
+    private static final String OUTPUT4k2ksmpte_FULL_HEIGHT = "2160";
 
     private static final String mDisplayAxis1080 = " 1920 1080 ";
     private static final String mDisplayAxis720 = " 1280 720 ";
@@ -173,22 +178,6 @@ public class OutputModeManager {
 
             int[] curPosition = getPosition(newMode);
             int[] oldPosition = getPosition(curMode);
-            int axis[] = {0, 0, 0, 0};
-
-            String axisStr = readSysfs(VideoAxisFile);
-            String[] axisArray = axisStr.split(" ");
-
-            for(int i=0; i<axisArray.length; i++) {
-                if(i == axis.length){
-                    break;
-                }
-                try {
-                    axis[i] =  Integer.parseInt(axisArray[i]);
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
 
             String mWinAxis = curPosition[0]+" "+curPosition[1]+" "+(curPosition[0]+curPosition[2]-1)+" "+(curPosition[1]+curPosition[3]-1);
 
@@ -269,7 +258,7 @@ public class OutputModeManager {
                 writeSysfs(UpdateFreescaleFb0File, "1");
             }
 
-            setProperty(COMMON_MODE_PROP, newMode);
+            setBootenv(COMMON_MODE_PROP, newMode);
             saveNewMode2Prop(newMode);
 
             Intent intent = new Intent(ACTION_HDMI_MODE_CHANGED);
@@ -306,7 +295,7 @@ public class OutputModeManager {
             writeSysfs(FreescaleFb0File, "0");
             writeSysfs(FreescaleFb1File, "0");
             writeSysfs(OutputModeFile, newMode);
-            setProperty(COMMON_MODE_PROP, newMode);
+            setBootenv(COMMON_MODE_PROP, newMode);
             saveNewMode2Prop(newMode);
 
             Intent intent = new Intent(ACTION_HDMI_MODE_CHANGED);
@@ -394,10 +383,10 @@ public class OutputModeManager {
 
     private void saveNewMode2Prop(String newMode){
         if((newMode != null) && newMode.contains("cvbs")){
-            setProperty(CVBS_MODE_PROP, newMode);
+            setBootenv(CVBS_MODE_PROP, newMode);
         }
         else{
-            setProperty(HDMI_MODE_PROP, newMode);
+            setBootenv(HDMI_MODE_PROP, newMode);
         }
     }
 
@@ -467,94 +456,94 @@ public class OutputModeManager {
 
         switch (index) {
         case 0: // 480i
-            curPosition[0] = getPropertyInt(sel_480ioutput_x, 0);
-            curPosition[1] = getPropertyInt(sel_480ioutput_y, 0);
-            curPosition[2] = getPropertyInt(sel_480ioutput_width, OUTPUT480_FULL_WIDTH);
-            curPosition[3] = getPropertyInt(sel_480ioutput_height, OUTPUT480_FULL_HEIGHT);
+            curPosition[0] = getBootenvInt(sel_480ioutput_x, "0");
+            curPosition[1] = getBootenvInt(sel_480ioutput_y, "0");
+            curPosition[2] = getBootenvInt(sel_480ioutput_width, OUTPUT480_FULL_WIDTH);
+            curPosition[3] = getBootenvInt(sel_480ioutput_height, OUTPUT480_FULL_HEIGHT);
             break;
         case 1: // 480p
-            curPosition[0] = getPropertyInt(sel_480poutput_x, 0);
-            curPosition[1] = getPropertyInt(sel_480poutput_y, 0);
-            curPosition[2] = getPropertyInt(sel_480poutput_width, OUTPUT480_FULL_WIDTH);
-            curPosition[3] = getPropertyInt(sel_480poutput_height, OUTPUT480_FULL_HEIGHT);
+            curPosition[0] = getBootenvInt(sel_480poutput_x, "0");
+            curPosition[1] = getBootenvInt(sel_480poutput_y, "0");
+            curPosition[2] = getBootenvInt(sel_480poutput_width, OUTPUT480_FULL_WIDTH);
+            curPosition[3] = getBootenvInt(sel_480poutput_height, OUTPUT480_FULL_HEIGHT);
             break;
         case 2: // 576i
-            curPosition[0] = getPropertyInt(sel_576ioutput_x, 0);
-            curPosition[1] = getPropertyInt(sel_576ioutput_y, 0);
-            curPosition[2] = getPropertyInt(sel_576ioutput_width, OUTPUT576_FULL_WIDTH);
-            curPosition[3] = getPropertyInt(sel_576ioutput_height, OUTPUT576_FULL_HEIGHT);
+            curPosition[0] = getBootenvInt(sel_576ioutput_x, "0");
+            curPosition[1] = getBootenvInt(sel_576ioutput_y, "0");
+            curPosition[2] = getBootenvInt(sel_576ioutput_width, OUTPUT576_FULL_WIDTH);
+            curPosition[3] = getBootenvInt(sel_576ioutput_height, OUTPUT576_FULL_HEIGHT);
             break;
         case 3: // 576p
-            curPosition[0] = getPropertyInt(sel_576poutput_x, 0);
-            curPosition[1] = getPropertyInt(sel_576poutput_y, 0);
-            curPosition[2] = getPropertyInt(sel_576poutput_width, OUTPUT576_FULL_WIDTH);
-            curPosition[3] = getPropertyInt(sel_576poutput_height, OUTPUT576_FULL_HEIGHT);
+            curPosition[0] = getBootenvInt(sel_576poutput_x, "0");
+            curPosition[1] = getBootenvInt(sel_576poutput_y, "0");
+            curPosition[2] = getBootenvInt(sel_576poutput_width, OUTPUT576_FULL_WIDTH);
+            curPosition[3] = getBootenvInt(sel_576poutput_height, OUTPUT576_FULL_HEIGHT);
             break;
         case 4: // 720p
         case 7: // 720p50hz
-            curPosition[0] = getPropertyInt(sel_720poutput_x, 0);
-            curPosition[1] = getPropertyInt(sel_720poutput_y, 0);
-            curPosition[2] = getPropertyInt(sel_720poutput_width, OUTPUT720_FULL_WIDTH);
-            curPosition[3] = getPropertyInt(sel_720poutput_height, OUTPUT720_FULL_HEIGHT);
+            curPosition[0] = getBootenvInt(sel_720poutput_x, "0");
+            curPosition[1] = getBootenvInt(sel_720poutput_y, "0");
+            curPosition[2] = getBootenvInt(sel_720poutput_width, OUTPUT720_FULL_WIDTH);
+            curPosition[3] = getBootenvInt(sel_720poutput_height, OUTPUT720_FULL_HEIGHT);
             break;
 
         case 5: // 1080i
         case 8: // 1080i50hz
-            curPosition[0] = getPropertyInt(sel_1080ioutput_x, 0);
-            curPosition[1] = getPropertyInt(sel_1080ioutput_y, 0);
-            curPosition[2] = getPropertyInt(sel_1080ioutput_width, OUTPUT1080_FULL_WIDTH);
-            curPosition[3] = getPropertyInt(sel_1080ioutput_height, OUTPUT1080_FULL_HEIGHT);
+            curPosition[0] = getBootenvInt(sel_1080ioutput_x, "0");
+            curPosition[1] = getBootenvInt(sel_1080ioutput_y, "0");
+            curPosition[2] = getBootenvInt(sel_1080ioutput_width, OUTPUT1080_FULL_WIDTH);
+            curPosition[3] = getBootenvInt(sel_1080ioutput_height, OUTPUT1080_FULL_HEIGHT);
             break;
 
         case 6: // 1080p
         case 9: // 1080p50hz
         case 16://1080p24hz
-            curPosition[0] = getPropertyInt(sel_1080poutput_x, 0);
-            curPosition[1] = getPropertyInt(sel_1080poutput_y, 0);
-            curPosition[2] = getPropertyInt(sel_1080poutput_width, OUTPUT1080_FULL_WIDTH);
-            curPosition[3] = getPropertyInt(sel_1080poutput_height, OUTPUT1080_FULL_HEIGHT);
+            curPosition[0] = getBootenvInt(sel_1080poutput_x, "0");
+            curPosition[1] = getBootenvInt(sel_1080poutput_y, "0");
+            curPosition[2] = getBootenvInt(sel_1080poutput_width, OUTPUT1080_FULL_WIDTH);
+            curPosition[3] = getBootenvInt(sel_1080poutput_height, OUTPUT1080_FULL_HEIGHT);
             break;
         case 10: // 480cvbs
-            curPosition[0] = getPropertyInt(sel_480ioutput_x, 0);
-            curPosition[1] = getPropertyInt(sel_480ioutput_y, 0);
-            curPosition[2] = getPropertyInt(sel_480ioutput_width, OUTPUT480_FULL_WIDTH);
-            curPosition[3] = getPropertyInt(sel_480ioutput_height, OUTPUT480_FULL_HEIGHT);
+            curPosition[0] = getBootenvInt(sel_480ioutput_x, "0");
+            curPosition[1] = getBootenvInt(sel_480ioutput_y, "0");
+            curPosition[2] = getBootenvInt(sel_480ioutput_width, OUTPUT480_FULL_WIDTH);
+            curPosition[3] = getBootenvInt(sel_480ioutput_height, OUTPUT480_FULL_HEIGHT);
             break;
         case 11: // 576cvbs
-            curPosition[0] = getPropertyInt(sel_576ioutput_x, 0);
-            curPosition[1] = getPropertyInt(sel_576ioutput_y, 0);
-            curPosition[2] = getPropertyInt(sel_576ioutput_width, OUTPUT576_FULL_WIDTH);
-            curPosition[3] = getPropertyInt(sel_576ioutput_height, OUTPUT576_FULL_HEIGHT);
+            curPosition[0] = getBootenvInt(sel_576ioutput_x, "0");
+            curPosition[1] = getBootenvInt(sel_576ioutput_y, "0");
+            curPosition[2] = getBootenvInt(sel_576ioutput_width, OUTPUT576_FULL_WIDTH);
+            curPosition[3] = getBootenvInt(sel_576ioutput_height, OUTPUT576_FULL_HEIGHT);
             break;
         case 12: // 4k2k24hz
-            curPosition[0] = getPropertyInt(sel_4k2k24hzoutput_x, 0);
-            curPosition[1] = getPropertyInt(sel_4k2k24hzoutput_y, 0);
-            curPosition[2] = getPropertyInt(sel_4k2k24hzoutput_width, OUTPUT4k2k_FULL_WIDTH);
-            curPosition[3] = getPropertyInt(sel_4k2k24hzoutput_height, OUTPUT4k2k_FULL_HEIGHT);
+            curPosition[0] = getBootenvInt(sel_4k2k24hzoutput_x, "0");
+            curPosition[1] = getBootenvInt(sel_4k2k24hzoutput_y, "0");
+            curPosition[2] = getBootenvInt(sel_4k2k24hzoutput_width, OUTPUT4k2k_FULL_WIDTH);
+            curPosition[3] = getBootenvInt(sel_4k2k24hzoutput_height, OUTPUT4k2k_FULL_HEIGHT);
             break;
         case 13: // 4k2k25hz
-            curPosition[0] = getPropertyInt(sel_4k2k25hzoutput_x, 0);
-            curPosition[1] = getPropertyInt(sel_4k2k25hzoutput_y, 0);
-            curPosition[2] = getPropertyInt(sel_4k2k25hzoutput_width, OUTPUT4k2k_FULL_WIDTH);
-            curPosition[3] = getPropertyInt(sel_4k2k25hzoutput_height, OUTPUT4k2k_FULL_HEIGHT);
+            curPosition[0] = getBootenvInt(sel_4k2k25hzoutput_x, "0");
+            curPosition[1] = getBootenvInt(sel_4k2k25hzoutput_y, "0");
+            curPosition[2] = getBootenvInt(sel_4k2k25hzoutput_width, OUTPUT4k2k_FULL_WIDTH);
+            curPosition[3] = getBootenvInt(sel_4k2k25hzoutput_height, OUTPUT4k2k_FULL_HEIGHT);
             break;
         case 14: // 4k2k30hz
-            curPosition[0] = getPropertyInt(sel_4k2k30hzoutput_x, 0);
-            curPosition[1] = getPropertyInt(sel_4k2k30hzoutput_y, 0);
-            curPosition[2] = getPropertyInt(sel_4k2k30hzoutput_width, OUTPUT4k2k_FULL_WIDTH);
-            curPosition[3] = getPropertyInt(sel_4k2k30hzoutput_height, OUTPUT4k2k_FULL_HEIGHT);
+            curPosition[0] = getBootenvInt(sel_4k2k30hzoutput_x, "0");
+            curPosition[1] = getBootenvInt(sel_4k2k30hzoutput_y, "0");
+            curPosition[2] = getBootenvInt(sel_4k2k30hzoutput_width, OUTPUT4k2k_FULL_WIDTH);
+            curPosition[3] = getBootenvInt(sel_4k2k30hzoutput_height, OUTPUT4k2k_FULL_HEIGHT);
             break;
         case 15: // 4k2ksmpte
-            curPosition[0] = getPropertyInt(sel_4k2ksmpteoutput_x, 0);
-            curPosition[1] = getPropertyInt(sel_4k2ksmpteoutput_y, 0);
-            curPosition[2] = getPropertyInt(sel_4k2ksmpteoutput_width, OUTPUT4k2ksmpte_FULL_WIDTH);
-            curPosition[3] = getPropertyInt(sel_4k2ksmpteoutput_height, OUTPUT4k2ksmpte_FULL_HEIGHT);
+            curPosition[0] = getBootenvInt(sel_4k2ksmpteoutput_x, "0");
+            curPosition[1] = getBootenvInt(sel_4k2ksmpteoutput_y, "0");
+            curPosition[2] = getBootenvInt(sel_4k2ksmpteoutput_width, OUTPUT4k2ksmpte_FULL_WIDTH);
+            curPosition[3] = getBootenvInt(sel_4k2ksmpteoutput_height, OUTPUT4k2ksmpte_FULL_HEIGHT);
             break;
         default: // 720p
-            curPosition[0] = getPropertyInt(sel_720poutput_x, 0);
-            curPosition[1] = getPropertyInt(sel_720poutput_y, 0);
-            curPosition[2] = getPropertyInt(sel_720poutput_width, OUTPUT720_FULL_WIDTH);
-            curPosition[3] = getPropertyInt(sel_720poutput_height, OUTPUT720_FULL_HEIGHT);
+            curPosition[0] = getBootenvInt(sel_720poutput_x, "0");
+            curPosition[1] = getBootenvInt(sel_720poutput_y, "0");
+            curPosition[2] = getBootenvInt(sel_720poutput_width, OUTPUT720_FULL_WIDTH);
+            curPosition[3] = getBootenvInt(sel_720poutput_height, OUTPUT720_FULL_HEIGHT);
             break;
         }
 
@@ -814,7 +803,7 @@ public class OutputModeManager {
     }
 
     private void switchHdmiPassthough(){
-        String value = getPropertyString(PASSTHROUGH_PROPERTY, "PCM");
+        String value = getBootenv(PASSTHROUGH_PROPERTY, "PCM");
 
         if(value.contains(":auto")){
             autoSwitchHdmiPassthough();
@@ -824,32 +813,31 @@ public class OutputModeManager {
     }
 
     public int autoSwitchHdmiPassthough (){
-
-        String mAudioCapInfo = readSysfs(mAudoCapFile);
+        String mAudioCapInfo = readSysfsTotal(mAudoCapFile);
         if(mAudioCapInfo.contains("Dobly_Digital+")){
             writeSysfs(DigitalRawFile,"2");
             writeSysfs(SPDIF_AUIDO_SWITCH, "spdif_mute");
             writeSysfs(HDMI_AUIDO_SWITCH, "audio_on");
-            setProperty(PASSTHROUGH_PROPERTY, "HDMI passthrough:auto");
+            setBootenv(PASSTHROUGH_PROPERTY, "HDMI passthrough:auto");
             return 2;
         }else if(mAudioCapInfo.contains("AC-3")){
             writeSysfs(DigitalRawFile,"1");
             writeSysfs(HDMI_AUIDO_SWITCH, "audio_on");
             writeSysfs(SPDIF_AUIDO_SWITCH, "spdif_unmute");
-            setProperty(PASSTHROUGH_PROPERTY, "SPDIF passthrough:auto");
+            setBootenv(PASSTHROUGH_PROPERTY, "SPDIF passthrough:auto");
             return 1;
         }else{
             writeSysfs(DigitalRawFile,"0");
             writeSysfs(SPDIF_AUIDO_SWITCH, "spdif_mute");
             writeSysfs(HDMI_AUIDO_SWITCH, "audio_on");
-            setProperty(PASSTHROUGH_PROPERTY, "PCM:auto");
+            setBootenv(PASSTHROUGH_PROPERTY, "PCM:auto");
             return 0;
         }
     }
 
     public void setDigitalVoiceValue(String value) {
         // value : "PCM" ,"RAW","SPDIF passthrough","HDMI passthrough"
-        setProperty(PASSTHROUGH_PROPERTY, value);
+        setBootenv(PASSTHROUGH_PROPERTY, value);
 
         if ("PCM".equals(value)) {
             writeSysfs(DigitalRawFile, "0");
@@ -952,9 +940,30 @@ public class OutputModeManager {
         mSystenControl.setProperty(key, value);
     }
 
+    private String getBootenv(String key, String value){
+        if(DEBUG)
+            Log.i(TAG, "getBootenv key:" + key + " value:" + value);
+        return mSystenControl.getBootenv(key, value);
+    }
+
+    private int getBootenvInt(String key, String value){
+        if(DEBUG)
+            Log.i(TAG, "getBootenvInt key:" + key + " value:" + value);
+        return Integer.parseInt(mSystenControl.getBootenv(key, value));
+    }
+
+    private void setBootenv(String key, String value){
+        if(DEBUG)
+            Log.i(TAG, "setBootenv key:" + key + " value:" + value);
+        mSystenControl.setBootenv(key, value);
+    }
+
+    private String readSysfsTotal(String path) {
+        return mSystenControl.readSysFs(path).replaceAll("\n", "");
+    }
     private String readSysfs(String path) {
 
-        return mSystenControl.readSysFs(path);
+        return mSystenControl.readSysFs(path).replaceAll("\n", "");
         /*
         if (!new File(path).exists()) {
             Log.e(TAG, "File not found: " + path);
