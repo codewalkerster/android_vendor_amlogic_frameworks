@@ -93,7 +93,7 @@ static void copy_changed_values(
 	copy_if_gt0(&set->pixclock, &base->pixclock, 9);
 }
 
-DisplayMode::DisplayMode()
+DisplayMode::DisplayMode(const char *path)
     :mDisplayType(DISPLAY_TYPE_MBOX),
     mFb0Width(-1),
     mFb0Height(-1),
@@ -105,7 +105,14 @@ DisplayMode::DisplayMode()
     mFb1TripleEnable(true),
     mLogLevel(LOG_LEVEL_DEFAULT){
 
-    //init();
+    if(NULL == path){
+        pConfigPath = DISPLAY_CFG_FILE;
+    }
+    else{
+        pConfigPath = path;
+    }
+
+    SYS_LOGI("display mode config path: %s", pConfigPath);
 
     pSysWrite = new SysWrite();
 }
@@ -156,9 +163,9 @@ int DisplayMode::parseConfigFile(){
     const char* WHITESPACE = " \t\r";
 
     SysTokenizer* tokenizer;
-    int status = SysTokenizer::open(DISPLAY_CFG_FILE, &tokenizer);
+    int status = SysTokenizer::open(pConfigPath, &tokenizer);
     if (status) {
-        SYS_LOGE("Error %d opening display config file %s.", status, DISPLAY_CFG_FILE);
+        SYS_LOGE("Error %d opening display config file %s.", status, pConfigPath);
     } else {
         while (!tokenizer->isEof()) {
 

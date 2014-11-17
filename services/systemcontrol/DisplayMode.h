@@ -66,7 +66,7 @@ enum {
 class DisplayMode
 {
 public:
-    DisplayMode();
+    DisplayMode(const char *path);
     ~DisplayMode();
 
     void init();
@@ -84,6 +84,7 @@ private:
     void setTVDisplay();
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
 
+    const char* pConfigPath;
     int mDisplayType;
     int mFb0Width;
     int mFb0Height;

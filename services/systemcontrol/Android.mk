@@ -79,3 +79,34 @@ LOCAL_FORCE_STATIC_EXECUTABLE := true
 LOCAL_MODULE:= systemcontrol_recovery
 
 include $(BUILD_EXECUTABLE)
+
+
+include $(CLEAR_VARS)
+
+ifeq ($(TARGET_BOARD_PLATFORM), meson8)
+LOCAL_CFLAGS += -DMESON8_ENVSIZE
+endif
+
+LOCAL_CFLAGS += -DRECOVERY_MODE
+
+LOCAL_SRC_FILES:= \
+	main_recovery.cpp \
+	ubootenv.c \
+	SysWrite.cpp \
+	DisplayMode.cpp \
+	SysTokenizer.cpp
+
+LOCAL_STATIC_LIBRARIES := \
+	libcutils \
+	liblog \
+	libz \
+	libc
+
+LOCAL_C_INCLUDES := \
+    external/zlib
+
+LOCAL_FORCE_STATIC_EXECUTABLE := true
+
+LOCAL_MODULE:= libsystemcontrol_recovery
+
+include $(BUILD_STATIC_LIBRARY)

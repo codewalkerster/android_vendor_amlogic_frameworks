@@ -27,9 +27,14 @@
 
 int main(int argc, char** argv)
 {
+    const char* path = NULL;
+    if(argc >= 2){
+        path = argv[1];
+    }
+
     bootenv_init();
 
-    DisplayMode displayMode;
+    DisplayMode displayMode(path);
     displayMode.init();
 
     return 0;

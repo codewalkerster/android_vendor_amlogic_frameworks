@@ -37,9 +37,9 @@
 
 namespace android {
 
-void SystemControl::instantiate() {
+void SystemControl::instantiate(const char *cfgpath) {
     android::status_t ret = defaultServiceManager()->addService(
-            String16("system_control"), new SystemControl());
+            String16("system_control"), new SystemControl(cfgpath));
 
     if (ret != android::OK) {
         ALOGE("Couldn't register system control service!");
@@ -47,14 +47,14 @@ void SystemControl::instantiate() {
     ALOGI("instantiate add system_control service result:%d", ret);
 }
 
-SystemControl::SystemControl()
+SystemControl::SystemControl(const char *path)
     : mLogLevel(LOG_LEVEL_DEFAULT){
 
     bootenv_init();
 
     pSysWrite = new SysWrite();
 
-    pDisplayMode = new DisplayMode();
+    pDisplayMode = new DisplayMode(path);
     pDisplayMode->init();
 }
 

@@ -38,11 +38,15 @@ using namespace android;
 int main(int argc, char** argv)
 {
     //char value[PROPERTY_VALUE_MAX];
+    const char* path = NULL;
+    if(argc >= 2){
+        path = argv[1];
+    }
 
     sp<ProcessState> proc(ProcessState::self());
     sp<IServiceManager> sm = defaultServiceManager();
     ALOGI("ServiceManager: %p", sm.get());
-    SystemControl::instantiate();
+    SystemControl::instantiate(path);
     ProcessState::self()->startThreadPool();
     IPCThreadState::self()->joinThreadPool();
 }

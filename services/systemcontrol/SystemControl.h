@@ -38,7 +38,7 @@ namespace android {
 class SystemControl : public BnISystemControlService
 {
 public:
-    SystemControl();
+    SystemControl(const char *path);
     virtual ~SystemControl();
 
 	virtual bool getProperty(const String16& key, String16& value);
@@ -55,7 +55,7 @@ public:
     virtual void setBootEnv(const String16& key, const String16& value);
     virtual bool getBootEnv(const String16& key, String16& value);
 
-    static void instantiate();
+    static void instantiate(const char *cfgpath);
 
     virtual status_t dump(int fd, const Vector<String16>& args);
 
