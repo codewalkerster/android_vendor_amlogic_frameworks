@@ -19,12 +19,19 @@
     <uses-permission android:name="droidlogic.permission.SYSTEM_CONTROL" />
     <application android:process="system"
                  android:persistent="true"
-                 android:hasCode="false"
+                 android:hasCode="true"
                  android:label="@string/droidlogic_system_label"
                  android:allowClearUserData="false"
                  android:killAfterRestore="false"
                  android:icon="@drawable/ic_launcher_droidlogic"
                  android:supportsRtl="true">
+
+        <receiver android:name="com.droidlogic.UsbCameraReceiver">
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+                <action android:name="android.hardware.usb.action.USB_DEVICE_DETACHED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 
