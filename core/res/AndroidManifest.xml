@@ -17,6 +17,8 @@
         android:description="@string/droidlogic_perm_system_control_description" />
 
     <uses-permission android:name="droidlogic.permission.SYSTEM_CONTROL" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application android:process="system"
                  android:persistent="true"
                  android:hasCode="true"
@@ -33,6 +35,12 @@
             </intent-filter>
         </receiver>
 
+        <service android:name="com.droidlogic.HdmiService" />
+        <receiver android:name="com.droidlogic.BootComplete">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

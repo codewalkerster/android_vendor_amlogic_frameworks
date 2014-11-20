@@ -222,7 +222,7 @@ public class SystemControlManager {
                     return value;
             }
         } catch (RemoteException ex) {
-            Log.e(TAG, "getProperty:" + ex);
+            Log.e(TAG, "get boot env:" + ex);
         }
 
         return null;
@@ -241,7 +241,7 @@ public class SystemControlManager {
                 data.recycle();
             }
         } catch (RemoteException ex) {
-            Log.e(TAG, "setProperty:" + ex);
+            Log.e(TAG, "set boot env:" + ex);
         }
     }
 }

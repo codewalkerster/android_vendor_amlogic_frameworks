@@ -171,6 +171,9 @@ void SysWrite::readSys(const char *path, char *buf, int count){
         SYS_LOGE("read error: %s, %s\n", path, strerror(errno));
     }
 
+    if(0x0a == buf[r-1])
+        buf[r-1] = 0;
+
     if(mLogLevel > LOG_LEVEL_1)
         SYS_LOGI("read %s, val:%s\n", path, buf);
 
