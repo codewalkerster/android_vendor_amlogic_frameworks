@@ -73,7 +73,7 @@ public class HdmiService extends Service  {
 
     @Override
     public void onDestroy() {
-        return super.onDestroy();
+        super.onDestroy();
     }
 
     @Override
