@@ -75,8 +75,8 @@ LOCAL_C_INCLUDES := \
     external/zlib
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
-
-LOCAL_MODULE:= systemcontrol_recovery
+LOCAL_MODULE_PATH := $(PRODUCT_OUT)/utilities
+LOCAL_MODULE:= systemcontrol_static
 
 include $(BUILD_EXECUTABLE)
 
@@ -105,8 +105,6 @@ LOCAL_STATIC_LIBRARIES := \
 LOCAL_C_INCLUDES := \
     external/zlib
 
-LOCAL_FORCE_STATIC_EXECUTABLE := true
-
-LOCAL_MODULE:= libsystemcontrol_recovery
+LOCAL_MODULE:= libsystemcontrol_static
 
 include $(BUILD_STATIC_LIBRARY)
