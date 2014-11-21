@@ -23,6 +23,7 @@ public class SystemControlManager {
 
     int GET_BOOT_ENV                            = IBinder.FIRST_CALL_TRANSACTION + 8;
     int SET_BOOT_ENV                            = IBinder.FIRST_CALL_TRANSACTION + 9;
+    int GET_DISPLAY_INFO                        = IBinder.FIRST_CALL_TRANSACTION + 10;
 
     private Context mContext;
     private IBinder mIBinder = null;
@@ -243,5 +244,48 @@ public class SystemControlManager {
         } catch (RemoteException ex) {
             Log.e(TAG, "set boot env:" + ex);
         }
+    }
+
+    public DisplayInfo getDisplayInfo(){
+        DisplayInfo info = null;
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                mIBinder.transact(GET_DISPLAY_INFO, data, reply, 0);
+                info = new DisplayInfo();
+                info.type = reply.readInt();
+                info.fb0Width = reply.readInt();
+                info.fb0Height = reply.readInt();
+                info.fb0FbBits = reply.readInt();
+                info.fb0TripleEnable = (reply.readInt()==0)?false:true;
+                info.fb1Width = reply.readInt();
+                info.fb1Height = reply.readInt();
+                info.fb1FbBits = reply.readInt();
+                info.fb1TripleEnable = (reply.readInt()==0)?false:true;
+
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "get display info:" + ex);
+        }
+
+        return info;
+    }
+
+    public static class DisplayInfo{
+        //1:tablet 2:MBOX 3:TV
+        public int type;
+        public int fb0Width;
+        public int fb0Height;
+        public int fb0FbBits;
+        public boolean fb0TripleEnable;//Triple Buffer enable or not
+
+        public int fb1Width;
+        public int fb1Height;
+        public int fb1FbBits;
+        public boolean fb1TripleEnable;//Triple Buffer enable or not
     }
 }

@@ -165,6 +165,13 @@ void SystemControl::setBootEnv(const String16& key, const String16& value){
     }
 }
 
+void SystemControl::getDroidDisplayInfo(int &type, int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
+        int &fb1w, int &fb1h, int &fb1bits, int &fb1trip){
+    if(NO_ERROR == permissionCheck()){
+        pDisplayMode->getDisplayInfo(type, fb0w, fb0h, fb0bits, fb0trip, fb1w, fb1h, fb1bits, fb1trip);
+    }
+}
+
 void SystemControl::traceValue(const String16& type, const String16& key, const String16& value) {
     if(mLogLevel > LOG_LEVEL_0){
         ALOGI("%s key=%s value=%s from pid=%d, uid=%d",

@@ -38,9 +38,9 @@ public:
     {
     }
 
-	virtual bool getProperty(const String16& key, String16& value)
-	{
-		Parcel data, reply;
+    virtual bool getProperty(const String16& key, String16& value)
+    {
+        Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
         data.writeString16(key);
         ALOGV("getProperty key:%s\n", String8(key).string());
@@ -57,15 +57,15 @@ public:
         }
         value = reply.readString16();
         return true;
-	}
+    }
 
-	virtual bool getPropertyString(const String16& key, String16& def, String16& value)
-	{
-		Parcel data, reply;
+    virtual bool getPropertyString(const String16& key, String16& def, String16& value)
+    {
+        Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
         data.writeString16(key);
         data.writeString16(def);
-		ALOGV("getPropertyString key:%s\n", String8(key).string());
+        ALOGV("getPropertyString key:%s\n", String8(key).string());
 
         if (remote()->transact(GET_PROPERTY_STRING, data, &reply) != NO_ERROR) {
             ALOGD("getPropertyString could not contact remote\n");
@@ -80,15 +80,15 @@ public:
 
         value = reply.readString16();
         return true;
-	}
+    }
 
-	virtual int32_t getPropertyInt(const String16& key, int32_t def)
-	{
-		Parcel data, reply;
+    virtual int32_t getPropertyInt(const String16& key, int32_t def)
+    {
+        Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
         data.writeString16(key);
         data.writeInt32(def);
-		ALOGV("getPropertyInt key:%s\n", String8(key).string());
+        ALOGV("getPropertyInt key:%s\n", String8(key).string());
 
         if (remote()->transact(GET_PROPERTY_INT, data, &reply) != NO_ERROR) {
             ALOGE("getPropertyInt could not contact remote\n");
@@ -96,15 +96,15 @@ public:
         }
 
         return reply.readInt32();
-	}
+    }
 
-	virtual int64_t getPropertyLong(const String16& key, int64_t def)
-	{
-		Parcel data, reply;
+    virtual int64_t getPropertyLong(const String16& key, int64_t def)
+    {
+        Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
         data.writeString16(key);
         data.writeInt64(def);
-		ALOGV("getPropertyLong key:%s\n", String8(key).string());
+        ALOGV("getPropertyLong key:%s\n", String8(key).string());
 
         if (remote()->transact(GET_PROPERTY_LONG, data, &reply) != NO_ERROR) {
             ALOGE("getPropertyLong could not contact remote\n");
@@ -112,16 +112,16 @@ public:
         }
 
         return reply.readInt64();
-	}
+    }
 
-	virtual bool getPropertyBoolean(const String16& key, bool def)
-	{
-		Parcel data, reply;
+    virtual bool getPropertyBoolean(const String16& key, bool def)
+    {
+        Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
         data.writeString16(key);
         data.writeInt32(def?1:0);
 
-		ALOGV("getPropertyBoolean key:%s\n", String8(key).string());
+        ALOGV("getPropertyBoolean key:%s\n", String8(key).string());
 
         if (remote()->transact(GET_PROPERTY_BOOL, data, &reply) != NO_ERROR) {
             ALOGE("getPropertyBoolean could not contact remote\n");
@@ -129,28 +129,28 @@ public:
         }
 
         return reply.readInt32() != 0;
-	}
+    }
 
-	virtual void setProperty(const String16& key, const String16& value)
-	{
-		Parcel data, reply;
+    virtual void setProperty(const String16& key, const String16& value)
+    {
+        Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
         data.writeString16(key);
-		data.writeString16(value);
-		ALOGV("setProperty key:%s, value:%s\n", String8(key).string(), String8(value).string());
+        data.writeString16(value);
+        ALOGV("setProperty key:%s, value:%s\n", String8(key).string(), String8(value).string());
 
         if (remote()->transact(SET_PROPERTY, data, &reply) != NO_ERROR) {
             ALOGE("setProperty could not contact remote\n");
             return;
         }
-	}
+    }
 
-	virtual bool readSysfs(const String16& path, String16& value)
-	{
-		Parcel data, reply;
+    virtual bool readSysfs(const String16& path, String16& value)
+    {
+        Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
         data.writeString16(path);
-		ALOGV("setProperty path:%s\n", String8(path).string());
+        ALOGV("setProperty path:%s\n", String8(path).string());
 
         if (remote()->transact(READ_SYSFS, data, &reply) != NO_ERROR) {
             ALOGE("readSysfs could not contact remote\n");
@@ -159,15 +159,15 @@ public:
 
         value = reply.readString16();
         return true;
-	}
+    }
 
-	virtual bool writeSysfs(const String16& path, const String16& value)
-	{
-		Parcel data, reply;
+    virtual bool writeSysfs(const String16& path, const String16& value)
+    {
+        Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
         data.writeString16(path);
-		data.writeString16(value);
-		ALOGV("writeSysfs path:%s, value:%s\n", String8(path).string(), String8(value).string());
+        data.writeString16(value);
+        ALOGV("writeSysfs path:%s, value:%s\n", String8(path).string(), String8(value).string());
 
         if (remote()->transact(WRITE_SYSFS, data, &reply) != NO_ERROR) {
             ALOGE("writeSysfs could not contact remote\n");
@@ -175,12 +175,12 @@ public:
         }
 
         return reply.readInt32() != 0;
-	}
+    }
 
 
     virtual bool getBootEnv(const String16& key, String16& value)
-	{
-		Parcel data, reply;
+    {
+        Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
         data.writeString16(key);
         ALOGV("getBootEnv key:%s\n", String8(key).string());
@@ -197,21 +197,44 @@ public:
         }
         value = reply.readString16();
         return true;
-	}
+    }
 
     virtual void setBootEnv(const String16& key, const String16& value)
-	{
-		Parcel data, reply;
+    {
+        Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
         data.writeString16(key);
-		data.writeString16(value);
-		ALOGV("setBootEnv key:%s, value:%s\n", String8(key).string(), String8(value).string());
+        data.writeString16(value);
+        ALOGV("setBootEnv key:%s, value:%s\n", String8(key).string(), String8(value).string());
 
         if (remote()->transact(SET_BOOT_ENV, data, &reply) != NO_ERROR) {
             ALOGE("setBootEnv could not contact remote\n");
             return;
         }
-	}
+    }
+
+    virtual void getDroidDisplayInfo(int &type, int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
+        int &fb1w, int &fb1h, int &fb1bits, int &fb1trip)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        ALOGV("getDisplayInfo\n");
+
+        if (remote()->transact(GET_DISPLAY_INFO, data, &reply) != NO_ERROR) {
+            ALOGE("getDisplayInfo could not contact remote\n");
+            return;
+        }
+
+        type = reply.readInt32();
+        fb0w = reply.readInt32();
+        fb0h = reply.readInt32();
+        fb0bits = reply.readInt32();
+        fb0trip = reply.readInt32();
+        fb1w = reply.readInt32();
+        fb1h = reply.readInt32();
+        fb1bits = reply.readInt32();
+        fb1trip = reply.readInt32();
+    }
 };
 
 IMPLEMENT_META_INTERFACE(SystemControlService, "droidlogic.ISystemControlService");
@@ -302,6 +325,22 @@ status_t BnISystemControlService::onTransact(
             String16 key = data.readString16();
             String16 val = data.readString16();
             setBootEnv(key, val);
+            return NO_ERROR;
+        }
+        case GET_DISPLAY_INFO: {
+            int type, fb0w, fb0h, fb0bits, fb0trip, fb1w, fb1h, fb1bits, fb1trip;
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            getDroidDisplayInfo(type, fb0w, fb0h, fb0bits, fb0trip, fb1w, fb1h, fb1bits, fb1trip);
+
+            reply->writeInt32(type);
+            reply->writeInt32(fb0w);
+            reply->writeInt32(fb0h);
+            reply->writeInt32(fb0bits);
+            reply->writeInt32(fb0trip);
+            reply->writeInt32(fb1w);
+            reply->writeInt32(fb1h);
+            reply->writeInt32(fb1bits);
+            reply->writeInt32(fb1trip);
             return NO_ERROR;
         }
         default: {

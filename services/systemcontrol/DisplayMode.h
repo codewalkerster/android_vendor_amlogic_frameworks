@@ -70,6 +70,10 @@ public:
     ~DisplayMode();
 
     void init();
+
+    void getDisplayInfo(int &type, int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
+        int &fb1w, int &fb1h, int &fb1bits, int &fb1trip);
+
     void setLogLevel(int level);
     int dump(char *result);
 

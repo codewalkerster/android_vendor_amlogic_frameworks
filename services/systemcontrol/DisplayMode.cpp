@@ -135,6 +135,20 @@ void DisplayMode::init(){
     }
 }
 
+void DisplayMode:: getDisplayInfo(int &type, int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
+        int &fb1w, int &fb1h, int &fb1bits, int &fb1trip){
+    type = mDisplayType;
+    fb0w = mFb0Width;
+    fb0h = mFb0Height;
+    fb0bits = mFb0FbBits;
+    fb0trip = mFb0TripleEnable?1:0;
+
+    fb1w = mFb1Width;
+    fb1h = mFb1Height;
+    fb1bits = mFb1FbBits;
+    fb1trip = mFb1TripleEnable?1:0;
+}
+
 void DisplayMode::setLogLevel(int level){
     mLogLevel = level;
 }

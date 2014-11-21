@@ -41,19 +41,22 @@ public:
     SystemControl(const char *path);
     virtual ~SystemControl();
 
-	virtual bool getProperty(const String16& key, String16& value);
-	virtual bool getPropertyString(const String16& key, String16& def, String16& value);
-	virtual int32_t getPropertyInt(const String16& key, int32_t def);
-	virtual int64_t getPropertyLong(const String16& key, int64_t def);
+    virtual bool getProperty(const String16& key, String16& value);
+    virtual bool getPropertyString(const String16& key, String16& def, String16& value);
+    virtual int32_t getPropertyInt(const String16& key, int32_t def);
+    virtual int64_t getPropertyLong(const String16& key, int64_t def);
 
-	virtual bool getPropertyBoolean(const String16& key, bool def);
-	virtual void setProperty(const String16& key, const String16& value);
+    virtual bool getPropertyBoolean(const String16& key, bool def);
+    virtual void setProperty(const String16& key, const String16& value);
 
-	virtual bool readSysfs(const String16& path, String16& value);
-	virtual bool writeSysfs(const String16& path, const String16& value);
+    virtual bool readSysfs(const String16& path, String16& value);
+    virtual bool writeSysfs(const String16& path, const String16& value);
 
     virtual void setBootEnv(const String16& key, const String16& value);
     virtual bool getBootEnv(const String16& key, String16& value);
+
+    virtual void getDroidDisplayInfo(int &type, int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
+        int &fb1w, int &fb1h, int &fb1bits, int &fb1trip);
 
     static void instantiate(const char *cfgpath);
 
