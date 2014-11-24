@@ -125,6 +125,11 @@ char* SysTokenizer::peekRemainderOfLine() const {
 char* SysTokenizer::nextToken(const char* delimiters) {
     const char* end = getEnd();
     const char* tokenStart = mCurrent;
+
+#if DEBUG_TOKENIZER
+    SYS_LOGI("nextToken mCurrent:%s, delimiters:%s\n", mCurrent, delimiters);
+#endif
+
     while (mCurrent != end) {
         char ch = *mCurrent;
         if (ch == '\n' || isDelimiter(ch, delimiters)) {
@@ -135,6 +140,10 @@ char* SysTokenizer::nextToken(const char* delimiters) {
 
     memset((void*)mStrs, 0 , MAX_STR_LEN);
     strncpy((char *)mStrs, tokenStart, mCurrent - tokenStart);
+
+#if DEBUG_TOKENIZER
+    SYS_LOGI("nextToken parse end str:%s, num:%d \n", mStrs, mCurrent - tokenStart);
+#endif
     return (char *)mStrs;
 }
 

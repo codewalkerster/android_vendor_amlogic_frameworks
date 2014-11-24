@@ -194,14 +194,22 @@ int DisplayMode::parseConfigFile(){
                 if(!strcmp(token, DEVICE_STR_MID)){
                     mDisplayType = DISPLAY_TYPE_TABLET;
 
+                    tokenizer->skipDelimiters(WHITESPACE);
                     mFb0Width = atoi(tokenizer->nextToken(WHITESPACE));
+                    tokenizer->skipDelimiters(WHITESPACE);
                     mFb0Height = atoi(tokenizer->nextToken(WHITESPACE));
+                    tokenizer->skipDelimiters(WHITESPACE);
                     mFb0FbBits = atoi(tokenizer->nextToken(WHITESPACE));
+                    tokenizer->skipDelimiters(WHITESPACE);
                     mFb0TripleEnable = (0 == atoi(tokenizer->nextToken(WHITESPACE)))?false:true;
 
+                    tokenizer->skipDelimiters(WHITESPACE);
                     mFb1Width = atoi(tokenizer->nextToken(WHITESPACE));
+                    tokenizer->skipDelimiters(WHITESPACE);
                     mFb1Height = atoi(tokenizer->nextToken(WHITESPACE));
+                    tokenizer->skipDelimiters(WHITESPACE);
                     mFb1FbBits = atoi(tokenizer->nextToken(WHITESPACE));
+                    tokenizer->skipDelimiters(WHITESPACE);
                     mFb1TripleEnable = (0 == atoi(tokenizer->nextToken(WHITESPACE)))?false:true;
 
                 } else if (!strcmp(token, DEVICE_STR_MBOX)) {
