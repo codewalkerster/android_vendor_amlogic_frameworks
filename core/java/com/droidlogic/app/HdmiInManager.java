@@ -62,11 +62,9 @@ public class HdmiInManager {
     /**
      * @hide
      */
-    public int displayPip(int x, int y, int width, int height) {
-        int ret = -1;
+    public void displayPip(int x, int y, int width, int height) {
         if(getHdmiInEnable())
-            ret = _displayPip(x, y, width, height);
-        return ret;
+            _displayPip(x, y, width, height);
     }
 
     /**
@@ -162,11 +160,9 @@ public class HdmiInManager {
     /**
      * @hide
      */
-    public int enableAudio(int flag) {
-        int ret = -1;
+    public void enableAudio(int flag) {
         if(getHdmiInEnable())
-            ret = _enableAudio(flag);
-        return ret;
+            _enableAudio(flag);
     }
 
     /**
@@ -190,6 +186,22 @@ public class HdmiInManager {
     /**
      * @hide
      */
+    public void setMainWindowPosition(int x, int y) {
+        if(getHdmiInEnable())
+            _setMainWindowPosition(x, y);
+    }
+
+    /**
+     * @hide
+     */
+    public void setMainWindowFull() {
+        if(getHdmiInEnable())
+            _setMainWindowFull();
+    }
+
+    /**
+     * @hide
+     */
     public int setSourceType() {
         int ret = -1;
         if(getHdmiInEnable())
@@ -205,6 +217,14 @@ public class HdmiInManager {
         if(getHdmiInEnable())
             ret = _isSurfaceAvailable(surface);
         return ret;
+    }
+
+    /**
+     * @hide
+     */
+    public void displayOSD(int width, int height) {
+        if(getHdmiInEnable())
+            _displayOSD(width, height);
     }
 
     /**
@@ -279,7 +299,7 @@ public class HdmiInManager {
     private native void _deinit();
     private native int _displayHdmi();
     private native int _displayAndroid();
-    private native int _displayPip(int x, int y, int width, int height);
+    private native void _displayPip(int x, int y, int width, int height);
     private native int _getHActive();
     private native int _getVActive();
     private native String _getHdmiInSize();
@@ -289,10 +309,13 @@ public class HdmiInManager {
     private native boolean _isInterlace();
     private native boolean _hdmiPlugged();
     private native boolean _hdmiSignal();
-    private native int _enableAudio(int flag);
+    private native void _enableAudio(int flag);
     private native int _handleAudio();
     private native void _setEnable(boolean enable);
+    private native void _setMainWindowPosition(int x, int y);
+    private native void _setMainWindowFull();
     private native int _setSourceType();
+    private native void _displayOSD(int width, int height);
     private native boolean _isSurfaceAvailable(Surface surface);
     private native boolean _setPreviewWindow(Surface surface);
     private native int _setCrop(int x, int y, int width, int height);

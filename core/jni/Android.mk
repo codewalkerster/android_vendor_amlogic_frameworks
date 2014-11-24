@@ -30,12 +30,15 @@ LOCAL_SHARED_LIBRARIES := \
     libbinder \
     libcutils \
     libutils \
+    libgui \
+    libandroid_runtime \
     liblog \
     libhardware \
     libhardware_legacy \
     libnativehelper \
     libmedia
 
+LOCAL_CFLAGS += -Wno-unused-parameter
 LOCAL_CFLAGS += -DEGL_EGLEXT_PROTOTYPES -DGL_GLEXT_PROTOTYPES
 
 ifeq ($(strip $(BOARD_ALSA_AUDIO)),tiny)

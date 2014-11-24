@@ -79,7 +79,7 @@ static void FreeRecorder(void) {
     LOGD("*****FreeRecorder****\n");
 #if CC_DISABLE_ALSA_MODULE == 0
 #if CC_ALSA_HAS_MUTEX_LOCK == 1
-  Mutex::Autolock _l(free_recorder_lock);
+    Mutex::Autolock _l(free_recorder_lock);
 #endif
 
     if (glpRecorder != NULL) {
@@ -91,16 +91,14 @@ static void FreeRecorder(void) {
         LOGD("FreeRecorder return\n");
     }
 #endif
-LOGD("***1**FreeRecorder****\n");
-
-
+    LOGD("***1**FreeRecorder****\n");
 }
 
 static void FreeTracker(void) {
     LOGD("*****FreeTracker****\n");
 #if CC_DISABLE_ALSA_MODULE == 0
 #if CC_ALSA_HAS_MUTEX_LOCK == 1
-  Mutex::Autolock _l(tracker_ctrl_lock);
+    Mutex::Autolock _l(tracker_ctrl_lock);
 #endif
 
     if (glpTracker != NULL) {
@@ -112,8 +110,7 @@ static void FreeTracker(void) {
         LOGD("FreeTracker return.\n");
     }
 #endif
-LOGD("***1**FreeTracker****\n");
-
+    LOGD("***1**FreeTracker****\n");
 }
 
 
@@ -128,7 +125,7 @@ static void trackerCallback(int event, void* user, void *info) {
 
 
 static int InitTempBuffer() {
-LOGD("*****InitTempBuffer**temp_buffer=%d**\n",temp_buffer);
+    LOGD("*****InitTempBuffer**temp_buffer=%p**\n",temp_buffer);
 #if CC_ALSA_HAS_MUTEX_LOCK == 1
     Mutex::Autolock _l(temp_buffer_lock);
 #endif
@@ -396,15 +393,15 @@ static int audio_select_source(int flag){
         LOGE("[%s:%d] Failed to open mixer\n", __FUNCTION__, __LINE__);
         goto err_exit;
     }
-	pctl = mixer_get_ctl_by_name(pmixer,"Audio In Source");
-	if (NULL == pctl) {
-		LOGE("[%s:%d] Failed to get mixer control for:%s\n", __FUNCTION__, __LINE__,"Audio In Source");
-		goto err_exit;
-	}
-	if (mixer_ctl_set_value(pctl, 0, flag) != 0) {
-		LOGE("[%s:%d] Failed to set value:%d\n", __FUNCTION__, __LINE__, flag);
-		goto err_exit;
-	}
+    pctl = mixer_get_ctl_by_name(pmixer,"Audio In Source");
+    if (NULL == pctl) {
+        LOGE("[%s:%d] Failed to get mixer control for:%s\n", __FUNCTION__, __LINE__,"Audio In Source");
+        goto err_exit;
+    }
+    if (mixer_ctl_set_value(pctl, 0, flag) != 0) {
+        LOGE("[%s:%d] Failed to set value:%d\n", __FUNCTION__, __LINE__, flag);
+        goto err_exit;
+    }
     mixer_close(pmixer);
     return 0;
 err_exit:
@@ -412,7 +409,7 @@ err_exit:
         mixer_close(pmixer);
     }
 #endif
-	return -1;
+    return -1;
 }
 #endif
 
@@ -448,7 +445,7 @@ int mAlsaInit(int tm_sleep, int init_flag, int track_rate) {
         }
 
         tmp_ret = glpRecorder->set(AUDIO_SOURCE_DEFAULT, record_rate, AUDIO_FORMAT_PCM_16_BIT, AUDIO_CHANNEL_IN_STEREO, 0, 
-		  // (AudioRecord::record_flags) 0, // flags
+        // (AudioRecord::record_flags) 0, // flags
                 recorderCallback,// callback_t
                 NULL,// void* user
                 0, // notificationFrames,
@@ -528,7 +525,7 @@ int mAlsaUninit(int tm_sleep) {
     Mutex::Autolock _l(alsa_uninit_lock);
 #endif
     LOGD("mAlsaUninit invoke audio_select_source.\n");
-	//audio_select_source(0);
+    //audio_select_source(0);
     property_set("sys.hdmiIn.Capture","false");
     // mAlsaStopRecorder();
     FreeRecorder();

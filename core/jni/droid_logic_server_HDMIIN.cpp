@@ -1,3 +1,5 @@
+#define LOG_NDEBUG 0
+#define LOG_TAG "hdmiin-jni"
 
 #include <jni.h>
 #include <JNIHelp.h>
@@ -9,11 +11,10 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
-#include <syslog.h>
 #include <string.h>
-
 #include <dirent.h>
-#include <android/log.h>
+
+#include <utils/Log.h>
 #include "HDMIIN/audio_global_cfg.h"
 #include "HDMIIN/audiodsp_control.h"
 #include "HDMIIN/audio_utils_ctl.h"
@@ -22,50 +23,41 @@
 
 #include <gui/IGraphicBufferProducer.h>
 #include <gui/Surface.h>
-//#include <android_runtime/android_view_Surface.h>
+#include <android_runtime/android_view_Surface.h>
 #include <linux/videodev2.h>
 #include <hardware/hardware.h>
 #include <hardware/aml_screen.h>
 
-//#define LOG  printf
-#define DISABLE_VIDEO_PATH          "/sys/class/video/disable_video"
-#define VFM_MAP_PATH                "/sys/class/vfm/map"
-#define FB0_FREE_SCALE_PATH         "/sys/class/graphics/fb0/free_scale"
-#define FB0_FREE_SCALE_AXIS_PATH    "/sys/class/graphics/fb0/free_scale_axis"
-#define FB1_FREE_SCALE_PATH         "/sys/class/graphics/fb1/free_scale"
-#define FB1_FREE_SCALE_AXIS_PATH    "/sys/class/graphics/fb1/free_scale_axis"
-#define DI_BYPASS_PROG_PATH         "/sys/module/di/parameters/bypass_prog"
+#include <droid_logic_server_HDMIIN.h>
 
 namespace android
 {
 
-static unsigned char audio_state = 0;
-static unsigned char audio_enable = 1;
-static unsigned char audio_ready = 0;
-static unsigned char video_enable = 0;
-static char audio_rate[32];
+static unsigned char audioState = 0;
+static unsigned char audioEnable = 1;
+static unsigned char audioReady = 0;
+static unsigned char videoEnable = 0;
+static char audioRate[32];
 static int rate = 0;
 
-static char class_path[PATH_MAX] = {0,};
-static char param_path[PATH_MAX] = {0,};
+static char classPath[PATH_MAX] = {0,};
+static char paramPath[PATH_MAX] = {0,};
 static bool sysfsChecked = false;
 static bool useSii9293 = false;
 static bool useSii9233a = false;
 
-static char vfm_tvpath[PATH_MAX] = {0,};
-static char vfm_default_ext[PATH_MAX] = {0,};
-static char vfm_default_amlvideo2[PATH_MAX] = {0,};
-static char vfm_hdmiin[PATH_MAX] = {0,};
+static char vfmTvpath[PATH_MAX] = {0,};
+static char vfmDefaultExt[PATH_MAX] = {0,};
+static char vfmDefaultAmlvideo2[PATH_MAX] = {0,};
+static char vfmHdmiin[PATH_MAX] = {0,};
 static bool rmPathFlag = false;
-static int mInputSource = 0;
+static int inputSource = 0;
 static sp<ANativeWindow> window = NULL;
+static bool useVideoLayer = true;
+static bool isDisplayFullscreen = false;
 
 //check use ppmgr
-#define PROP_HDMIIN_PPMGR ("sys.hdmiin.ppmgr")
 static bool usePpmgr = false;
-#define PROP_HDMIIN_VIDEOLAYER ("mbx.hdmiin.videolayer")
-static bool mUseVideoLayer = true;
-static bool mIsFullscreen = false;
 
 enum State{
     START,
@@ -73,129 +65,104 @@ enum State{
     STOPING,
     STOP,
 };
-aml_screen_module_t* mScreenModule;
-aml_screen_device_t* mScreenDev;
-int mWidth = 0;
-int mHeight = 0;
-int mState = STOP;
+aml_screen_module_t* screenModule;
+aml_screen_device_t* screenDev;
+int displayWidth = 0;
+int displayHeight = 0;
+int displayState = STOP;
 
-typedef struct output_mode_info_
-{
+typedef struct output_mode_info_ {
     char name[16];
     int width;
     int height;
+    int scale_width;
+    int scale_height;
     bool iMode;
-}
-output_mode_info_t;
+} output_mode_info_t;
 
-output_mode_info_t output_mode_info[] =
-{
-    {"1080p", 1920, 1080, false},
-    {"1080p24hz", 1920, 1080, false},
-    {"1080p50hz", 1920, 1080, false},
-    {"1080i", 1920, 1080, true},
-    {"1080i50hz", 1920, 1080, true},
-    {"720p", 1280, 720, false},
-    {"720p50hz", 1280, 720, false},
-    {"480p", 720, 480, false},
-    {"480i", 720, 480, true},
-    {"576p", 720, 576, false},
-    {"576i", 720, 576, true},
+output_mode_info_t output_mode_info[] = {
+    {"1080p", 1920, 1080, 720, 405, false},
+    {"1080p24hz", 1920, 1080, 720, 405, false},
+    {"1080p50hz", 1920, 1080, 720, 405, false},
+    {"1080i", 1920, 1080, 720, 405, true},
+    {"1080i50hz", 1920, 1080, 720, 405, true},
+    {"720p", 1280, 720, 480, 270, false},
+    {"720p50hz", 1280, 720, 480, 270, false},
+    {"480p", 720, 480, 360, 240, false},
+    {"480i", 720, 480, 360, 240, true},
+    {"576p", 720, 576, 360, 288, false},
+    {"576i", 720, 576, 360, 288, true},
 };
 
 #define OUTPUT_MODE_NUM (sizeof(output_mode_info) / sizeof(output_mode_info[0]))
 
-#define DEFAULT_HACTIVE (1920)
-#define DEFAULT_VACTIVE (1080)
-
-static int send_command(const char* cmd_file, const char* cmd_string)
-{
-    int fd = open(cmd_file, O_RDWR);
-    int len = strlen(cmd_string);
+static int sendCommand(const char* cmdFile, const char* cmdString) {
+    int fd = open(cmdFile, O_RDWR);
+    int len = strlen(cmdString);
     int ret = -1;
 
-    __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","file: %s, cmd: %s\n", cmd_file, cmd_string);
-	  if(fd >= 0){
-        write(fd, cmd_string, len);
+    if(fd >= 0) {
+        write(fd, cmdString, len);
         close(fd);
+        ret = 0;
+    } if(ret < 0) {
+        ALOGE("fail to %s file %s", ret==-1?"open":"write", cmdFile);
+    }
 
-         ret = 0;
-	  }
-	  if(ret<0){
-        __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","fail to %s file %s\n", ret==-1?"open":"write", cmd_file);
-	  }
     return ret;
 }
 
-static int read_value(const char* prop_file)
-{
-    int fd = open(prop_file, O_RDONLY);
+static int readValue(const char* propFile) {
+    int fd = open(propFile, O_RDONLY);
     int len = 0;
-    char tmp_buf[32];
-    int ret = 0;
-    // __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","file: %s\n", prop_file);
-	  if(fd >= 0){
-        len = read(fd, tmp_buf, 32 );
-        close(fd);
-        if(len > 0){
-            // __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","file: %s, %s\n", prop_file, tmp_buf);
-            ret = atoi(tmp_buf); 
-           // __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","read %s => %d\n", prop_file, ret);
-        }
-	  }
-	  else{
-        __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","fail to open file %s\n", prop_file);
-	  }
-    return ret;
-
-}
-
-static int read_value(const char* prop_file, const int pos)
-{
-    int fd = open(prop_file, O_RDONLY);
-    int len = 0;
-    char tmp_buf[128];
+    char tmpBuf[32] = {0,};
     int ret = 0;
 
-    memset(tmp_buf, 0, sizeof(tmp_buf));
-    // __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","file: %s\n", prop_file);
-	  if(fd >= 0){
-        len = read(fd, tmp_buf, 128);
+    if(fd >= 0) {
+        len = read(fd, tmpBuf, 32);
         close(fd);
-        if(len > 0){
-            // __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","file: %s, %s\n", prop_file, tmp_buf);
-            ret = (tmp_buf[pos] == '0') ? 0 : 1;
-           // __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","read %s => %d\n", prop_file, ret);
-        }
-	  }
-	  else{
-        __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","fail to open file %s\n", prop_file);
-	  }
-    return ret;
+        if(len > 0)
+            ret = atoi(tmpBuf);
+    } else {
+        ALOGE("fail to open file %s", propFile);
+    }
 
+    return ret;
 }
 
-static int read_value(const char* prop_file, char* buf)
-{
-    int fd = open(prop_file, O_RDONLY);
+static int readValue(const char* propFile, const int pos) {
+    int fd = open(propFile, O_RDONLY);
     int len = 0;
-    char tmp_buf[128];
+    char tmpBuf[128] = {0,};
+    int ret = 0;
+
+    memset(tmpBuf, 0, sizeof(tmpBuf));
+    if(fd >= 0) {
+        len = read(fd, tmpBuf, 128);
+        close(fd);
+        if(len > 0)
+            ret = (tmpBuf[pos] == '0') ? 0 : 1;
+    } else {
+        ALOGE("fail to open file %s", propFile);
+    }
+
+    return ret;
+}
+
+static int readValue(const char* propFile, char* buf) {
+    int fd = open(propFile, O_RDONLY);
+    int len = 0;
+    char tmpBuf[128] = {0,};
     int ret = -1;
 
-    memset(tmp_buf, 0, sizeof(tmp_buf));
-    // __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","file: %s\n", prop_file);
+    memset(tmpBuf, 0, sizeof(tmpBuf));
     if (fd >= 0) {
-        len = read(fd, tmp_buf, 128);
+        len = read(fd, tmpBuf, 128);
         close(fd);
         if (len > 0) {
-            // __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","file: %s, %s, len: %d\n", prop_file, tmp_buf, strlen(tmp_buf));
-            // if (!strcmp(tmp_buf, "invalid\n"))
-                // return -1;
-
-            strncpy(buf, tmp_buf, strlen(tmp_buf) - 1);
-            buf[strlen(tmp_buf)] = '\0';
+            strncpy(buf, tmpBuf, strlen(tmpBuf) - 1);
+            buf[strlen(tmpBuf)] = '\0';
             ret = 0;
-            // __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","buf: %s, len: %d\n", buf, strlen(buf));
         }
     }
 
@@ -207,24 +174,20 @@ enum {
     DISPLAY_TYPE
 };
 
-static int getInputInfo(char* mode, const int type, char* buf)
-{
+static int getInputInfo(char* mode, const int type, char* buf) {
     int ret = -1;
     char* context = NULL;
     char* ptr = NULL;
 
-    // __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","getInputInfo: %s, len: %d, type: %d\n", mode, strlen(mode), type);
     ptr = strtok_r(mode, ":", &context);
     if (ptr != NULL) {
         if (type == HDMI_TYPE) {
             strcpy(buf, ptr);
-            // __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","buf: %s\n", buf);
             ret = 0;
         } else if (type == DISPLAY_TYPE) {
             ptr = strtok_r(NULL, ":", &context);
             if (ptr != NULL) {
                 strcpy(buf, ptr);
-                // __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","buf: %s\n", buf);
                 ret = 0;
             }
         }
@@ -233,302 +196,200 @@ static int getInputInfo(char* mode, const int type, char* buf)
     return ret;
 }
 
-static int read_output_display_mode(void)
-{
-    int fd = open("/sys/class/display/mode", O_RDONLY);
+static int readOutputDisplayMode() {
+    int fd = open(DISPLAY_MODE_PATH, O_RDONLY);
     int len = 0;
     unsigned int i;
-    char tmp_buf[32];
+    char tmpBuf[32] = {0,};
     int ret = -1;
-	  if(fd >= 0){
-        len = read(fd, tmp_buf, 32 );
+    if (fd >= 0) {
+        memset(tmpBuf, 0, sizeof(tmpBuf));
+        len = read(fd, tmpBuf, 32);
         close(fd);
-        if(len > 0){
-            for(i=0; i<OUTPUT_MODE_NUM; i++){
-                if(strncmp(tmp_buf, output_mode_info[i].name, strlen(output_mode_info[i].name))==0){
+        if (len > 0) {
+            for (i = 0; i < OUTPUT_MODE_NUM; i++) {
+                if (strncmp(tmpBuf, output_mode_info[i].name, strlen(output_mode_info[i].name)) == 0) {
                     ret = i;
                     break;
                 }
             }
-            if(i==OUTPUT_MODE_NUM){
-                __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","output mode not supported: %s\n", tmp_buf);
+            if (i == OUTPUT_MODE_NUM) {
+                ALOGE("output mode not supported: %s", tmpBuf);
             }
         }
-	  }
-	  else{
-        __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","fail to open file %s\n", "/sys/class/display/mode");
-	  }
+    } else
+        ALOGE("fail to open file /sys/class/display/mode");
+
     return ret;
-
 }
 
-static char* getFs(const char* path, const char* key)
-{
-    char fsPath[PATH_MAX] = {0,};
-    strncpy(fsPath, path, strlen(path));
-    strcat(fsPath, key);
-    return fsPath;
+static char* getFs(const char* path, const char* key, char *buf) {
+    strncpy(buf, path, strlen(path));
+    strcat(buf, key);
+    return buf;
 }
 
-static void disp_android(void)
-{
-    send_command(getFs(class_path, "enable") , "0"); // disable "hdmi in"
-    //send_command("/sys/class/ppmgr/ppscaler" , "0"); // disable pscaler  for "hdmi in"
+static void dispAndroid() {
+    char fsBuf[PATH_MAX] = {0,};
+    memset(fsBuf, 0, sizeof(fsBuf));
+    sendCommand(getFs(classPath, "enable", fsBuf) , "0"); // disable "hdmi in"
+    //sendCommand(PPSCALER_PATH, "0"); // disable pscaler  for "hdmi in"
 
-    send_command("/sys/class/vfm/map", "rm default_ext" );
-    send_command("/sys/class/vfm/map", "add default_ext vdin0 vm amvideo" );
-    send_command("/sys/module/di/parameters/bypass_prog", "0" );
+    sendCommand(VFM_MAP_PATH, "rm default_ext" );
+    sendCommand(VFM_MAP_PATH, "add default_ext vdin0 vm amvideo" );
+    sendCommand(BYPASS_PROG_PATH, "0" );
 
      /* set and enable freescale */
-    send_command("/sys/class/graphics/fb0/free_scale", "0");
-    send_command("/sys/class/graphics/fb0/free_scale_axis", "0 0 1279 719 ");
-    send_command("/sys/class/graphics/fb0/free_scale", "1");
+    sendCommand(FREESCALE_PATH, "0");
+    sendCommand(FREESCALE_AXIS_PATH, "0 0 1279 719 ");
+    sendCommand(FREESCALE_PATH, "1");
 
-    send_command("/sys/class/graphics/fb1/free_scale", "0");
-    send_command("/sys/class/graphics/fb1/free_scale_axis", "0 0 1279 719 ");
-    send_command("/sys/class/graphics/fb1/free_scale", "1");
-    /**/
+    sendCommand(FREESCALE_1_PATH, "0");
+    sendCommand(FREESCALE_1_AXIS_PATH, "0 0 1279 719 ");
+    sendCommand(FREESCALE_1_PATH, "1");
 
      /* turn on OSD layer */
-    send_command("/sys/class/graphics/fb0/blank", "0");
-    //send_command("/sys/class/graphics/fb1/blank", "0");
-     /**/
-
+    sendCommand(OSD_PATH, "0");
+    //sendCommand(OSD_1_PATH, "0");
 }
 
-static void disp_hdmi(void)
-{
-    send_command(getFs(class_path, "enable") , "0"); // disable "hdmi in"
-    send_command("/sys/class/video/disable_video"           , "2"); // disable video layer, video layer will be enabled after "hdmi in" is enabled
+static void dispHdmi() {
+    char fsBuf[PATH_MAX] = {0,};
+    memset(fsBuf, 0, sizeof(fsBuf));
+    sendCommand(getFs(classPath, "enable", fsBuf) , "0"); // disable "hdmi in"
+    sendCommand(DISABLE_VIDEO_PATH, "2"); // disable video layer, video layer will be enabled after "hdmi in" is enabled
 
-    send_command("/sys/class/vfm/map", "rm default_ext" );
-    send_command("/sys/class/vfm/map", "add default_ext vdin0 deinterlace amvideo" );
-    send_command("/sys/module/di/parameters/bypass_prog", "1" );
+    sendCommand(VFM_MAP_PATH, "rm default_ext" );
+    sendCommand(VFM_MAP_PATH, "add default_ext vdin0 deinterlace amvideo" );
+    sendCommand(BYPASS_PROG_PATH, "1" );
 
      /* disable OSD layer */
-    send_command("/sys/class/graphics/fb0/blank"            , "1");
-    //send_command("/sys/class/graphics/fb1/blank"            , "1");
-     /**/
-
-    //send_command("/sys/class/ppmgr/ppscaler"                , "0"); // disable pscaler  for "hdmi in"
+    sendCommand(OSD_PATH, "1");
+    //sendCommand(OSD_1_PATH, "1");
+    //sendCommand(PPSCALER_PATH, "0"); // disable pscaler  for "hdmi in"
 
      /* disable freescale */
-    send_command("/sys/class/graphics/fb0/free_scale"       , "0");
-    send_command("/sys/class/graphics/fb1/free_scale"       , "0");
-     /**/
+    sendCommand(FREESCALE_PATH, "0");
+    sendCommand(FREESCALE_1_PATH, "0");
 
-    send_command(getFs(class_path, "enable") , "1"); // enable "hdmi in"
+    sendCommand(getFs(classPath, "enable", fsBuf) , "1"); // enable "hdmi in"
 
 //    system("stop media");
 //    system("alsa_aplay -C -Dhw:0,0 -r 48000 -f S16_LE -t raw -c 2 | alsa_aplay -Dhw:0,0 -r 48000 -f S16_LE -t raw -c 2");
-
 }
 
 
-static void disp_pip(int x, int y, int width, int height)
-{
+static void dispPip(int x, int y, int width, int height) {
     char buf[32];
     int idx = 0;
-	__android_log_print(ANDROID_LOG_INFO, "<HDMI IN>", "disp_pip(), x: %d, w: %d, w: %d, h: %d\n", x, y, width, height);
-    // mWidth = width - x;
-    // mHeight = height - y;
-    /* if((mWidth < 0) || (mHeight < 0))
-    {
-        mWidth = x - width;
-        mHeight = y - height;
-    } */
-    mWidth = width;
-    mHeight = height;
+    displayWidth = width;
+    displayHeight = height;
 
-    if(usePpmgr)
-    {
-		__android_log_print(ANDROID_LOG_INFO, "<HDMI IN>", "disp_pip(), usePpmgr");
+    if (usePpmgr) {
+        ALOGV("disp_pip(), usePpmgr");
         /* set and enable pscaler */
-        idx = read_output_display_mode();
-        if(idx < 0){
+        idx = readOutputDisplayMode();
+        if (idx < 0) {
             idx = 0;
         }
         snprintf(buf, 31, "%d %d %d %d", 0, 0, output_mode_info[idx].width-1, output_mode_info[idx].height-1);
-        send_command("/sys/class/video/axis", buf);
-        send_command("/sys/class/ppmgr/ppscaler", "1");
+        sendCommand(VIDEO_AXIS_PATH, buf);
+        sendCommand(PPSCALER_PATH, "1");
         snprintf(buf, 31, "%d %d %d %d 1", x, y, x+width-1, y+height-1);
-        send_command("/sys/class/ppmgr/ppscaler_rect", buf);
-    }
-    else
-    {
-        /* send_command("/sys/class/ppmgr/ppscaler", "0");
-        send_command("/sys/class/graphics/fb0/free_scale", "0");
-        send_command("/sys/class/graphics/fb1/free_scale", "0");
-        send_command("/sys/class/video/screen_mode", "1"); // 1:full stretch
+        sendCommand(PPSCALER_RECT_PATH, buf);
+    } else {
+        /* sendCommand(PPSCALER_PATH, "0");
+        sendCommand(FREESCALE_PATH, "0");
+        sendCommand(FREESCALE_1_PATH, "0");
+        sendCommand(SCREEN_MODE_PATH, "1"); // 1:full stretch
         snprintf(buf, 31, "%d %d %d %d 1", x, y, x+width-1, y+height-1);
-        send_command("/sys/class/video/axis", buf); */
+        sendCommand(VIDEO_AXIS_PATH, buf); */
     }
 }
 
-/* static int checkExist(char* path)
-{
-    int ret = -1;
+static int checkExistFile(const char* path, const char* name) {
     struct stat buf;
-    char sysfs_path[PATH_MAX] = {0,};
-    strncpy(sysfs_path, path, strlen(path));
-    if (stat(strcat(sysfs_path, "poweron"), &buf) == 0) {
-        ret = 0;
-    }
-    else
-    {
-        ret = -1;
-    }
-    return ret;
-} */
+    char sysfsPath[PATH_MAX] = {0,};
 
-static int checkExistFile(const char* path, const char* name)
-{
-    struct stat buf;
-    char sysfs_path[PATH_MAX] = {0, };
-
-    strncpy(sysfs_path, path, strlen(path));
-    if (stat(strcat(sysfs_path, name), &buf) == 0)
+    strncpy(sysfsPath, path, strlen(path));
+    if (stat(strcat(sysfsPath, name), &buf) == 0)
         return 0;
 
     return -1;
 }
 
-static int checkExist(const char* path)
-{
+static int checkExist(const char* path) {
     return checkExistFile(path, "poweron");
 }
 
-static void checkSysfs()
-{
-    //for it660x
-    const char* it660x_class_path = "/sys/class/it660x/it660x_hdmirx0/";
-    const char* it660x_param_path = "/sys/module/tvin_it660x/parameters/";
-
-    //for mt box
-    const char* mt_class_path = "/sys/class/vdin_ctrl/vdin_ctrl0/";
-    const char* mt_param_path = "/sys/module/tvin_it660x/parameters/";
-
-    // for sii9233a
-    const char* sii9233a_class_path = "/sys/class/sii9233a/";
-    const char* sii9233a_param_path = "/sys/class/sii9233a/";
-
-    // for sii9293
-    const char* sii9293_class_path = "/sys/class/sii9293/";
-    const char* sii9293_param_path = "/sys/class/sii9293/";
-
-    if(sysfsChecked)
-    {
+static void checkSysfs() {
+    if (sysfsChecked)
         return;
-    }
-    else
-    {
-        sysfsChecked = true;
-    }
 
-    __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","checkSysfs\n");
-    if (checkExist(it660x_class_path) == 0)
-    {
-        strncpy(class_path, it660x_class_path, strlen(it660x_class_path));
-        strncpy(param_path, it660x_param_path, strlen(it660x_param_path));
-    }
-    else if (checkExist(mt_class_path) == 0)
-    {
-        strncpy(class_path, mt_class_path, strlen(mt_class_path));
-        strncpy(param_path, mt_param_path, strlen(mt_class_path));
-    }
-    else if (checkExistFile(sii9233a_class_path, "port") == 0)
-    {
+    sysfsChecked = true;
+    if (checkExist(IT660X_CLASS_PATH) == 0) {
+        strncpy(classPath, IT660X_CLASS_PATH, strlen(IT660X_CLASS_PATH));
+        strncpy(paramPath, IT660X_PARAM_PATH, strlen(IT660X_PARAM_PATH));
+    } else if (checkExist(MTBOX_CLASS_PATH) == 0) {
+        strncpy(classPath, MTBOX_CLASS_PATH, strlen(MTBOX_CLASS_PATH));
+        strncpy(paramPath, MTBOX_PARAM_PATH, strlen(MTBOX_PARAM_PATH));
+    } else if (checkExistFile(SII9233A_CLASS_PATH, "port") == 0) {
         useSii9233a = true;
-        strncpy(class_path, sii9233a_class_path, strlen(sii9233a_class_path));
-        strncpy(param_path, sii9233a_param_path, strlen(sii9233a_param_path));
-    }
-    else if (checkExistFile(sii9293_class_path, "enable") == 0)
-    {
+        strncpy(classPath, SII9233A_CLASS_PATH, strlen(SII9233A_CLASS_PATH));
+        strncpy(paramPath, SII9233A_PARAM_PATH, strlen(SII9233A_PARAM_PATH));
+    } else if (checkExistFile(SII9293_CLASS_PATH, "enable") == 0) {
         useSii9293 = true;
-        strncpy(class_path, sii9293_class_path, strlen(sii9293_class_path));
-        strncpy(param_path, sii9293_param_path, strlen(sii9293_param_path));
-    }
-    else
-    {
+        strncpy(classPath, SII9293_CLASS_PATH, strlen(SII9293_CLASS_PATH));
+        strncpy(paramPath, SII9293_PARAM_PATH, strlen(SII9293_PARAM_PATH));
+    } else {
         // TODO: add more
     }
-
-    __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","class_path %s \n", class_path);
-    __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","param_path %s \n", param_path);
+    ALOGV("classPath %s", classPath);
+    ALOGV("paramPath %s", paramPath);
 }
 
-static void getVfmPath()
-{
+static void getPath(const char *name, char *vfmPath) {
     int len = 0;
     int offset = 0;
-    char* ptr;
-    char* starptr;
-    //int size=1024*4;
+    char* ptr = NULL;
+    char* starptr = NULL;
     char buf[1024*4]={0,};
-    int fd = open("/sys/class/vfm/map", O_RDWR);
-    if(fd >= 0)
-    {
-        len = read(fd, buf, 1024*4);
+    int fd = open(VFM_MAP_PATH, O_RDWR);
+    if(fd >= 0) {
+        len = read(fd, buf, sizeof(buf));
         close(fd);
-        if(len > 0)
-        {
-            __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","[getVfmPath] :%s.\n", buf);
-        }
-    }
-}
-
-
-static void getPath(const char *name, char *vfm_path)
-{
-    int len = 0;
-    int offset = 0;
-    char* ptr;
-    char* starptr;
-    //int size=1024*4;
-    char buf[1024*4]={0,};
-    int fd = open("/sys/class/vfm/map", O_RDWR);
-    if(fd >= 0)
-    {
-        len = read(fd, buf, 1024*4);
-        close(fd);
-        if(len > 0)
-        {
+        if(len > 0) {
             ptr = strstr(buf, name);
-            if(ptr != NULL)
-            {
+            if(ptr) {
                 starptr = ptr;
                 ptr = strchr(starptr, '}');
-                if(ptr != NULL)
-                {
+                if(ptr) {
                     offset = ptr - starptr + 1;
-                    strncpy(vfm_path, starptr, offset);
-                    // __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","[getPath] name:%s, vfm_path:%s.\n", name, vfm_path);
+                    strncpy(vfmPath, starptr, offset);
                 }
             }
         }
     }
 }
 
-static void resumePath(const char *name, char *vfm_path)
+static void resumePath(const char *name, char *vfmPath)
 {
-    char* ptr;
-    char* endptr;
+    char* ptr = NULL;
+    char* endptr = NULL;
     int offset = 0;
     char path[512]={0,};
     char buf[512]={0,};
     char *bufptr = NULL;
     char *context = NULL;
-    char cmd[32];
+    char cmd[32] = {0,};
 
-    if(strlen(vfm_path) > 0)
-    {
+    if(strlen(vfmPath) > 0) {
         memset(cmd, 0, sizeof(cmd));
         sprintf(cmd, "rm %s\n", name);
-        send_command("/sys/class/vfm/map", cmd);
+        sendCommand(VFM_MAP_PATH, cmd);
 
-
-        endptr = strchr(vfm_path, '}');
-        ptr = strchr(vfm_path, '{');
+        endptr = strchr(vfmPath, '}');
+        ptr = strchr(vfmPath, '{');
         strncpy(buf, ptr + 1, endptr - ptr - 1);
         bufptr = buf;
         snprintf(path, sizeof(path), "add %s ", name);
@@ -544,22 +405,21 @@ static void resumePath(const char *name, char *vfm_path)
             }
             bufptr = NULL;
         }
-
-        send_command("/sys/class/vfm/map", path);
+        sendCommand(VFM_MAP_PATH, path);
     }
 }
 
-static bool searchPath(const char *vfm_path, const char *module) {
-    char *ptr;
-    char *endptr;
-    char buf[512] = {0, };
+static bool searchPath(const char *vfmPath, const char *module) {
+    char *ptr = NULL;
+    char *endptr = NULL;
+    char buf[512] = {0,};
     char *bufptr = NULL;
     char *context = NULL;
-    char node[128] = {0, };
+    char node[128] = {0,};
 
-    if (strlen(vfm_path) > 0) {
-        endptr = strchr(vfm_path, '}');
-        ptr = strchr(vfm_path, '{');
+    if (strlen(vfmPath) > 0) {
+        endptr = strchr(vfmPath, '}');
+        ptr = strchr(vfmPath, '{');
         strncpy(buf, ptr + 1, endptr - ptr - 1);
         bufptr = buf;
         while ((ptr = strtok_r(bufptr, " ", &context)) != NULL) {
@@ -581,63 +441,48 @@ static bool searchPath(const char *vfm_path, const char *module) {
 }
 
 static void safeRmPath(const char* path) {
-    const char* checkNode = "/sys/module/amvideo/parameters/new_frame_count";
     int retry = 20; //retry 20 times
     int len = 0;
-    int size = 512;
     int readRlt = 0;
     char buf[512]={0,};
     char cmd[512]={0,};
 
-    __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","[safeRmPath] \n");
-
-    if (!strcmp(path, "hdmiin") && strlen(vfm_hdmiin) > 0) {
-        if (!searchPath(vfm_hdmiin, "amvideo")) {
-            send_command(VFM_MAP_PATH, "rm hdmiin");
+    if (!strcmp(path, "hdmiin") && strlen(vfmHdmiin) > 0) {
+        if (!searchPath(vfmHdmiin, "amvideo")) {
+            sendCommand(VFM_MAP_PATH, "rm hdmiin");
             return;
         }
     }
 
     strcpy(cmd, "rm ");
     while(retry > 0) {
-        int fd = open(checkNode, O_RDONLY);
-        if(fd >= 0)
-        {
-            memset(buf, 0, size);
-            len = read(fd, buf, size);
+        int fd = open(VIDEO_FRAME_COUNT_PATH, O_RDONLY);
+        if (fd >= 0) {
+            memset(buf, 0, sizeof(buf));
+            len = read(fd, buf, sizeof(buf));
             close(fd);
-            if(len > 0)
-            {
+            if (len > 0) {
                 readRlt = atoi(buf);
-                __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","[safeRmPath] readRlt:%d.\n", readRlt);
                 if(readRlt > 0)
-                {
                     sleep(1);  // sleep 10 ms
-                }
-                else if(readRlt == 0)
-                {
+                else if(readRlt == 0) {
                     strcat(cmd, path);
-                    send_command("/sys/class/vfm/map", cmd);
+                    sendCommand(VFM_MAP_PATH, cmd);
                     break;
-                }
-                else
-                {
-                    // readRlt < 0
-                    __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","[safeRmPath] readRlt < 0.\n");
+                } else
                     break;
-                }
             }
         }
         retry--;
 
         if(retry == 0) {
             strcat(cmd, path);
-            send_command("/sys/class/vfm/map", cmd);
+            sendCommand(VFM_MAP_PATH, cmd);
         }
     }
 }
 
-static bool checkBoolProp(char *name, char *def) {
+static bool checkBoolProp(const char *name, const char *def) {
     char prop[PROPERTY_VALUE_MAX] = {0,};
 
     property_get(name, prop, def);
@@ -648,265 +493,277 @@ static bool checkBoolProp(char *name, char *def) {
 }
 
 static void getScreenDev() {
-    if (mScreenDev)
+    if (screenDev)
         return;
 
-    if (!mScreenModule)
-        hw_get_module(AML_SCREEN_HARDWARE_MODULE_ID, (const hw_module_t **)&mScreenModule);
+    if (!screenModule)
+        hw_get_module(AML_SCREEN_HARDWARE_MODULE_ID, (const hw_module_t **)&screenModule);
 
-    if (mScreenModule)
-        mScreenModule->common.methods->open((const hw_module_t *)mScreenModule, AML_SCREEN_SOURCE,
-                (struct hw_device_t **)&mScreenDev);
+    if (screenModule)
+        screenModule->common.methods->open((const hw_module_t *)screenModule, AML_SCREEN_SOURCE,
+                (struct hw_device_t **)&screenDev);
 }
 
-static void init(int source, bool isFullscreen)
-{
+static void init(JNIEnv *env, jobject obj, int source, bool isFullscreen) {
+    char fsBuf[PATH_MAX] = {0,};
+    checkSysfs();
     usePpmgr = checkBoolProp(PROP_HDMIIN_PPMGR, "false");
-    mUseVideoLayer = checkBoolProp(PROP_HDMIIN_VIDEOLAYER, "true");
-    mIsFullscreen = isFullscreen;
-    mInputSource = source;
+    useVideoLayer = checkBoolProp(PROP_HDMIIN_VIDEOLAYER, "true");
+    isDisplayFullscreen = isFullscreen;
+    inputSource = source;
+
     int retry = 5;
     if (useSii9293) {
         while (retry > 0) {
-            if (read_value(getFs(class_path, "drv_init_flag"), 16) == 1)
+            memset(fsBuf, 0, sizeof(fsBuf));
+            if (readValue(getFs(classPath, "drv_init_flag", fsBuf), 16) == 1)
                 break;
-            __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","retry: %d, sleep 100ms\n", retry);
             retry--;
+            ALOGV("retry: %d, sleep 100ms", retry);
             usleep(100000);
         }
     }
 
-    __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","Version 0.1\n");
-    // send_command("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor", "performance");
+    // sendCommand("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor", "performance");
     if (useSii9233a || useSii9293) {
-        send_command(getFs(class_path, "enable"), "0\n");
+        memset(fsBuf, 0, sizeof(fsBuf));
+        sendCommand(getFs(classPath, "enable", fsBuf), "0\n");
     } else {
-        send_command(getFs(class_path, "enable")  , "0"); // disable "hdmi in"
+        memset(fsBuf, 0, sizeof(fsBuf));
+        sendCommand(getFs(classPath, "enable", fsBuf), "0"); // disable "hdmi in"
     }
 
-    if (mIsFullscreen && mUseVideoLayer)
-        send_command("/sys/class/video/disable_video", "1"); // disable video layer
-
-    if (!mIsFullscreen || !mUseVideoLayer) {
+    if (isDisplayFullscreen && useVideoLayer)
+        sendCommand(DISABLE_VIDEO_PATH, "1"); // disable video layer
+    else {
         getScreenDev();
-        if (mScreenDev != NULL) {
-            mScreenDev->ops.set_source_type(mScreenDev, HDMI_IN);
+        if (screenDev != NULL) {
+            screenDev->ops.set_source_type(screenDev, HDMI_IN);
         } else
-            __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","mScreenDev == NULL\n");
+            ALOGE("mScreenDev == NULL");
     }
 
     //rm tvpath for conflict
-    memset(vfm_tvpath, 0, sizeof(vfm_tvpath));
-    memset(vfm_default_ext, 0, sizeof(vfm_default_ext));
-    memset(vfm_default_amlvideo2, 0, sizeof(vfm_default_amlvideo2));
-    memset(vfm_hdmiin, 0, sizeof(vfm_hdmiin));
-    getPath("tvpath ", vfm_tvpath);
-    send_command("/sys/class/vfm/map", "rm tvpath");
-    getPath("default_ext ", vfm_default_ext);
-    send_command("/sys/class/vfm/map", "rm default_ext");
-    if (!mIsFullscreen || !mUseVideoLayer) {
-        getPath("default_amlvideo2 ", vfm_default_amlvideo2);
-        send_command("/sys/class/vfm/map", "rm default_amlvideo2");
+    memset(vfmTvpath, 0, sizeof(vfmTvpath));
+    memset(vfmDefaultExt, 0, sizeof(vfmDefaultExt));
+    memset(vfmDefaultAmlvideo2, 0, sizeof(vfmDefaultAmlvideo2));
+    memset(vfmHdmiin, 0, sizeof(vfmHdmiin));
+    getPath("tvpath ", vfmTvpath);
+    sendCommand(VFM_MAP_PATH, "rm tvpath");
+    getPath("default_ext ", vfmDefaultExt);
+    sendCommand(VFM_MAP_PATH, "rm default_ext");
+    if (!isDisplayFullscreen || !useVideoLayer) {
+        getPath("default_amlvideo2 ", vfmDefaultAmlvideo2);
+        sendCommand(VFM_MAP_PATH, "rm default_amlvideo2");
     }
 
     safeRmPath("hdmiin");
-    if(usePpmgr)
-    {
-        __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","usePpmgr\n");
-        // send_command("/sys/class/vfm/map", "rm default_amlvideo2" );
-        send_command("/sys/class/vfm/map", "add hdmiin vdin0 amlvideo2 ppmgr amvideo" );
+    if (usePpmgr) {
+        ALOGV("usePpmgr\n");
+        // sendCommand(VFM_MAP_PATH, "rm default_amlvideo2" );
+        sendCommand(VFM_MAP_PATH, "add hdmiin vdin0 amlvideo2 ppmgr amvideo" );
 
         /* set and enable freescale */
-        send_command("/sys/class/graphics/fb0/free_scale", "0");
-        send_command("/sys/class/graphics/fb0/free_scale_axis", "0 0 1279 719");
-        send_command("/sys/class/graphics/fb0/free_scale", "1");
-        send_command("/sys/class/graphics/fb1/free_scale", "0");
-        send_command("/sys/class/graphics/fb1/free_scale_axis", "0 0 1279 719 ");
-        send_command("/sys/class/graphics/fb1/free_scale", "1");
-    }
-    else
-    {
-        __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","!usePpmgr\n");
-
-        if (mIsFullscreen && mUseVideoLayer)
-            send_command("/sys/class/vfm/map", "add hdmiin vdin0 amvideo" );
+        sendCommand(FREESCALE_PATH, "0");
+        sendCommand(FREESCALE_AXIS_PATH, "0 0 1279 719");
+        sendCommand(FREESCALE_PATH, "1");
+        sendCommand(FREESCALE_1_PATH, "0");
+        sendCommand(FREESCALE_1_AXIS_PATH, "0 0 1279 719 ");
+        sendCommand(FREESCALE_1_PATH, "1");
+    } else {
+        if (isDisplayFullscreen && useVideoLayer)
+            sendCommand(VFM_MAP_PATH, "add hdmiin vdin0 amvideo");
         else
-            send_command("/sys/class/vfm/map", "add hdmiin vdin0 amlvideo2" );
+            sendCommand(VFM_MAP_PATH, "add hdmiin vdin0 amlvideo2");
     }
 
     if (useSii9233a) {
-        char port[8];
+        char port[8] = {0,};
         memset(port, 0, sizeof(port));
-        sprintf(port, "%d\n", source);
-        send_command(getFs(class_path, "port"), port);
-        send_command(getFs(class_path, "enable"), "1\n");
-    } else if (useSii9293)
-        send_command(getFs(class_path, "enable") , "1\n");
-    else {
-        send_command(getFs(class_path, "poweron") , "1");
-        send_command(getFs(class_path, "enable")  , "1");
+        sprintf(port, "%d\n", inputSource);
+        memset(fsBuf, 0, sizeof(fsBuf));
+        sendCommand(getFs(classPath, "port", fsBuf), port);
+        memset(fsBuf, 0, sizeof(fsBuf));
+        sendCommand(getFs(classPath, "enable", fsBuf), "1\n");
+    } else if (useSii9293) {
+        memset(fsBuf, 0, sizeof(fsBuf));
+        sendCommand(getFs(classPath, "enable", fsBuf), "1\n");
+    } else {
+        memset(fsBuf, 0, sizeof(fsBuf));
+        sendCommand(getFs(classPath, "poweron", fsBuf), "1");
+        memset(fsBuf, 0, sizeof(fsBuf));
+        sendCommand(getFs(classPath, "enable", fsBuf), "1");
     }
+    if (isDisplayFullscreen && useVideoLayer)
+        sendCommand(HDMIIN_ON_VIDEO_PATH, "1");
 }
 
-static void uninit(void)
-{
+static void setMwFull();
+
+static void deinit(JNIEnv *env, jobject obj) {
+    char fsBuf[PATH_MAX] = {0,};
+    videoEnable = 0;
+
     if (useSii9233a || useSii9293) {
-        send_command(getFs(class_path, "enable")  , "0\n"); // disable "hdmi in"
+        memset(fsBuf, 0, sizeof(fsBuf));
+        sendCommand(getFs(classPath, "enable", fsBuf), "0\n"); // disable "hdmi in"
     } else {
-        send_command(getFs(class_path, "enable")  , "0"); // disable "hdmi in"
-        send_command(getFs(class_path, "poweron"), "0"); //power off "hdmi in"
+        memset(fsBuf, 0, sizeof(fsBuf));
+        sendCommand(getFs(classPath, "enable", fsBuf), "0"); // disable "hdmi in"
+        memset(fsBuf, 0, sizeof(fsBuf));
+        sendCommand(getFs(classPath, "poweron", fsBuf), "0"); //power off "hdmi in"
     }
 
-    if (mIsFullscreen && mUseVideoLayer)
-        send_command("/sys/class/video/disable_video", "2");
+    if (isDisplayFullscreen && useVideoLayer)
+        sendCommand(DISABLE_VIDEO_PATH, "2");
 
-    memset(vfm_hdmiin, 0, sizeof(vfm_hdmiin));
-    getPath("hdmiin ", vfm_hdmiin);
+    memset(vfmHdmiin, 0, sizeof(vfmHdmiin));
+    getPath("hdmiin ", vfmHdmiin);
     safeRmPath("hdmiin");
-    resumePath("tvpath", vfm_tvpath);
-    resumePath("default_ext", vfm_default_ext);
-    if (!mIsFullscreen || !mUseVideoLayer)
-        resumePath("default_amlvideo2", vfm_default_amlvideo2);
+    resumePath("tvpath", vfmTvpath);
+    resumePath("default_ext", vfmDefaultExt);
+    if (!isDisplayFullscreen || !useVideoLayer)
+        resumePath("default_amlvideo2", vfmDefaultAmlvideo2);
+    else
+        sendCommand(HDMIIN_ON_VIDEO_PATH, "0");
     sysfsChecked = false;
 }
 
-static void deinit(void)
-{
-	__android_log_print(ANDROID_LOG_INFO, "<HDMI IN>"," deinit Version 0.1\n");
-	uninit();
+static void setMwFull() {
+    char value[32] = {0,};
+    int ret = 0;
+    unsigned int i = 0;
+    int width = 0;
+    int height = 0;
+
+    memset(value, 0, sizeof(value));
+    ret = readValue(DISPLAY_MODE_PATH, value);
+    if (ret == -1)
+        return;
+
+    for (i = 0; i < OUTPUT_MODE_NUM; i++) {
+        if (strstr(value, output_mode_info[i].name) != NULL) {
+            width = output_mode_info[i].width;
+            height = output_mode_info[i].height;
+            break;
+        }
+    }
+    if (width == 0 || height == 0)
+        return;
+
+    memset(value, 0, sizeof(value));
+    sprintf(value, "0 0 %d %d", width - 1, height - 1);
+    sendCommand(WINDOW_AXIS_PATH, value);
+    sendCommand(FREESCALE_PATH, "0x10001");
 }
 
-static void audio_start(int track_rate)
-{
-	//__android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","audio passthrough test code start\n");
-	send_command("/sys/class/amaudio/record_type", "2");
-	AudioUtilsInit();
-	__android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","init audioutil finished, track_rate: %d\n", track_rate);
-	mAlsaInit(0, CC_FLAG_CREATE_TRACK | CC_FLAG_START_TRACK|CC_FLAG_CREATE_RECORD|CC_FLAG_START_RECORD, track_rate);
-	__android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","start audio track finished\n");
-	// audiodsp_start();
-	__android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","audiodsp start finished\n");
-	//AudioUtilsStartLineIn();
-	//__android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","start line in finished\n");
-
+static void setMainWindowFull(JNIEnv *env, jobject obj) {
+    setMwFull();
 }
 
-static void audio_stop(void)
-{
-	AudioUtilsStopLineIn();
-	send_command("/sys/class/amaudio/record_type", "0");
-	__android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","stop line in finished\n");
-	AudioUtilsUninit();
-	__android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","uninit audioutil finished\n");
-	mAlsaUninit(0);
-	__android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","stop audio track finished\n");
-	// audiodsp_stop();
-	__android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","audiodsp stop finished, sys.hdmiin.mute false\n");
-	property_set("sys.hdmiin.mute", "false");
+static void setMainWindowPosition(JNIEnv *env, jobject obj, jint x, jint y) {
+    char value[32] = {0,};
+    int ret = 0;
+    unsigned int i = 0;
+    int width = 0;
+    int height = 0;
 
+    memset(value, 0, sizeof(value));
+    ret = readValue(DISPLAY_MODE_PATH, value);
+    if (ret == -1)
+        return;
+
+    for (i = 0; i < OUTPUT_MODE_NUM; i++) {
+        if (strstr(value, output_mode_info[i].name) != NULL) {
+            width = output_mode_info[i].scale_width;
+            height = output_mode_info[i].scale_height;
+            break;
+        }
+    }
+    if (width == 0 || height == 0)
+        return;
+
+    memset(value, 0, sizeof(value));
+    sprintf(value, "%d %d %d %d", x, y, x + width - 1, y + height - 1);
+    sendCommand(WINDOW_AXIS_PATH, value);
+    sendCommand(FREESCALE_PATH, "0x10001");
 }
 
-static void setStateCB(int state)
-{
-    mState = state;
+static void startVideo(JNIEnv *env, jobject obj) {
+    if (isDisplayFullscreen && useVideoLayer) {
+        int ret = readValue(DISABLE_VIDEO_PATH);
+        if (ret != 2 && ret != 0) {
+            sendCommand(DISABLE_VIDEO_PATH, "2");
+        }
+        videoEnable = 1;
+    }
 }
 
-static int getState()
-{
-    return mState;
+static void stopVideo(JNIEnv *env, jobject obj) {
+    if (isDisplayFullscreen && useVideoLayer)
+        sendCommand(DISABLE_VIDEO_PATH, "1");
 }
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _init
- * Signature: ()V
- */
-static void Java_com_android_server_OverlayViewService__1init
-  (JNIEnv *env, jobject obj, jint source, jboolean isFullscreen)
-{
-    checkSysfs();
-    init(source, isFullscreen);
+static void audioStart(int trackRate) {
+    sendCommand(RECORD_TYPE_PATH, "2");
+    AudioUtilsInit();
+    ALOGV("init audioutil finished, track_rate: %d", trackRate);
+    mAlsaInit(0, CC_FLAG_CREATE_TRACK | CC_FLAG_START_TRACK|CC_FLAG_CREATE_RECORD|CC_FLAG_START_RECORD, trackRate);
+    ALOGV("start audio track finished");
+    // audiodsp_start();
+    ALOGV("audiodsp start finished");
+    //AudioUtilsStartLineIn();
 }
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _deinit
- * Signature: ()V
- */
-static void Java_com_android_server_OverlayViewService__1deinit
-  (JNIEnv *env, jobject obj)
-{
-	video_enable = 0;
-
-	deinit();
+static void audioStop() {
+    AudioUtilsStopLineIn();
+    sendCommand(RECORD_TYPE_PATH, "0");
+    ALOGV("stop line in finished");
+    AudioUtilsUninit();
+    ALOGV("uninit audioutil finished");
+    mAlsaUninit(0);
+    ALOGV("stop audio track finished");
+    // audiodsp_stop();
+    ALOGV("audiodsp stop finished, sys.hdmiin.mute false");
+    property_set(PROP_MUTE, "false");
 }
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _displayHdmi
- * Signature: ()I
- */
-static jint Java_com_android_server_OverlayViewService__1displayHdmi
-  (JNIEnv *env, jobject obj)
-{
-    disp_hdmi();
-    video_enable = 1;
+static void setStateCB(int state) {
+    displayState = state;
+}
+
+static int getState() {
+    return displayState;
+}
+
+static jint displayHdmi(JNIEnv *env, jobject obj) {
+    dispHdmi();
+    videoEnable = 1;
     return 0;
 }
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _displayAndroid
- * Signature: ()I
- */
-static jint Java_com_android_server_OverlayViewService__1displayAndroid
-  (JNIEnv *env, jobject obj)
-{
-    video_enable = 0;
-    disp_android();
+static jint displayAndroid(JNIEnv *env, jobject obj) {
+    videoEnable = 0;
+    dispAndroid();
     return 0;
 }
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _displayPip
- * Signature: (IIII)I
- */
-static jint Java_com_android_server_OverlayViewService__1displayPip
-  (JNIEnv *env, jobject obj, jint x, jint y, jint width, jint height)
-{
-    char mode[20];
-
-    disp_pip( x, y, width, height);
-
-    memset((void*)mode, 0, 20);
-    sprintf(mode, "%d %d %d %d", x, y, width, height);
-
-    __android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","mode is: %s\n", mode);
-
-    // send_command("/sys/class/graphics/fb0/video_hole", mode);
-
-    video_enable = 1;
-
-    return 0;
+static void displayPip(JNIEnv *env, jobject obj, jint x, jint y, jint width, jint height) {
+    dispPip( x, y, width, height);
+    videoEnable = 1;
 }
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _getHActive
- * Signature: ()I
- */
-static jint Java_com_android_server_OverlayViewService__1getHActive
-  (JNIEnv *env, jobject obj)
-{
-    char value[128];
-    char buf[16];
+static jint getHActive(JNIEnv *env, jobject obj) {
+    char fsBuf[PATH_MAX] = {0,};
+    char value[128] = {0,};
+    char buf[16] = {0,};
     int ret = 0;
     unsigned int i = 0;
 
     if (useSii9233a || useSii9293) {
         memset(value, 0, sizeof(value));
-        ret = read_value(getFs(param_path, "input_mode"), value);
+        memset(fsBuf, 0, sizeof(fsBuf));
+        ret = readValue(getFs(paramPath, "input_mode", fsBuf), value);
         if (ret == -1)
             return ret;
 
@@ -925,24 +782,20 @@ static jint Java_com_android_server_OverlayViewService__1getHActive
         }
     }
 
-	return read_value(getFs(param_path, "horz_active"));
+    memset(fsBuf, 0, sizeof(fsBuf));
+    return readValue(getFs(paramPath, "horz_active", fsBuf));
 }
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _getHdmiInSize
- * Signature: ()Ljava/lang/String;
- */
-
-static jstring Java_com_android_server_OverlayViewService__1getHdmiInSize
-  (JNIEnv *env, jobject obj)
-{
-    char value[128];
+static jstring getHdmiInSize(JNIEnv *env, jobject obj) {
+    char value[128] = {0,};
+    char fsBuf[PATH_MAX] = {0,};
     int ret = 0;
 
+    checkSysfs();
     if (useSii9233a || useSii9293) {
         memset(value, 0, sizeof(value));
-        ret = read_value(getFs(param_path, "input_mode"), value);
+        memset(fsBuf, 0, sizeof(fsBuf));
+        ret = readValue(getFs(paramPath, "input_mode", fsBuf), value);
         if (ret == -1)
             return NULL;
 
@@ -955,22 +808,17 @@ static jstring Java_com_android_server_OverlayViewService__1getHdmiInSize
     return NULL;
 }
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _getVActive
- * Signature: ()I
- */
-static jint Java_com_android_server_OverlayViewService__1getVActive
-  (JNIEnv *env, jobject obj)
-{
-    char value[128];
-    char buf[16];
+static jint getVActive(JNIEnv *env, jobject obj) {
+    char value[128] = {0,};
+    char fsBuf[PATH_MAX] = {0,};
+    char buf[16] = {0,};
     int ret = 0;
     unsigned int i = 0;
 
     if (useSii9233a || useSii9293) {
         memset(value, 0, sizeof(value));
-        ret = read_value(getFs(param_path, "input_mode"), value);
+        memset(fsBuf, 0, sizeof(fsBuf));
+        ret = readValue(getFs(paramPath, "input_mode", fsBuf), value);
         if (ret == -1)
             return ret;
 
@@ -989,24 +837,20 @@ static jint Java_com_android_server_OverlayViewService__1getVActive
         }
     }
 
-	return read_value(getFs(param_path, "vert_active"));
+    memset(fsBuf, 0, sizeof(fsBuf));
+    return readValue(getFs(paramPath, "vert_active", fsBuf));
 }
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _isDvi
- * Signature: ()Z
- */
-static jboolean Java_com_android_server_OverlayViewService__1isDvi
-  (JNIEnv *env, jobject obj)
-{
-    char value[128];
-    char buf[16];
+static jboolean isDvi(JNIEnv *env, jobject obj) {
+    char value[128] = {0,};
+    char fsBuf[PATH_MAX] = {0,};
+    char buf[16] = {0,};
     int ret = 0;
 
     if (useSii9233a || useSii9293) {
         memset(value, 0, sizeof(value));
-        ret = read_value(getFs(param_path, "input_mode"), value);
+        memset(fsBuf, 0, sizeof(fsBuf));
+        ret = readValue(getFs(paramPath, "input_mode", fsBuf), value);
         if (ret == -1)
             return JNI_FALSE;
 
@@ -1021,81 +865,73 @@ static jboolean Java_com_android_server_OverlayViewService__1isDvi
         return (strcmp(buf, "DVI") == 0);
     }
 
-	return (read_value(getFs(param_path, "is_hdmi_mode"))==0);
+    memset(fsBuf, 0, sizeof(fsBuf));
+    return (readValue(getFs(paramPath, "is_hdmi_mode", fsBuf)) == 0);
 }
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _isPowerOn
- * Signature: ()Z
- */
-static jboolean Java_com_android_server_OverlayViewService__1isPowerOn
-  (JNIEnv *env, jobject obj)
-{
-    char value[128];
+static jboolean isPowerOn(JNIEnv *env, jobject obj) {
+    char value[128] = {0,};
+    char fsBuf[PATH_MAX] = {0,};
     int ret = 0;
 
-	checkSysfs();
+    checkSysfs();
     if (useSii9293) {
-        if (read_value(getFs(class_path, "enable"), 22) == 1)
+        memset(fsBuf, 0, sizeof(fsBuf));
+        if (readValue(getFs(classPath, "enable", fsBuf), 22) == 1)
             return JNI_TRUE;
 
         return JNI_FALSE;
-    } else if (useSii9233a)
-        return (read_value(getFs(class_path, "port"), 30) == 1);
+    } else if (useSii9233a) {
+        memset(fsBuf, 0, sizeof(fsBuf));
+        return (readValue(getFs(classPath, "port", fsBuf), 30) == 1);
+    }
 
-	return (read_value(getFs(class_path, "poweron"))==1);
+    memset(fsBuf, 0, sizeof(fsBuf));
+    return (readValue(getFs(classPath, "poweron", fsBuf)) == 1);
 }
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _isEnable
- * Signature: ()Z
- */
-static jboolean Java_com_android_server_OverlayViewService__1isEnable
-  (JNIEnv *env, jobject obj)
-{
-    char value[128];
+static jboolean isEnable(JNIEnv *env, jobject obj) {
+    char value[128] = {0,};
+    char fsBuf[PATH_MAX] = {0,};
     int ret = 0;
 
-	checkSysfs();
+    checkSysfs();
     if (useSii9233a || useSii9293) {
         if (useSii9293) {
-            if (read_value(getFs(class_path, "enable"), 22) == 1)
+            memset(fsBuf, 0, sizeof(fsBuf));
+            if (readValue(getFs(classPath, "enable", fsBuf), 22) == 1)
                 return JNI_TRUE;
         } else if (useSii9233a) {
-            if (read_value(getFs(class_path, "enable"), 23) == 1)
+            memset(fsBuf, 0, sizeof(fsBuf));
+            if (readValue(getFs(classPath, "enable", fsBuf), 23) == 1)
                 return JNI_TRUE;
         }
 
+        memset(fsBuf, 0, sizeof(fsBuf));
         memset(value, 0, sizeof(value));
-        ret = read_value(getFs(param_path, "input_mode"), value);
+        ret = readValue(getFs(paramPath, "input_mode", fsBuf), value);
         if (ret == -1)
             return JNI_FALSE;
 
         return JNI_TRUE;
     }
 
-	return (read_value(getFs(class_path, "enable"))==1);
+    memset(fsBuf, 0, sizeof(fsBuf));
+    return (readValue(getFs(classPath, "enable", fsBuf))==1);
 }
 
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _isInterlace
- * Signature: ()Z
- */
-static jboolean Java_com_android_server_OverlayViewService__1isInterlace
-  (JNIEnv *env, jobject obj)
-{
-    char value[128];
-    char buf[16];
+static jboolean isInterlace(JNIEnv *env, jobject obj) {
+    char value[128] = {0,};
+    char fsBuf[PATH_MAX] = {0,};
+    char buf[16] = {0,};
     int ret = 0;
     unsigned int i = 0;
 
     if (useSii9233a || useSii9293) {
+        memset(fsBuf, 0, sizeof(fsBuf));
         memset(value, 0, sizeof(value));
-        ret = read_value(getFs(param_path, "input_mode"), value);
+        ret = readValue(getFs(paramPath, "input_mode", fsBuf), value);
         if (ret == -1)
             return JNI_FALSE;
 
@@ -1114,284 +950,210 @@ static jboolean Java_com_android_server_OverlayViewService__1isInterlace
         }
     }
 
-	return (read_value(getFs(param_path, "is_interlace"))==1);
+    memset(buf, 0, sizeof(buf));
+    return (readValue(getFs(paramPath, "is_interlace", fsBuf)) == 1);
 }
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _hdmiPlugged
- * Signature: ()Z
- */
-static jboolean Java_com_android_server_OverlayViewService__1hdmiPlugged
-  (JNIEnv *env, jobject obj)
-{
-    char value[128];
+static jboolean hdmiPlugged(JNIEnv *env, jobject obj) {
+    char value[128] = {0,};
+    char fsBuf[PATH_MAX] = {0,};
     int ret = 0;
 
+    checkSysfs();
     if (useSii9233a || useSii9293) {
         memset(value, 0, sizeof(value));
-        ret = read_value(getFs(param_path, "cable_status"), value);
+        memset(fsBuf, 0, sizeof(fsBuf));
+        ret = readValue(getFs(paramPath, "cable_status", fsBuf), value);
         if (ret == -1)
             return JNI_FALSE;
-
         if ('1' == value[0])
             return JNI_TRUE;
-
         return JNI_FALSE;
     }
 
-	return JNI_FALSE;
+    return JNI_FALSE;
 }
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _hdmiSignal
- * Signature: ()Z
- */
-static jboolean Java_com_android_server_OverlayViewService__1hdmiSignal
-  (JNIEnv *env, jobject obj)
-{
-    char value[128];
+static jboolean hdmiSignal(JNIEnv *env, jobject obj) {
+    char value[128] = {0,};
+    char fsBuf[PATH_MAX] = {0,};
     int ret = 0;
 
+    checkSysfs();
     if (useSii9233a || useSii9293) {
         memset(value, 0, sizeof(value));
-        ret = read_value(getFs(param_path, "signal_status"), value);
+        memset(fsBuf, 0, sizeof(fsBuf));
+        ret = readValue(getFs(paramPath, "signal_status", fsBuf), value);
         if (ret == -1)
             return JNI_FALSE;
-
         if ('1' == value[0])
             return JNI_TRUE;
-
         return JNI_FALSE;
     }
 
-	return JNI_FALSE;
+    return JNI_FALSE;
 }
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _enableAudio
- * Signature: (I)I
- */
-static jint Java_com_android_server_OverlayViewService__1enableAudio
-  (JNIEnv *env, jobject obj, jint flag)
-{
-		__android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","%s, flag=%d\n", __func__,flag);
-		#if 1
-    memset(audio_rate, 0, sizeof(audio_rate));
-    if(flag == 1){
-        audio_enable = 1;
+static void enableAudio(JNIEnv *env, jobject obj, jint flag) {
+    memset(audioRate, 0, sizeof(audioRate));
+    if (flag == 1) {
+        audioEnable = 1;
+    } else {
+        audioEnable = 0;
     }
-    else{
-        audio_enable = 0;
-        // audio_ready = 0;
-    }
-    #endif
-    return 0;
 }
 
-/*
- * Class:     com_android_server_OverlayViewService
- * Method:    _handleAudio
- * Signature: ()I
- */
-static jint Java_com_android_server_OverlayViewService__1handleAudio
-  (JNIEnv *env, jobject obj)
-{
-#if 1
-// __android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","%s: video_enable:%d,audio_enable:%d,audio_state:%d\n", __func__,video_enable,audio_enable,audio_state);
-    char value[32];
+static jint handleAudio(JNIEnv *env, jobject obj) {
+    char value[32] = {0,};
+    char fsBuf[PATH_MAX] = {0,};
     int ret = 0;
-    bool rate_changed = false;
+    bool rateChanged = false;
 
-    audio_ready = 0;
+    audioReady = 0;
     memset(value, 0, sizeof(value));
-	ret = read_value(getFs(param_path, "audio_sample_rate"), value);
+    memset(fsBuf, 0, sizeof(fsBuf));
+    ret = readValue(getFs(paramPath, "audio_sample_rate", fsBuf), value);
     if (ret == -1)
-        audio_ready = 0;
+        audioReady = 0;
     else if (strstr(value, "kHz") != NULL)
-        audio_ready = 1;
-    if (ret != -1 && strcmp(audio_rate, value)) {
-        __android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","audio_sample_rate: %s\n", value);
-        rate_changed = true;
-        strcpy(audio_rate, value);
-        double val = atof(audio_rate);
+        audioReady = 1;
+    if (ret != -1 && strcmp(audioRate, value)) {
+        ALOGV("audio_sample_rate: %s", value);
+        rateChanged = true;
+        strcpy(audioRate, value);
+        double val = atof(audioRate);
         val *= 1000;
         rate = (int)val;
         if (rate == 0) {
-            __android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","sys.hdmiin.mute true\n");
+            ALOGV("sys.hdmiin.mute true");
             property_set("sys.hdmiin.mute", "true");
         } else {
-            __android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","sys.hdmiin.mute false\n");
+            ALOGV("sys.hdmiin.mute false");
             property_set("sys.hdmiin.mute", "false");
         }
     }
 
-	if(audio_ready != 0 && video_enable&&audio_enable){
-        if(audio_state == 0){
-            audio_start(rate);
-            audio_state = 1;
-        } else if (audio_state == 1 && rate_changed) {
-            audio_start(rate);
+    if (audioReady != 0 && videoEnable && audioEnable) {
+        if (audioState == 0) {
+            audioStart(rate);
+            audioState = 1;
+        } else if (audioState == 1 && rateChanged) {
+            audioStart(rate);
         }
 
-        if(0/*(read_value(getFs(param_path, "vert_active"))==0)
-            ||(read_value(getFs(param_path, "is_hdmi_mode"))==0)*/){
-            if(audio_state == 2){
-                AudioUtilsStopLineIn();
-                audio_state = 1;
-    	          __android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","%s: stop line in finished\n", __func__);
-    	      }
-        }
-        else{
-            if(audio_state == 1){
-    	        AudioUtilsStartLineIn();
-                if (!useSii9233a && !useSii9293)
-                  send_command(getFs(class_path, "enable") , "257"); //0x101: bit16, event of "mailbox_send_audiodsp"
-    	        audio_state = 2;
-    	        __android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","%s: start line in finished\n", __func__);	
+        if (audioState == 1) {
+            AudioUtilsStartLineIn();
+            if (!useSii9233a && !useSii9293) {
+                memset(fsBuf, 0, sizeof(fsBuf));
+                sendCommand(getFs(classPath, "enable", fsBuf) , "257"); //0x101: bit16, event of "mailbox_send_audiodsp"
             }
+            audioState = 2;
+        }
+    } else if (!audioEnable) {
+        if (audioState != 0) {
+            audioStop();
+            audioState = 0;
         }
     }
-    else if (!audio_enable) {
-        if(audio_state!=0){
-			__android_log_print(ANDROID_LOG_INFO, "<HDMI IN AUD>","%s, audio_stop\n", __func__);
-            audio_stop();
-            audio_state = 0;
-        }
-    }
-    #endif
-    return audio_ready;
+    return audioReady;
 }
 
-/*
-* Class:     com_android_server_OverlayViewService
-* Method:    _setEnable
-* Signature: ()I
-*/
-static void Java_com_android_server_OverlayViewService__1setEnable
-(JNIEnv *env, jobject obj, jboolean enable)
-{
+static void setEnable(JNIEnv *env, jobject obj, jboolean enable) {
+    char fsBuf[PATH_MAX] = {0,};
     if (enable) {
-        if (!mIsFullscreen || !mUseVideoLayer) {
+        if (!isDisplayFullscreen || !useVideoLayer) {
             getScreenDev();
-            if (mScreenDev != NULL) {
-                mScreenDev->ops.set_source_type(mScreenDev, HDMI_IN);
+            if (screenDev != NULL) {
+                screenDev->ops.set_source_type(screenDev, HDMI_IN);
             } else
-                __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>","mScreenDev == NULL\n");
+                ALOGE("screenDev == NULL");
         }
 
         if (useSii9233a) {
-            char port[8];
+            char port[8] = {0,};
             memset(port, 0, sizeof(port));
-            sprintf(port, "%d\n", mInputSource);
-            send_command(getFs(class_path, "port"), port);
-            send_command(getFs(class_path, "enable"), "1\n");
-        } else if (useSii9293)
-            send_command(getFs(class_path, "enable") , "1\n");
-        else {
-            send_command(getFs(class_path, "poweron") , "1");
-            send_command(getFs(class_path, "enable")  , "1"); // disable "hdmi in"
+            sprintf(port, "%d\n", inputSource);
+            memset(fsBuf, 0, sizeof(fsBuf));
+            sendCommand(getFs(classPath, "port", fsBuf), port);
+            memset(fsBuf, 0, sizeof(fsBuf));
+            sendCommand(getFs(classPath, "enable", fsBuf), "1\n");
+        } else if (useSii9293) {
+            memset(fsBuf, 0, sizeof(fsBuf));
+            sendCommand(getFs(classPath, "enable", fsBuf) , "1\n");
+        } else {
+            memset(fsBuf, 0, sizeof(fsBuf));
+            sendCommand(getFs(classPath, "poweron", fsBuf) , "1");
+            memset(fsBuf, 0, sizeof(fsBuf));
+            sendCommand(getFs(classPath, "enable", fsBuf)  , "1"); // disable "hdmi in"
         }
     } else {
         if (useSii9233a || useSii9293) {
-            send_command(getFs(class_path, "enable")  , "0\n"); // disable "hdmi in"
+            memset(fsBuf, 0, sizeof(fsBuf));
+            sendCommand(getFs(classPath, "enable", fsBuf)  , "0\n"); // disable "hdmi in"
         } else {
-            send_command(getFs(class_path, "enable")  , "0"); // disable "hdmi in"
-            send_command(getFs(class_path, "poweron"), "0"); //power off "hdmi in"
+            memset(fsBuf, 0, sizeof(fsBuf));
+            sendCommand(getFs(classPath, "enable", fsBuf)  , "0"); // disable "hdmi in"
+            memset(fsBuf, 0, sizeof(fsBuf));
+            sendCommand(getFs(classPath, "poweron", fsBuf), "0"); //power off "hdmi in"
         }
     }
 }
 
-/*
-* Class:     com_android_server_OverlayViewService
-* Method:    _setSourceType
-* Signature: ()I
-*/
-static jint Java_com_android_server_OverlayViewService__1setSourceType
-(JNIEnv *env, jobject obj)
-{
-    if (mIsFullscreen && mUseVideoLayer)
+static jint setSourceType(JNIEnv *env, jobject obj) {
+    if (isDisplayFullscreen && useVideoLayer)
         return -1;
 
-    if (mScreenDev != NULL)
-        mScreenDev->ops.set_source_type(mScreenDev, HDMI_IN);
+    if (screenDev != NULL)
+        screenDev->ops.set_source_type(screenDev, HDMI_IN);
     return 0;
 }
 
-/*
-* Class:     com_android_server_OverlayViewService
-* Method:    _isSurfaceAvailable
-* Signature: (Landroid/view/Surface;)Z
-*/
-static jboolean Java_com_android_server_OverlayViewService__isSurfaceAvailable
-(JNIEnv *env, jobject obj, jobject jsurface)
-{
-	if (jsurface)
-	{
-		//sp<Surface> surface(android_view_Surface_getSurface(env, jsurface));
-		sp<Surface> surface = NULL;
-		if (surface == NULL) {
-			__android_log_print(ANDROID_LOG_INFO, "<HDMI IN>", "isSurfaceAvailable(), surface == NULL\n");
-			return JNI_FALSE;
-		}
+static jboolean isSurfaceAvailable(JNIEnv *env, jobject obj, jobject jsurface) {
+    if (jsurface) {
+        sp<Surface> surface(android_view_Surface_getSurface(env, jsurface));
+        if (surface == NULL) {
+            ALOGE("isSurfaceAvailable, surface == NULL");
+            return JNI_FALSE;
+        }
+        return JNI_TRUE;
+    }
 
-		return JNI_TRUE;
-	}
-
-	__android_log_print(ANDROID_LOG_INFO, "<HDMI IN>", "isSurfaceAvailable(), jsurface == NULL\n");
-	return JNI_FALSE;
+    ALOGE("isSurfaceAvailable, surface == NULL");
+    return JNI_FALSE;
 }
 
-/*
-* Class:     com_android_server_OverlayViewService
-* Method:    _setPreviewWindow
-* Signature: (Landroid/view/Surface;)V
-*/
-static jboolean Java_com_android_server_OverlayViewService__setPreviewWindow
-(JNIEnv *env, jobject obj, jobject jsurface)
-{
-    if (mIsFullscreen && mUseVideoLayer)
+static void displayOSD(JNIEnv *env, jobject obj, jint width, jint height) {
+    displayWidth = width;
+    displayHeight = height;
+    videoEnable = 1;
+}
+
+static jboolean setPreviewWindow(JNIEnv *env, jobject obj, jobject jsurface) {
+    if (isDisplayFullscreen && useVideoLayer)
         return JNI_FALSE;
 
-    /* if (!mScreenModule)
-    {
-        hw_get_module(AML_SCREEN_HARDWARE_MODULE_ID, (const hw_module_t **)&mScreenModule);
-        mScreenModule->common.methods->open((const hw_module_t *)mScreenModule, AML_SCREEN_SOURCE, 
-            (struct hw_device_t**)&mScreenDev);
-    } */
-
     sp<IGraphicBufferProducer> gbp;
-    if(jsurface)
-    {
-        //sp<Surface> surface(android_view_Surface_getSurface(env, jsurface));
-        sp<Surface> surface = NULL;
+    if(jsurface) {
+        sp<Surface> surface(android_view_Surface_getSurface(env, jsurface));
         if (surface == NULL) {
-            __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>", "setPreviewWindow(), surface == NULL\n");
+            ALOGE("setPreviewWindow, surface == NULL");
             return JNI_FALSE;
         }
         gbp = surface->getIGraphicBufferProducer();
         if(gbp != NULL)
-        {
             window = new Surface(gbp);
-        }
     }
 
-    if(window != NULL)
-    {
-        if (window != NULL) {
-            window ->incStrong((void*)ANativeWindow_acquire);
-        }
-        __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>", "setPreviewWindow(), mWidth: %d, mHeight: %d\n", mWidth, mHeight);
+    if(window != NULL) {
+        window ->incStrong((void*)ANativeWindow_acquire);
         getScreenDev();
-        if(mScreenDev != NULL) {
-            mScreenDev->ops.setPreviewWindow(mScreenDev, window.get());
-            mScreenDev->ops.set_format(mScreenDev, mWidth, mHeight, V4L2_PIX_FMT_NV21);
-            mScreenDev->ops.setStateCallBack(mScreenDev, setStateCB);
-        }
-        else {
-            __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>", "AML_SCREEN_HARDWARE_MODULE is busy!!\n");
+        if(screenDev != NULL) {
+            screenDev->ops.setPreviewWindow(screenDev, window.get());
+            ALOGV("setPreviewWindow, width: %d, height: %d\n", displayWidth, displayHeight);
+            screenDev->ops.set_format(screenDev, displayWidth, displayHeight, V4L2_PIX_FMT_NV21);
+            screenDev->ops.setStateCallBack(screenDev, setStateCB);
+        } else {
+            ALOGE("AML_SCREEN_HARDWARE_MODULE is busy!!");
             return JNI_FALSE;
         }
     }
@@ -1399,195 +1161,97 @@ static jboolean Java_com_android_server_OverlayViewService__setPreviewWindow
     return JNI_TRUE;
 }
 
-/*
- * Class:       com_android_server_OverlayViewService
- * Method:      setCrop
- * Signature:   (IIII)I
- */
-static jint Java_com_android_server_OverlayViewService__1setCrop
-  (JNIEnv *env, jobject obj, jint x, jint y, jint width, jint height)
-{
-    if (mIsFullscreen && mUseVideoLayer)
+static jint setCrop(JNIEnv *env, jobject obj, jint x, jint y, jint width, jint height) {
+    if (isDisplayFullscreen && useVideoLayer)
         return -1;
 
-    __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>", "setCrop(), x: %d, y: %d, width: %d, height: %d\n", x, y, width, height);
-    if (mScreenDev != NULL)
-        mScreenDev->ops.set_crop(mScreenDev, x, y, width, height);
+    ALOGV("setCrop, x: %d, y: %d, width: %d, height: %d", x, y, width, height);
+    if (screenDev != NULL)
+        screenDev->ops.set_crop(screenDev, x, y, width, height);
     return 0;
 }
 
-/*
-* Class:     com_android_server_startMov
-* Method:    _startMov
-* Signature: ()V
-*/
-static void Java_com_android_server_OverlayViewService__startMov
-(JNIEnv *env, jobject obj)
-{
-    if (mIsFullscreen && mUseVideoLayer)
+static void startMov(JNIEnv *env, jobject obj) {
+    if (isDisplayFullscreen && useVideoLayer)
         return;
 
-    int state = getState();
-    __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>", "startMov() state:%d\n",state);
-    if(mScreenDev != NULL)
-    {
-        mScreenDev->ops.start(mScreenDev);
-    }
+    if(screenDev != NULL)
+        screenDev->ops.start(screenDev);
 }
 
-/*
-* Class:     com_android_server_stopMov
-* Method:    _stopMov
-* Signature: ()V
-*/
-static void Java_com_android_server_OverlayViewService__stopMov
-(JNIEnv *env, jobject obj)
-{
-    if (mIsFullscreen && mUseVideoLayer)
+static void stopMov(JNIEnv *env, jobject obj) {
+    if (isDisplayFullscreen && useVideoLayer)
         return;
 
     int state = getState();
-    __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>", "stopMov() state:%d\n",state);
-    if(mScreenDev != NULL && state != STOP)
-    {
-        mScreenDev->ops.stop(mScreenDev);
-        mScreenDev->common.close((struct hw_device_t *)mScreenDev);
-        mScreenDev = NULL;
-        mScreenModule = NULL;
+    ALOGV("stopMov, state:%d", state);
+    if(screenDev != NULL && state != STOP) {
+        screenDev->ops.stop(screenDev);
+        screenDev->common.close((struct hw_device_t *)screenDev);
+        screenDev = NULL;
+        screenModule = NULL;
 
-        if (window != NULL) {
+        if (window != NULL)
             window ->decStrong((void*)ANativeWindow_acquire);
-        }
     }
 }
 
-/*
-* Class:     com_android_server_pauseMov
-* Method:    _pauseMov
-* Signature: ()V
-*/
-static void Java_com_android_server_OverlayViewService__pauseMov
-(JNIEnv *env, jobject obj)
-{
-    if (mIsFullscreen && mUseVideoLayer)
+static void pauseMov(JNIEnv *env, jobject obj) {
+    if (isDisplayFullscreen && useVideoLayer)
         return;
 
-    int state = getState();
-    __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>", "pauseMov() state:%d\n",state);
-    if(mScreenDev != NULL)
-    {
-        //mScreenDev->ops.pause(mScreenDev);
+    if(screenDev != NULL) {
+        // screenDev->ops.pause(screenDev);
     }
 }
 
-/*
-* Class:     com_android_server_resumeMov
-* Method:    _resumeMov
-* Signature: ()V
-*/
-static void Java_com_android_server_OverlayViewService__resumeMov
-(JNIEnv *env, jobject obj)
-{
-    if (mIsFullscreen && mUseVideoLayer)
+static void resumeMov(JNIEnv *env, jobject obj) {
+    if (isDisplayFullscreen && useVideoLayer)
         return;
 
-    int state = getState();
-    __android_log_print(ANDROID_LOG_INFO, "<HDMI IN>", "resumeMov() state:%d\n",state);
-    if(mScreenDev != NULL)
-    {
-        //mScreenDev->ops.resume(mScreenDev);
+    if(screenDev != NULL) {
+        // screenDev->ops.resume(screenDev);
     }
-}
-
-/*
-* Class:     com_android_server_startVideo
-* Method:    _startVideo
-* Signature: ()V
-*/
-static void Java_com_android_server_OverlayViewService__startVideo
-(JNIEnv *env, jobject obj)
-{
-    if (mIsFullscreen && mUseVideoLayer) {
-        int ret = read_value("/sys/class/video/disable_video");
-        if (ret != 2 && ret != 0)
-            send_command("/sys/class/video/disable_video", "2");
-    }
-}
-
-/*
-* Class:     com_android_server_stopVideo
-* Method:    _stopVideo
-* Signature: ()V
-*/
-static void Java_com_android_server_OverlayViewService__stopVideo
-(JNIEnv *env, jobject obj)
-{
-    if (mIsFullscreen && mUseVideoLayer)
-        send_command("/sys/class/video/disable_video", "1");
 }
 
 static JNINativeMethod sMethods[] =
 {
-		{"_init", "(IZ)V",
-			(void*)Java_com_android_server_OverlayViewService__1init},
-		{"_deinit", "()V",
-			(void*)Java_com_android_server_OverlayViewService__1deinit},
-		{"_displayHdmi", "()I",
-			(void*)Java_com_android_server_OverlayViewService__1displayHdmi},
-		{"_displayAndroid", "()I",
-			(void*)Java_com_android_server_OverlayViewService__1displayAndroid},
-		{"_displayPip", "(IIII)I",
-			(void*)Java_com_android_server_OverlayViewService__1displayPip},
-		{"_getHActive", "()I",
-			(void*)Java_com_android_server_OverlayViewService__1getHActive},
-		{"_getVActive", "()I",
-			(void*)Java_com_android_server_OverlayViewService__1getVActive},
-		{"_getHdmiInSize", "()Ljava/lang/String;",
-			(void*)Java_com_android_server_OverlayViewService__1getHdmiInSize},
-		{"_isDvi", "()Z",
-			(void*)Java_com_android_server_OverlayViewService__1isDvi},
-		{"_isPowerOn", "()Z",
-			(void*)Java_com_android_server_OverlayViewService__1isPowerOn},
-		{"_isEnable", "()Z",
-			(void*)Java_com_android_server_OverlayViewService__1isEnable},
-		{"_isInterlace", "()Z",
-			(void*)Java_com_android_server_OverlayViewService__1isInterlace},
-		{"_hdmiPlugged", "()Z",
-			(void*)Java_com_android_server_OverlayViewService__1hdmiPlugged},
-		{"_hdmiSignal", "()Z",
-			(void*)Java_com_android_server_OverlayViewService__1hdmiSignal},
-		{"_enableAudio", "(I)I",
-			(void*)Java_com_android_server_OverlayViewService__1enableAudio},
-		{"_handleAudio", "()I",
-			(void*)Java_com_android_server_OverlayViewService__1handleAudio},
-		{"_setEnable", "(Z)V",
-			(void*)Java_com_android_server_OverlayViewService__1setEnable},
-		{"_setSourceType", "()I",
-			(void*)Java_com_android_server_OverlayViewService__1setSourceType},
-		{"_isSurfaceAvailable", "(Landroid/view/Surface;)Z",
-			(void*)Java_com_android_server_OverlayViewService__isSurfaceAvailable},
-		{"_setPreviewWindow", "(Landroid/view/Surface;)Z",
-			(void*)Java_com_android_server_OverlayViewService__setPreviewWindow},
-		{"_setCrop", "(IIII)I",
-			(void*)Java_com_android_server_OverlayViewService__1setCrop},
-		{"_startMov", "()V",
-			(void*)Java_com_android_server_OverlayViewService__startMov},
-		{"_stopMov", "()V",
-			(void*)Java_com_android_server_OverlayViewService__stopMov},
-		{"_pauseMov", "()V",
-			(void*)Java_com_android_server_OverlayViewService__pauseMov},
-		{"_resumeMov", "()V",
-			(void*)Java_com_android_server_OverlayViewService__resumeMov},
-		{"_startVideo", "()V",
-			(void*)Java_com_android_server_OverlayViewService__startVideo},
-		{"_stopVideo", "()V",
-			(void*)Java_com_android_server_OverlayViewService__stopVideo},
+    {"_init", "(IZ)V", (void*)init},
+    {"_deinit", "()V", (void*)deinit},
+    {"_setMainWindowFull", "()V", (void*)setMainWindowFull},
+    {"_setMainWindowPosition", "(II)V", (void*)setMainWindowPosition},
+    {"_startVideo", "()V", (void*)startVideo},
+    {"_stopVideo", "()V", (void*)stopVideo},
+    {"_displayHdmi", "()I", (void*)displayHdmi},
+    {"_displayAndroid", "()I", (void*)displayAndroid},
+    {"_displayPip", "(IIII)V", (void*)displayPip},
+    {"_getHActive", "()I", (void*)getHActive},
+    {"_getHdmiInSize", "()Ljava/lang/String;", (void*)getHdmiInSize},
+    {"_getVActive", "()I", (void*)getVActive},
+    {"_isDvi", "()Z", (void*)isDvi},
+    {"_isPowerOn", "()Z", (void*)isPowerOn},
+    {"_isEnable", "()Z", (void*)isEnable},
+    {"_isInterlace", "()Z", (void*)isInterlace},
+    {"_hdmiPlugged", "()Z", (void*)hdmiPlugged},
+    {"_hdmiSignal", "()Z", (void*)hdmiSignal},
+    {"_enableAudio", "(I)V", (void*)enableAudio},
+    {"_handleAudio", "()I", (void*)handleAudio},
+    {"_setEnable", "(Z)V", (void*)setEnable},
+    {"_setSourceType", "()I", (void*)setSourceType},
+    {"_isSurfaceAvailable", "(Landroid/view/Surface;)Z", (void*)isSurfaceAvailable},
+    {"_displayOSD", "(II)V", (void*)displayOSD},
+    {"_setPreviewWindow", "(Landroid/view/Surface;)Z", (void*)setPreviewWindow},
+    {"_setCrop", "(IIII)I", (void*)setCrop},
+    {"_startMov", "()V", (void*)startMov},
+    {"_stopMov", "()V", (void*)stopMov},
+    {"_pauseMov", "()V", (void*)pauseMov},
+    {"_resumeMov", "()V", (void*)resumeMov},
 };
 
 int register_android_server_HDMIIN(JNIEnv* env)
 {
-	return jniRegisterNativeMethods(env, "com/droidlogic/app/HdmiInManager",
-	                        sMethods, NELEM(sMethods));
+    return jniRegisterNativeMethods(env, "com/droidlogic/app/HdmiInManager",
+            sMethods, NELEM(sMethods));
 }
 
 }  // end namespace android
