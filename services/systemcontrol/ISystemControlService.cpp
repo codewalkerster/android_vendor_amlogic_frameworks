@@ -213,7 +213,8 @@ public:
         }
     }
 
-    virtual void getDroidDisplayInfo(int &type, int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
+    virtual void getDroidDisplayInfo(int &type, String16& socType, String16& defaultUI,
+        int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
         int &fb1w, int &fb1h, int &fb1bits, int &fb1trip)
     {
         Parcel data, reply;
@@ -226,6 +227,8 @@ public:
         }
 
         type = reply.readInt32();
+        socType = reply.readString16();
+        defaultUI = reply.readString16();
         fb0w = reply.readInt32();
         fb0h = reply.readInt32();
         fb0bits = reply.readInt32();
@@ -328,11 +331,16 @@ status_t BnISystemControlService::onTransact(
             return NO_ERROR;
         }
         case GET_DISPLAY_INFO: {
+            String16 socType;
+            String16 defaultUI;
             int type, fb0w, fb0h, fb0bits, fb0trip, fb1w, fb1h, fb1bits, fb1trip;
+
             CHECK_INTERFACE(ISystemControlService, data, reply);
-            getDroidDisplayInfo(type, fb0w, fb0h, fb0bits, fb0trip, fb1w, fb1h, fb1bits, fb1trip);
+            getDroidDisplayInfo(type, socType, defaultUI, fb0w, fb0h, fb0bits, fb0trip, fb1w, fb1h, fb1bits, fb1trip);
 
             reply->writeInt32(type);
+            reply->writeString16(socType);
+            reply->writeString16(defaultUI);
             reply->writeInt32(fb0w);
             reply->writeInt32(fb0h);
             reply->writeInt32(fb0bits);

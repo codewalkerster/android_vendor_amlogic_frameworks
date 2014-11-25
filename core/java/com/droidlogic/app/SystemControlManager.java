@@ -7,23 +7,29 @@ import android.os.RemoteException;
 import android.util.Log;
 
 public class SystemControlManager {
-    private static final String TAG             = "SysControlManager";
+    private static final String TAG                 = "SysControlManager";
 
-    private static final String SYS_TOKEN       = "droidlogic.ISystemControlService";
-    public static final int REMOTE_EXCEPTION    = -0xffff;
+    //must sync with DisplayMode.h
+    public static final int DISPLAY_TYPE_NONE       = 0;
+    public static final int DISPLAY_TYPE_TABLET     = 1;
+    public static final int DISPLAY_TYPE_MBOX       = 2;
+    public static final int DISPLAY_TYPE_TV         = 3;
 
-    int GET_PROPERTY                            = IBinder.FIRST_CALL_TRANSACTION;
-    int GET_PROPERTY_STRING                     = IBinder.FIRST_CALL_TRANSACTION + 1;
-    int GET_PROPERTY_INT                        = IBinder.FIRST_CALL_TRANSACTION + 2;
-    int GET_PROPERTY_LONG                       = IBinder.FIRST_CALL_TRANSACTION + 3;
-    int GET_PROPERTY_BOOL                       = IBinder.FIRST_CALL_TRANSACTION + 4;
-    int SET_PROPERTY                            = IBinder.FIRST_CALL_TRANSACTION + 5;
-    int READ_SYSFS                              = IBinder.FIRST_CALL_TRANSACTION + 6;
-    int WRITE_SYSFS                             = IBinder.FIRST_CALL_TRANSACTION + 7;
+    private static final String SYS_TOKEN           = "droidlogic.ISystemControlService";
+    private static final int REMOTE_EXCEPTION       = -0xffff;
 
-    int GET_BOOT_ENV                            = IBinder.FIRST_CALL_TRANSACTION + 8;
-    int SET_BOOT_ENV                            = IBinder.FIRST_CALL_TRANSACTION + 9;
-    int GET_DISPLAY_INFO                        = IBinder.FIRST_CALL_TRANSACTION + 10;
+    private static final int GET_PROPERTY           = IBinder.FIRST_CALL_TRANSACTION;
+    private static final int GET_PROPERTY_STRING    = IBinder.FIRST_CALL_TRANSACTION + 1;
+    private static final int GET_PROPERTY_INT       = IBinder.FIRST_CALL_TRANSACTION + 2;
+    private static final int GET_PROPERTY_LONG      = IBinder.FIRST_CALL_TRANSACTION + 3;
+    private static final int GET_PROPERTY_BOOL      = IBinder.FIRST_CALL_TRANSACTION + 4;
+    private static final int SET_PROPERTY           = IBinder.FIRST_CALL_TRANSACTION + 5;
+    private static final int READ_SYSFS             = IBinder.FIRST_CALL_TRANSACTION + 6;
+    private static final int WRITE_SYSFS            = IBinder.FIRST_CALL_TRANSACTION + 7;
+
+    private static final int GET_BOOT_ENV           = IBinder.FIRST_CALL_TRANSACTION + 8;
+    private static final int SET_BOOT_ENV           = IBinder.FIRST_CALL_TRANSACTION + 9;
+    private static final int GET_DISPLAY_INFO       = IBinder.FIRST_CALL_TRANSACTION + 10;
 
     private Context mContext;
     private IBinder mIBinder = null;
@@ -256,6 +262,8 @@ public class SystemControlManager {
                 mIBinder.transact(GET_DISPLAY_INFO, data, reply, 0);
                 info = new DisplayInfo();
                 info.type = reply.readInt();
+                info.socType = reply.readString();
+                info.defaultUI = reply.readString();
                 info.fb0Width = reply.readInt();
                 info.fb0Height = reply.readInt();
                 info.fb0FbBits = reply.readInt();
@@ -278,6 +286,8 @@ public class SystemControlManager {
     public static class DisplayInfo{
         //1:tablet 2:MBOX 3:TV
         public int type;
+        public String socType;
+        public String defaultUI;
         public int fb0Width;
         public int fb0Height;
         public int fb0FbBits;

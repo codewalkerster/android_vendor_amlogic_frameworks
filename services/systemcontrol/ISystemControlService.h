@@ -67,7 +67,8 @@ public:
 
     virtual void setBootEnv(const String16& key, const String16& value) = 0;
     virtual bool getBootEnv(const String16& key, String16& value) = 0;
-    virtual void getDroidDisplayInfo(int &type, int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
+    virtual void getDroidDisplayInfo(int &type, String16& socType, String16& defaultUI,
+        int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
         int &fb1w, int &fb1h, int &fb1bits, int &fb1trip) = 0;
 };
 
