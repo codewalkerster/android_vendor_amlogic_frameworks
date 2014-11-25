@@ -26,21 +26,21 @@
 extern "C" {
 #endif
 
-#define CC_MAX_LINE_LEN             512
-#define MAX_STR_LEN                 512
+#define CC_MAX_LINE_LEN     512
+#define MAX_STR_LEN         512
 
 #ifdef RECOVERY_MODE
 #include <cutils/klog.h>
-#define SYS_LOGE(x...)  KLOG_ERROR("display", x)
-#define SYS_LOGD(x...)  KLOG_DEBUG("display", x)
-#define SYS_LOGV(x...)  KLOG_NOTICE("display", x)
-#define SYS_LOGI(x...)  KLOG_INFO("display", x)
+#define SYS_LOGE(x...)      KLOG_ERROR("systemcontrol", x)
+#define SYS_LOGD(x...)      KLOG_DEBUG("systemcontrol", x)
+#define SYS_LOGV(x...)      KLOG_NOTICE("systemcontrol", x)
+#define SYS_LOGI(x...)      KLOG_INFO("systemcontrol", x)
 #else
 #include <utils/Log.h>
-#define SYS_LOGE        ALOGE
-#define SYS_LOGD        ALOGD
-#define SYS_LOGV        ALOGV
-#define SYS_LOGI        ALOGI
+#define SYS_LOGE            ALOGE
+#define SYS_LOGD            ALOGD
+#define SYS_LOGV            ALOGV
+#define SYS_LOGI            ALOGI
 #endif
 
 enum {

@@ -31,7 +31,6 @@
 #include "ubootenv.h"
 #include "DisplayMode.h"
 #include "SysTokenizer.h"
-#include "common.h"
 
 #define MODE_480P                   "480p"
 #define MODE_480I                   "480i"
@@ -103,12 +102,12 @@ DisplayMode::DisplayMode(const char *path)
     mFb1Height(-1),
     mFb1FbBits(-1),
     mFb1TripleEnable(true),
-    mLogLevel(LOG_LEVEL_DEFAULT){
+    mLogLevel(LOG_LEVEL_DEFAULT) {
 
-    if(NULL == path){
+    if (NULL == path) {
         pConfigPath = DISPLAY_CFG_FILE;
     }
-    else{
+    else {
         pConfigPath = path;
     }
 
@@ -120,24 +119,32 @@ DisplayMode::DisplayMode(const char *path)
 DisplayMode::~DisplayMode() {
 }
 
-void DisplayMode::init(){
+void DisplayMode::init() {
     parseConfigFile();
 
     SYS_LOGI("display mode init type: %d [0:none 1:tablet 2:mbox 3:tv]", mDisplayType);
-    if(DISPLAY_TYPE_TABLET == mDisplayType){
+    if (DISPLAY_TYPE_TABLET == mDisplayType) {
         setTabletDisplay();
     }
-    else if(DISPLAY_TYPE_MBOX == mDisplayType){
+    else if (DISPLAY_TYPE_MBOX == mDisplayType) {
         setMboxDisplay();
     }
-    else if(DISPLAY_TYPE_TV == mDisplayType){
+    else if (DISPLAY_TYPE_TV == mDisplayType) {
         setTVDisplay();
     }
 }
 
-void DisplayMode:: getDisplayInfo(int &type, int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
-        int &fb1w, int &fb1h, int &fb1bits, int &fb1trip){
+void DisplayMode:: getDisplayInfo(int &type, char* socType, char* defaultUI) {
     type = mDisplayType;
+    if (NULL != socType)
+        strcpy(socType, mSocType);
+
+    if (NULL != defaultUI)
+        strcpy(defaultUI, mDefaultUI);
+}
+
+void DisplayMode:: getFbInfo(int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
+        int &fb1w, int &fb1h, int &fb1bits, int &fb1trip) {
     fb0w = mFb0Width;
     fb0h = mFb0Height;
     fb0bits = mFb0FbBits;
@@ -153,10 +160,10 @@ void DisplayMode::setLogLevel(int level){
     mLogLevel = level;
 }
 
-bool DisplayMode::getBootEnv(const char* key, char* value){
+bool DisplayMode::getBootEnv(const char* key, char* value) {
     const char* p_value = bootenv_get(key);
 
-    if(mLogLevel > LOG_LEVEL_1)
+    if (mLogLevel > LOG_LEVEL_1)
         SYS_LOGI("getBootEnv key:%s value:%s", key, p_value);
 
 	if (p_value) {
@@ -166,8 +173,8 @@ bool DisplayMode::getBootEnv(const char* key, char* value){
     return false;
 }
 
-void DisplayMode::setBootEnv(const char* key, char* value){
-    if(mLogLevel > LOG_LEVEL_1)
+void DisplayMode::setBootEnv(const char* key, char* value) {
+    if (mLogLevel > LOG_LEVEL_1)
         SYS_LOGI("setBootEnv key:%s value:%s", key, value);
 
     bootenv_update(key, value);
@@ -195,6 +202,8 @@ int DisplayMode::parseConfigFile(){
                     mDisplayType = DISPLAY_TYPE_TABLET;
 
                     tokenizer->skipDelimiters(WHITESPACE);
+                    strcpy(mSocType, tokenizer->nextToken(WHITESPACE));
+                    tokenizer->skipDelimiters(WHITESPACE);
                     mFb0Width = atoi(tokenizer->nextToken(WHITESPACE));
                     tokenizer->skipDelimiters(WHITESPACE);
                     mFb0Height = atoi(tokenizer->nextToken(WHITESPACE));
@@ -214,8 +223,16 @@ int DisplayMode::parseConfigFile(){
 
                 } else if (!strcmp(token, DEVICE_STR_MBOX)) {
                     mDisplayType = DISPLAY_TYPE_MBOX;
+
+                    tokenizer->skipDelimiters(WHITESPACE);
+                    strcpy(mSocType, tokenizer->nextToken(WHITESPACE));
+                    tokenizer->skipDelimiters(WHITESPACE);
+                    strcpy(mDefaultUI, tokenizer->nextToken(WHITESPACE));
                 } else if (!strcmp(token, DEVICE_STR_TV)) {
                     mDisplayType = DISPLAY_TYPE_TV;
+
+                    tokenizer->skipDelimiters(WHITESPACE);
+                    strcpy(mSocType, tokenizer->nextToken(WHITESPACE));
                 }else {
                     SYS_LOGE("%s: Expected keyword, got '%s'.", tokenizer->getLocation(), token);
                     break;
@@ -229,7 +246,7 @@ int DisplayMode::parseConfigFile(){
     return status;
 }
 
-void DisplayMode::setTabletDisplay(){
+void DisplayMode::setTabletDisplay() {
     struct fb_var_screeninfo var_set;
     var_set.xres = mFb0Width;
 	var_set.yres = mFb0Height;
@@ -244,7 +261,7 @@ void DisplayMode::setTabletDisplay(){
     var_set.xres = mFb1Width;
 	var_set.yres = mFb1Height;
 	var_set.xres_virtual = mFb1Width;
-    if(mFb1TripleEnable)
+    if (mFb1TripleEnable)
 	    var_set.yres_virtual = 3*mFb1Height;
     else
         var_set.yres_virtual = 2*mFb1Height;
@@ -263,7 +280,7 @@ void DisplayMode::setTabletDisplay(){
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
 }
 
-void DisplayMode::setMboxDisplay(){
+void DisplayMode::setMboxDisplay() {
     const char *prefix = UBOOTENV_PREFIX;
     const char *suffix_x = "_x";
     const char *suffix_y = "_y";
@@ -281,28 +298,28 @@ void DisplayMode::setMboxDisplay(){
     pSysWrite->readSysfs(DISPLAY_HPD_STATE, hpdstate);
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, current_mode);
 
-    if(pSysWrite->getPropertyBoolean("ro.platform.hdmionly", false)){
+    if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, false)) {
         if (!strcmp(hpdstate, "1")){
-            if (!strcmp(current_mode, MODE_480CVBS) || !strcmp(current_mode, MODE_576CVBS)){
+            if (!strcmp(current_mode, MODE_480CVBS) || !strcmp(current_mode, MODE_576CVBS)) {
                 pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
                 pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
             }
 
             getBootEnv(UBOOTENV_HDMIMODE, outputmode);
         }
-        else{
+        else {
             getBootEnv(UBOOTENV_CVBSMODE, outputmode);
         }
 
         setBootEnv(UBOOTENV_OUTPUTMODE, outputmode);
     }
-    else{
+    else {
         getBootEnv(UBOOTENV_OUTPUTMODE, outputmode);
     }
 
     //if the tv don't support current outputmode,then switch to best outputmode
-    if (strcmp(hpdstate, "1")){
-        if(strcmp(outputmode, MODE_480CVBS) && strcmp(outputmode, MODE_576CVBS)){
+    if (strcmp(hpdstate, "1")) {
+        if (strcmp(outputmode, MODE_480CVBS) && strcmp(outputmode, MODE_576CVBS)) {
             strcpy(outputmode, MODE_576CVBS);
         }
     }
@@ -312,7 +329,7 @@ void DisplayMode::setMboxDisplay(){
         current_mode,
         outputmode);
 
-    pSysWrite->setProperty("ro.sf.lcd_density", "240");
+    pSysWrite->setProperty(PROP_LCD_DENSITY, "240");
 
     char key_prefix[MAX_STR_LEN] = {0};
     char key[MAX_STR_LEN] = {0};
@@ -324,147 +341,168 @@ void DisplayMode::setMboxDisplay(){
     int defaultwidth = 0;
     int defaultheight = 0;
     bool hasRead = false;
+    bool usedDefault = false;
 
-    if (!strcmp(outputmode, MODE_4K2K24HZ) ||
-        !strcmp(outputmode, MODE_4K2K25HZ) ||
-        !strcmp(outputmode, MODE_4K2K30HZ) ||
-        !strcmp(outputmode, MODE_4K2KSMPTE)){
+    while (true) {
+        if (!strcmp(outputmode, MODE_4K2K24HZ) ||
+            !strcmp(outputmode, MODE_4K2K25HZ) ||
+            !strcmp(outputmode, MODE_4K2K30HZ) ||
+            !strcmp(outputmode, MODE_4K2KSMPTE)) {
 
-        if (!strcmp(outputmode, MODE_4K2KSMPTE)){
-            defaultwidth = outputwidth = 4096;
+            if (!strcmp(outputmode, MODE_4K2KSMPTE)) {
+                defaultwidth = outputwidth = 4096;
+            }
+            else {
+                defaultwidth = outputwidth = 3840;
+            }
+
+            defaultheight = outputheight = 2160;
+
+            strcpy(key_prefix, prefix);
+            strcat(key_prefix, outputmode);
+
+            strcpy(key, key_prefix);
+            if (getBootEnv(strcat(key, suffix_x), value))
+                outputx = atoi(value);
+
+            strcpy(key, key_prefix);
+            if (getBootEnv(strcat(key, suffix_y), value))
+                outputy = atoi(value);
+
+            strcpy(key, key_prefix);
+            if (getBootEnv(strcat(key, suffix_w), value))
+                outputwidth = atoi(value);
+
+            strcpy(key, key_prefix);
+            if (getBootEnv(strcat(key, suffix_h), value))
+                outputheight = atoi(value);
+
+            hasRead = true;
+            break;
+        }
+        else if (!strcmp(outputmode, MODE_480P) ||
+            !strcmp(outputmode, MODE_480I) ||
+            !strcmp(outputmode, MODE_480CVBS)) {
+            defaultwidth = outputwidth = 720;
+            defaultheight = outputheight = 480;
+            if (!strcmp(outputmode, MODE_480CVBS)) {
+                strcpy(key_prefix, prefix);
+                strcat(key_prefix, MODE_480I);
+
+                strcpy(key, key_prefix);
+                if (getBootEnv(strcat(key, suffix_x2), value))
+                    outputx = atoi(value);
+
+                strcpy(key, key_prefix);
+                if (getBootEnv(strcat(key, suffix_y2), value))
+                    outputy = atoi(value);
+
+                strcpy(key, key_prefix);
+                if (getBootEnv(strcat(key, suffix_w2), value))
+                    outputwidth = atoi(value);
+
+                strcpy(key, key_prefix);
+                if (getBootEnv(strcat(key, suffix_h2), value))
+                    outputheight = atoi(value);
+
+                hasRead = true;
+            }
+            break;
+        }
+        else if (!strcmp(outputmode, MODE_576P) ||
+            !strcmp(outputmode, MODE_576I) ||
+            !strcmp(outputmode, MODE_576CVBS)) {
+            defaultwidth = outputwidth = 720;
+            defaultheight = outputheight = 576;
+
+            if (!strcmp(outputmode, MODE_576CVBS)) {
+                strcpy(key_prefix, prefix);
+                strcat(key_prefix, MODE_576I);
+
+                strcpy(key, key_prefix);
+                if (getBootEnv(strcat(key, suffix_x2), value))
+                    outputx = atoi(value);
+
+                strcpy(key, key_prefix);
+                if (getBootEnv(strcat(key, suffix_y2), value))
+                    outputy = atoi(value);
+
+                strcpy(key, key_prefix);
+                if (getBootEnv(strcat(key, suffix_w2), value))
+                    outputwidth = atoi(value);
+
+                strcpy(key, key_prefix);
+                if (getBootEnv(strcat(key, suffix_h2), value))
+                    outputheight = atoi(value);
+
+                hasRead = true;
+            }
+            break;
+        }
+        else if (!strcmp(outputmode, MODE_720P) ||
+            !strcmp(outputmode, MODE_720P50HZ)) {
+            defaultwidth = outputwidth = 1280;
+            defaultheight = outputheight = 720;
+            break;
+        }
+        else if (!strcmp(outputmode, MODE_1080P) ||
+            !strcmp(outputmode, MODE_1080I) ||
+            !strcmp(outputmode, MODE_1080P24HZ) ||
+            !strcmp(outputmode, MODE_1080I50HZ) ||
+            !strcmp(outputmode, MODE_1080P50HZ)) {
+            defaultwidth = outputwidth = 1920;
+            defaultheight = outputheight = 1080;
+            break;
         }
         else {
-            defaultwidth = outputwidth = 3840;
+            if (!usedDefault) {
+                SYS_LOGI("using default ui: %s", mDefaultUI);
+
+                usedDefault = true;
+                strcpy(outputmode, mDefaultUI);
+                setBootEnv(UBOOTENV_OUTPUTMODE, outputmode);
+            }
+            else {
+                SYS_LOGI("because bootenv and config default are errors, so using system default ui: %s", MODE_1080P);
+
+                defaultwidth = outputwidth = 1920;
+                defaultheight = outputheight = 1080;
+
+                strcpy(outputmode, MODE_1080P);
+                setBootEnv(UBOOTENV_OUTPUTMODE, outputmode);
+                break;
+            }
         }
+    }
 
-        defaultheight = outputheight = 2160;
-
+    if (!hasRead) {
         strcpy(key_prefix, prefix);
         strcat(key_prefix, outputmode);
 
         strcpy(key, key_prefix);
-        if(getBootEnv(strcat(key, suffix_x), value))
+        if (getBootEnv(strcat(key, suffix_x2), value))
             outputx = atoi(value);
 
         strcpy(key, key_prefix);
-        if(getBootEnv(strcat(key, suffix_y), value))
+        if (getBootEnv(strcat(key, suffix_y2), value))
             outputy = atoi(value);
 
         strcpy(key, key_prefix);
-        if(getBootEnv(strcat(key, suffix_w), value))
+        if (getBootEnv(strcat(key, suffix_w2), value))
             outputwidth = atoi(value);
 
         strcpy(key, key_prefix);
-        if(getBootEnv(strcat(key, suffix_h), value))
-            outputheight = atoi(value);
-
-        hasRead = true;
-    }
-    else if (!strcmp(outputmode, MODE_480P) ||
-        !strcmp(outputmode, MODE_480I) ||
-        !strcmp(outputmode, MODE_480CVBS)){
-        defaultwidth = outputwidth = 720;
-        defaultheight = outputheight = 480;
-        if (!strcmp(outputmode, MODE_480CVBS)){
-            strcpy(key_prefix, prefix);
-            strcat(key_prefix, MODE_480I);
-
-            strcpy(key, key_prefix);
-            if(getBootEnv(strcat(key, suffix_x2), value))
-                outputx = atoi(value);
-
-            strcpy(key, key_prefix);
-            if(getBootEnv(strcat(key, suffix_y2), value))
-                outputy = atoi(value);
-
-            strcpy(key, key_prefix);
-            if(getBootEnv(strcat(key, suffix_w2), value))
-                outputwidth = atoi(value);
-
-            strcpy(key, key_prefix);
-            if(getBootEnv(strcat(key, suffix_h2), value))
-                outputheight = atoi(value);
-
-            hasRead = true;
-        }
-    }
-    else if (!strcmp(outputmode, MODE_576P) ||
-        !strcmp(outputmode, MODE_576I) ||
-        !strcmp(outputmode, MODE_576CVBS)){
-        defaultwidth = outputwidth = 720;
-        defaultheight = outputheight = 576;
-
-        if (!strcmp(outputmode, MODE_576CVBS)){
-            strcpy(key_prefix, prefix);
-            strcat(key_prefix, MODE_576I);
-
-            strcpy(key, key_prefix);
-            if(getBootEnv(strcat(key, suffix_x2), value))
-                outputx = atoi(value);
-
-            strcpy(key, key_prefix);
-            if(getBootEnv(strcat(key, suffix_y2), value))
-                outputy = atoi(value);
-
-            strcpy(key, key_prefix);
-            if(getBootEnv(strcat(key, suffix_w2), value))
-                outputwidth = atoi(value);
-
-            strcpy(key, key_prefix);
-            if(getBootEnv(strcat(key, suffix_h2), value))
-                outputheight = atoi(value);
-
-            hasRead = true;
-        }
-    }
-    else if (!strcmp(outputmode, MODE_720P) ||
-        !strcmp(outputmode, MODE_720P50HZ)){
-        defaultwidth = outputwidth = 1280;
-        defaultheight = outputheight = 720;
-    }
-    else if (!strcmp(outputmode, MODE_1080P) ||
-        !strcmp(outputmode, MODE_1080I) ||
-        !strcmp(outputmode, MODE_1080P24HZ) ||
-        !strcmp(outputmode, MODE_1080I50HZ) ||
-        !strcmp(outputmode, MODE_1080P50HZ)){
-        defaultwidth = outputwidth = 1920;
-        defaultheight = outputheight = 1080;
-    }
-    else {
-        strcpy(outputmode, MODE_1080P);
-
-        defaultwidth = outputwidth = 1920;
-        defaultheight = outputheight = 1080;
-    }
-
-    if(!hasRead){
-        strcpy(key_prefix, prefix);
-        strcat(key_prefix, outputmode);
-
-        strcpy(key, key_prefix);
-        if(getBootEnv(strcat(key, suffix_x2), value))
-            outputx = atoi(value);
-
-        strcpy(key, key_prefix);
-        if(getBootEnv(strcat(key, suffix_y2), value))
-            outputy = atoi(value);
-
-        strcpy(key, key_prefix);
-        if(getBootEnv(strcat(key, suffix_w2), value))
-            outputwidth = atoi(value);
-
-        strcpy(key, key_prefix);
-        if(getBootEnv(strcat(key, suffix_h2), value))
+        if (getBootEnv(strcat(key, suffix_h2), value))
             outputheight = atoi(value);
     }
 
     if ((!strcmp(outputmode, MODE_480I) || !strcmp(outputmode, MODE_576I)) &&
-        (pSysWrite->getPropertyBoolean("ro.platform.has.cvbsmode", false))){
+        (pSysWrite->getPropertyBoolean(PROP_HAS_CVBS_MODE, false))) {
         const char *mode = "";
-        if (!strcmp(outputmode, MODE_480I)){
+        if (!strcmp(outputmode, MODE_480I)) {
             mode = MODE_480CVBS;
         }
-        else if(!strcmp(outputmode, MODE_576I)){
+        else if (!strcmp(outputmode, MODE_576I)) {
             mode = MODE_576CVBS;
         }
 
@@ -496,23 +534,23 @@ void DisplayMode::setMboxDisplay(){
     //audio
     getBootEnv(UBOOTENV_DIGITAUDIO, value);
     char audiovalue[5];
-    if(!strcmp(value,"SPDIF passthrough")){
+    if (!strcmp(value,"SPDIF passthrough")) {
         strcpy(audiovalue, "1");
     }
-    else if(!strcmp(value, "HDMI passthrough")){
+    else if (!strcmp(value, "HDMI passthrough")) {
         strcpy(audiovalue, "2");
     }
-    else{
+    else {
         strcpy(audiovalue, "0");
     }
     pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, audiovalue);
 }
 
-void DisplayMode::setTVDisplay(){
+void DisplayMode::setTVDisplay() {
 
 }
 
-void DisplayMode::setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set){
+void DisplayMode::setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set) {
     struct fb_var_screeninfo var_old;
 
     int fh = open(fbdev, O_RDONLY);
@@ -523,31 +561,28 @@ void DisplayMode::setFbParameter(const char* fbdev, struct fb_var_screeninfo var
     close(fh);
 }
 
-int DisplayMode::dump(char *result){
-    if(NULL == result)
+int DisplayMode::dump(char *result) {
+    if (NULL == result)
         return -1;
 
-    char buf_d[2048] = {0};
-    sprintf(buf_d, "\ndisplay type: %d [0:none 1:tablet 2:mbox 3:tv]\n", mDisplayType);
+    char buf[2048] = {0};
+    sprintf(buf, "\ndisplay type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s\n", mDisplayType, mSocType);
+    strcat(result, buf);
 
-    char buf_fb0[2048] = {0};
-    sprintf(buf_fb0, "fb0 width:%d height:%d fbbits:%d triple buffer enable:%d\n",
-        mFb0Width, mFb0Height, mFb0FbBits, (int)mFb0TripleEnable);
+    if (DISPLAY_TYPE_TABLET == mDisplayType) {
+        sprintf(buf, "fb0 width:%d height:%d fbbits:%d triple buffer enable:%d\n",
+            mFb0Width, mFb0Height, mFb0FbBits, (int)mFb0TripleEnable);
+        strcat(result, buf);
 
-    char buf_fb1[2048] = {0};
-    sprintf(buf_fb1, "fb1 width:%d height:%d fbbits:%d triple buffer enable:%d\n",
-        mFb1Width, mFb1Height, mFb1FbBits, (int)mFb1TripleEnable);
+        sprintf(buf, "fb1 width:%d height:%d fbbits:%d triple buffer enable:%d\n",
+            mFb1Width, mFb1Height, mFb1FbBits, (int)mFb1TripleEnable);
+        strcat(result, buf);
+    }
 
-    strcat(result, buf_d);
-    strcat(result, buf_fb0);
-    strcat(result, buf_fb1);
-    /*
-    result.appendFormat(String8::format("\ndisplay type: %d [0:none 1:tablet 2:mbox 3:tv]\n", mDisplayType));
-    result.appendFormat(String8::format("fb0 width:%d height:%d fbbits:%d triple buffer enable:%d\n", 
-        mFb0Width, mFb0Height, mFb0FbBits, (int)mFb0TripleEnable));
-    result.appendFormat(String8::format("fb1 width:%d height:%d fbbits:%d triple buffer enable:%d\n", 
-        mFb1Width, mFb1Height, mFb1FbBits, (int)mFb1TripleEnable));
-        */
+    if (DISPLAY_TYPE_MBOX == mDisplayType) {
+        sprintf(buf, "default ui:%s\n", mDefaultUI);
+        strcat(result, buf);
+    }
     return 0;
 }
 

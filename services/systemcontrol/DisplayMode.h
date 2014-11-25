@@ -24,6 +24,7 @@
 
 #include <linux/fb.h>
 #include "SysWrite.h"
+#include "common.h"
 
 #define SOURCE_OUTPUT_WIDTH             1920
 #define SOURCE_OUTPUT_HEIGHT            1080
@@ -54,6 +55,10 @@
 
 #define AUDIO_DSP_DIGITAL_RAW           "/sys/class/audiodsp/digital_raw"
 
+#define PROP_HDMIONLY                   "ro.platform.hdmionly"
+#define PROP_LCD_DENSITY                "ro.sf.lcd_density"
+#define PROP_HAS_CVBS_MODE              "ro.platform.has.cvbsmode"
+
 enum {
     DISPLAY_TYPE_NONE               = 0,
     DISPLAY_TYPE_TABLET			    = 1,
@@ -71,7 +76,8 @@ public:
 
     void init();
 
-    void getDisplayInfo(int &type, int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
+    void getDisplayInfo(int &type, char* socType, char* defaultUI);
+    void getFbInfo(int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
         int &fb1w, int &fb1h, int &fb1bits, int &fb1trip);
 
     void setLogLevel(int level);
@@ -100,6 +106,8 @@ private:
     int mFb1FbBits;
     bool mFb1TripleEnable;//Triple Buffer enable or not
 
+    char mSocType[MAX_STR_LEN];
+    char mDefaultUI[MAX_STR_LEN];//this used for mbox
     int mLogLevel;
     SysWrite *pSysWrite = NULL;
 };
