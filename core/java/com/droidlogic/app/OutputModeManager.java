@@ -571,6 +571,98 @@ public class OutputModeManager {
         return curPosition;
     }
 
+    public void savePosition(int left, int top, int width, int height) {
+        int index = 4; // 720p
+        String x = String.valueOf(left);
+        String y = String.valueOf(top);
+        String w = String.valueOf(width);
+        String h = String.valueOf(height);
+        String mCurrentMode = mSystenControl.readSysFs(DISPLAY_MODE).replaceAll("\n","");
+
+        for (int i = 0; i < COMMON_MODE_VALUE_LIST.length; i++) {
+            if (mCurrentMode.equalsIgnoreCase(COMMON_MODE_VALUE_LIST[i])) {
+                index = i;
+            }
+        }
+        switch (index) {
+            case 0: // 480i
+            case 10: //480cvbs
+                setBootenv(ENV_480I_X, x);
+                setBootenv(ENV_480I_Y, y);
+                setBootenv(ENV_480I_W, w);
+                setBootenv(ENV_480I_H, h);
+                break;
+            case 1: // 480p
+                setBootenv(ENV_480P_X, x);
+                setBootenv(ENV_480P_Y, y);
+                setBootenv(ENV_480P_W, w);
+                setBootenv(ENV_480P_H, h);
+                break;
+            case 2: // 576i
+            case 11:    //576cvbs
+                setBootenv(ENV_576I_X, x);
+                setBootenv(ENV_576I_Y, y);
+                setBootenv(ENV_576I_W, w);
+                setBootenv(ENV_576I_H, h);
+                break;
+            case 3: // 576p
+                setBootenv(ENV_576P_X, x);
+                setBootenv(ENV_576P_Y, y);
+                setBootenv(ENV_576P_W, w);
+                setBootenv(ENV_576P_H, h);
+                break;
+            case 4: // 720p
+            case 7: // 720p50hz
+                setBootenv(ENV_720P_X, x);
+                setBootenv(ENV_720P_Y, y);
+                setBootenv(ENV_720P_W, w);
+                setBootenv(ENV_720P_H, h);
+                break;
+            case 5: // 1080i
+            case 8: // 1080i50hz
+                setBootenv(ENV_1080I_X, x);
+                setBootenv(ENV_1080I_Y, y);
+                setBootenv(ENV_1080I_W, w);
+                setBootenv(ENV_1080I_H, h);
+                break;
+            case 6: // 1080p
+            case 9: // 1080p50hz
+            case 16: //1080p24hz
+                setBootenv(ENV_1080P_X, x);
+                setBootenv(ENV_1080P_Y, y);
+                setBootenv(ENV_1080P_W, w);
+                setBootenv(ENV_1080P_H, h);
+                break;
+            case 12:    //4k2k24hz
+                setBootenv(ENV_4K2K24HZ_X, x);
+                setBootenv(ENV_4K2K24HZ_Y, y);
+                setBootenv(ENV_4K2K24HZ_W, w);
+                setBootenv(ENV_4K2K24HZ_H, h);
+                break;
+            case 13:    //4k2k25hz
+                setBootenv(ENV_4K2K25HZ_X, x);
+                setBootenv(ENV_4K2K25HZ_Y, y);
+                setBootenv(ENV_4K2K25HZ_W, w);
+                setBootenv(ENV_4K2K25HZ_H, h);
+                break;
+            case 14:    //4k2k30hz
+                setBootenv(ENV_4K2K30HZ_X, x);
+                setBootenv(ENV_4K2K30HZ_Y, y);
+                setBootenv(ENV_4K2K30HZ_W, w);
+                setBootenv(ENV_4K2K30HZ_H, h);
+                break;
+            case 15:    //4k2ksmpte
+                setBootenv(ENV_4K2KSMPTE_X, x);
+                setBootenv(ENV_4K2KSMPTE_Y, y);
+                setBootenv(ENV_4K2KSMPTE_W, w);
+                setBootenv(ENV_4K2KSMPTE_H, h);
+                break;
+        }
+        if (mSystenControl.getPropertyBoolean("ro.platform.has.realoutputmode", false)) {
+            writeSysfs(VIDEO_AXIS , x+" "+y+" "+(left+width-1)+" "+(top+height-1));
+        }
+    }
+
     public String getBestMatchResolution() {
         String[] supportList = null;
         String value = readSupportList(HDMI_SUPPORT_LIST);
