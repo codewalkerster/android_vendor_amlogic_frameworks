@@ -48,7 +48,7 @@ void SystemControl::instantiate(const char *cfgpath) {
 }
 
 SystemControl::SystemControl(const char *path)
-    : mLogLevel(LOG_LEVEL_DEFAULT){
+    : mLogLevel(LOG_LEVEL_DEFAULT) {
 
     bootenv_init();
 
@@ -63,8 +63,7 @@ SystemControl::~SystemControl() {
     delete pDisplayMode;
 }
 
-int SystemControl::permissionCheck(){
-
+int SystemControl::permissionCheck() {
     // codes that require permission check
     IPCThreadState* ipc = IPCThreadState::self();
     const int pid = ipc->getCallingPid();
@@ -77,7 +76,7 @@ int SystemControl::permissionCheck(){
         return PERMISSION_DENIED;
     }
 
-    if(mLogLevel > LOG_LEVEL_0){
+    if (mLogLevel > LOG_LEVEL_1) {
         ALOGI("system_control service permissionCheck pid=%d, uid=%d", pid, uid);
     }
 
@@ -85,60 +84,55 @@ int SystemControl::permissionCheck(){
 }
 
 //read write property and sysfs
-bool SystemControl::getProperty(const String16& key, String16& value){
+bool SystemControl::getProperty(const String16& key, String16& value) {
     char buf[PROPERTY_VALUE_MAX] = {0};
-    //property_get(key, buf, "");
     bool ret = pSysWrite->getProperty(String8(key).string(), buf);
     value.setTo(String16(buf));
 
     return ret;
 }
 
-bool SystemControl::getPropertyString(const String16& key, String16& def, String16& value){
+bool SystemControl::getPropertyString(const String16& key, String16& def, String16& value) {
     char buf[PROPERTY_VALUE_MAX] = {0};
-    //property_get(key, buf, "");
     bool ret = pSysWrite->getPropertyString(String8(key).string(), String8(def).string(), (char *)buf);
     value.setTo(String16(buf));
-
-    //bool ret = pSysWrite->getPropertyString(key, def, value);
     return ret;
 }
 
-int32_t SystemControl::getPropertyInt(const String16& key, int32_t def){
+int32_t SystemControl::getPropertyInt(const String16& key, int32_t def) {
     return pSysWrite->getPropertyInt(String8(key).string(), def);
 }
 
-int64_t SystemControl::getPropertyLong(const String16& key, int64_t def){
+int64_t SystemControl::getPropertyLong(const String16& key, int64_t def) {
     return pSysWrite->getPropertyLong(String8(key).string(), def);
 }
 
-bool SystemControl::getPropertyBoolean(const String16& key, bool def){
+bool SystemControl::getPropertyBoolean(const String16& key, bool def) {
     return pSysWrite->getPropertyBoolean(String8(key).string(), def);
 }
 
-void SystemControl::setProperty(const String16& key, const String16& value){
-    if(NO_ERROR == permissionCheck()){
+void SystemControl::setProperty(const String16& key, const String16& value) {
+    if (NO_ERROR == permissionCheck()) {
         pSysWrite->setProperty(String8(key).string(), String8(value).string());
         traceValue(String16("setProperty"), key, value);
     }
 }
 
-bool SystemControl::readSysfs(const String16& path, String16& value){
-    if(NO_ERROR == permissionCheck()){
+bool SystemControl::readSysfs(const String16& path, String16& value) {
+    if (NO_ERROR == permissionCheck()) {
         traceValue(String16("readSysfs"), path, value);
 
         char buf[PROPERTY_VALUE_MAX] = {0};
         bool ret = pSysWrite->readSysfs(String8(path).string(), buf);
         value.setTo(String16(buf));
         return ret;
-        //return pSysWrite->readSysfs(path, value);
     }
 
     return false;
 }
 
-bool SystemControl::writeSysfs(const String16& path, const String16& value){
-    if(NO_ERROR == permissionCheck()){
+bool SystemControl::writeSysfs(const String16& path, const String16& value) {
+    if (NO_ERROR == permissionCheck()) {
         traceValue(String16("writeSysfs"), path, value);
 
         return pSysWrite->writeSysfs(String8(path).string(), String8(value).string());
@@ -148,8 +142,7 @@ bool SystemControl::writeSysfs(const String16& path, const String16& value){
 }
 
 //set or get uboot env
-bool SystemControl::getBootEnv(const String16& key, String16& value){
-    //bool ret = pSysWrite->getProperty(key, value);
+bool SystemControl::getBootEnv(const String16& key, String16& value) {
     const char* p_value = bootenv_get(String8(key).string());
 	if (p_value) {
         value.setTo(String16(p_value));
@@ -158,8 +151,8 @@ bool SystemControl::getBootEnv(const String16& key, String16& value){
     return false;
 }
 
-void SystemControl::setBootEnv(const String16& key, const String16& value){
-    if(NO_ERROR == permissionCheck()){
+void SystemControl::setBootEnv(const String16& key, const String16& value) {
+    if (NO_ERROR == permissionCheck()) {
         bootenv_update(String8(key).string(), String8(value).string());
         traceValue(String16("setBootEnv"), key, value);
     }
@@ -167,8 +160,8 @@ void SystemControl::setBootEnv(const String16& key, const String16& value){
 
 void SystemControl::getDroidDisplayInfo(int &type, String16& socType, String16& defaultUI,
         int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
-        int &fb1w, int &fb1h, int &fb1bits, int &fb1trip){
-    if(NO_ERROR == permissionCheck()){
+        int &fb1w, int &fb1h, int &fb1bits, int &fb1trip) {
+    if (NO_ERROR == permissionCheck()) {
         char bufType[MAX_STR_LEN] = {0};
         char bufUI[MAX_STR_LEN] = {0};
         pDisplayMode->getDisplayInfo(type, bufType, bufUI);
@@ -179,16 +172,22 @@ void SystemControl::getDroidDisplayInfo(int &type, String16& socType, String16& 
 }
 
 void SystemControl::traceValue(const String16& type, const String16& key, const String16& value) {
-    if(mLogLevel > LOG_LEVEL_0){
-        ALOGI("%s key=%s value=%s from pid=%d, uid=%d",
+    if (mLogLevel > LOG_LEVEL_0) {
+        String16 procName;
+        int pid = IPCThreadState::self()->getCallingPid();
+        int uid = IPCThreadState::self()->getCallingUid();
+
+        getProcName(pid, procName);
+
+        ALOGI("%s key=%s value=%s from pid=%d, uid=%d, proc name=%s",
             String8(type).string(), String8(key).string(), String8(value).string(),
-            IPCThreadState::self()->getCallingPid(),
-            IPCThreadState::self()->getCallingUid());
+            pid, uid,
+            String8(procName).string());
     }
 }
 
 void SystemControl::setLogLevel(int level) {
-    if(level > (LOG_LEVEL_TOTAL - 1)){
+    if (level > (LOG_LEVEL_TOTAL - 1)) {
         ALOGE("out of range level=%d, max=%d", level, LOG_LEVEL_TOTAL);
         return;
     }
@@ -202,7 +201,28 @@ int SystemControl::getLogLevel() {
     return mLogLevel;
 }
 
-status_t SystemControl::dump(int fd, const Vector<String16>& args){
+int SystemControl::getProcName(pid_t pid, String16& procName) {
+    char proc_path[MAX_STR_LEN];
+    char cmdline[64];
+    int fd;
+
+    strcpy(cmdline, "unknown");
+
+    sprintf(proc_path, "/proc/%d/cmdline", pid);
+    fd = open(proc_path, O_RDONLY);
+    if (fd >= 0) {
+        int rc = read(fd, cmdline, sizeof(cmdline)-1);
+        cmdline[rc] = 0;
+        close(fd);
+
+        procName.setTo(String16(cmdline));
+        return 0;
+    }
+
+    return -1;
+}
+
+status_t SystemControl::dump(int fd, const Vector<String16>& args) {
     const size_t SIZE = 256;
     char buffer[SIZE];
     String8 result;
@@ -216,13 +236,13 @@ status_t SystemControl::dump(int fd, const Vector<String16>& args){
         Mutex::Autolock lock(mLock);
 
         int len = args.size();
-        for (int i = 0; i < len; i ++){
+        for (int i = 0; i < len; i ++) {
             String16 debugLevel("-l");
             String16 bootenv("-b");
             String16 display("-d");
             String16 help("-h");
             if (args[i] == debugLevel) {
-                if(i + 1 < len){
+                if (i + 1 < len) {
                     String8 levelStr(args[i+1]);
                     int level = atoi(levelStr.string());
                     setLogLevel(level);
@@ -239,12 +259,12 @@ status_t SystemControl::dump(int fd, const Vector<String16>& args){
                         String8(args[i+2]).string(), String8(args[i+3]).string()));
                     break;
                 }
-                else if (((i + 2) <= len) && (args[i + 1] == String16("get"))){
-                    if((i + 2) == len){
+                else if (((i + 2) <= len) && (args[i + 1] == String16("get"))) {
+                    if ((i + 2) == len) {
                         result.appendFormat("get all bootenv\n");
                         bootenv_print();
                     }
-                    else{
+                    else {
                         String16 value;
                         getBootEnv(args[i+2], value);
 
@@ -253,7 +273,7 @@ status_t SystemControl::dump(int fd, const Vector<String16>& args){
                     }
                     break;
                 }
-                else{
+                else {
                     result.appendFormat(
                         "dump bootenv format error!! should use:\n"
                         "dumpsys system_control -b [set |get] key value \n");

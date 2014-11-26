@@ -44,13 +44,13 @@ extern "C" {
 #endif
 
 enum {
-    LOG_LEVEL_0			    = 0,
+    LOG_LEVEL_0             = 0,
     LOG_LEVEL_1             = 1,//debug property
     LOG_LEVEL_2             = 2,//debug sysfs read write, parse config file
     LOG_LEVEL_TOTAL         = 3
 };
 
-#define LOG_LEVEL_DEFAULT   LOG_LEVEL_2
+#define LOG_LEVEL_DEFAULT   LOG_LEVEL_1
 
 #ifdef __cplusplus
 }

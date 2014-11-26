@@ -69,6 +69,7 @@ private:
     int permissionCheck();
     void setLogLevel(int level);
     void traceValue(const String16& type, const String16& key, const String16& value);
+    int getProcName(pid_t pid, String16& procName);
 
     mutable Mutex mLock;
 
