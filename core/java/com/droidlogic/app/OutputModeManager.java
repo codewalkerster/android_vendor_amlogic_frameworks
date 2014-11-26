@@ -74,6 +74,7 @@ public class OutputModeManager {
     private static final String ENV_HDMI_MODE               = "ubootenv.var.hdmimode";
     private static final String ENV_OUTPUT_MODE             = "ubootenv.var.outputmode";
     private static final String ENV_DIGIT_AUDIO             = "ubootenv.var.digitaudiooutput";
+    private static final String ENV_IS_BEST_MODE            = "ubootenv.var.is.bestmode";
 
     private final static String ENV_480I_X                  = "ubootenv.var.480ioutputx";
     private final static String ENV_480I_Y                  = "ubootenv.var.480ioutputy";
@@ -166,6 +167,20 @@ public class OutputModeManager {
 
     public void setOutputMode(final String mode) {
         setOutputModeNowLocked(mode);
+    }
+
+    public void setBestMode(String mode) {
+        if (mode == null) {
+            if (!isBestOutputmode()) {
+                mSystenControl.setBootenv(ENV_IS_BEST_MODE, "true");
+                setOutputMode(getBestMatchResolution());
+            } else {
+                mSystenControl.setBootenv(ENV_IS_BEST_MODE, "false");
+            }
+        } else {
+            mSystenControl.setBootenv(ENV_IS_BEST_MODE, "false");
+            setOutputModeNowLocked(mode);
+        }
     }
 
     public void setOutputModeNowLocked(final String mode){
@@ -817,6 +832,10 @@ public class OutputModeManager {
             Log.d(TAG,"freescale is open");
             return false;
         }
+    }
+
+    public boolean isBestOutputmode(){
+        return Boolean.parseBoolean(mSystenControl.getBootenv(ENV_IS_BEST_MODE, "true"));
     }
 
     public String filterResolution(String resolution){
