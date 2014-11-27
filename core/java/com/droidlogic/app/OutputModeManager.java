@@ -28,55 +28,55 @@ public class OutputModeManager {
     /**
      *  broadcast of the current HDMI output mode changed.
      */
-    public final static String ACTION_HDMI_MODE_CHANGED     = "android.intent.action.HDMI_MODE_CHANGED";
+    public static final String ACTION_HDMI_MODE_CHANGED     = "android.intent.action.HDMI_MODE_CHANGED";
 
     /**
      * Extra in {@link #ACTION_HDMI_MODE_CHANGED} indicating the mode:
      */
-    public final static String EXTRA_HDMI_MODE              = "mode";
+    public static final String EXTRA_HDMI_MODE              = "mode";
 
     public final static String DEFAULT_OUTPUT_MODE          = "1080p";
 
-    private static final String SYS_DIGITAL_RAW             = "/sys/class/audiodsp/digital_raw";
-    private static final String SYS_AUDIO_CAP               = "/sys/class/amhdmitx/amhdmitx0/aud_cap";
-    private static final String SYS_AUIDO_HDMI              = "/sys/class/amhdmitx/amhdmitx0/config";
-    private static final String SYS_AUIDO_SPDIF             = "/sys/devices/platform/spdif-dit.0/spdif_mute";
+    public static final String SYS_DIGITAL_RAW              = "/sys/class/audiodsp/digital_raw";
+    public static final String SYS_AUDIO_CAP                = "/sys/class/amhdmitx/amhdmitx0/aud_cap";
+    public static final String SYS_AUIDO_HDMI               = "/sys/class/amhdmitx/amhdmitx0/config";
+    public static final String SYS_AUIDO_SPDIF              = "/sys/devices/platform/spdif-dit.0/spdif_mute";
 
-    private static final String AUIDO_DSP_AC3_DRC           = "/sys/class/audiodsp/ac3_drc_control";
-    private static final String AUIDO_DSP_DTS_DEC           = "/sys/class/audiodsp/dts_dec_control";
+    public static final String AUIDO_DSP_AC3_DRC            = "/sys/class/audiodsp/ac3_drc_control";
+    public static final String AUIDO_DSP_DTS_DEC            = "/sys/class/audiodsp/dts_dec_control";
 
-    private static final String SYS_PPSCALER                = "/sys/class/ppmgr/ppscaler";
-    private static final String SYS_PPSCALER_RECT           = "/sys/class/ppmgr/ppscaler_rect";
+    public static final String SYS_PPSCALER                 = "/sys/class/ppmgr/ppscaler";
+    public static final String SYS_PPSCALER_RECT            = "/sys/class/ppmgr/ppscaler_rect";
 
-    private static final String HDMI_STATE                  = "/sys/class/amhdmitx/amhdmitx0/hpd_state";
-    private static final String HDMI_VDAC_PLUGGED           = "/sys/class/aml_mod/mod_off";
-    private static final String HDMI_VDAC_UNPLUGGED         = "/sys/class/aml_mod/mod_on";
-    private static final String HDMI_SUPPORT_LIST           = "/sys/class/amhdmitx/amhdmitx0/disp_cap";
+    public static final String HDMI_STATE                   = "/sys/class/amhdmitx/amhdmitx0/hpd_state";
+    public static final String HDMI_VDAC_PLUGGED            = "/sys/class/aml_mod/mod_off";
+    public static final String HDMI_VDAC_UNPLUGGED          = "/sys/class/aml_mod/mod_on";
+    public static final String HDMI_SUPPORT_LIST            = "/sys/class/amhdmitx/amhdmitx0/disp_cap";
 
-    private static final String DISPLAY_MODE                = "/sys/class/display/mode";
-    private static final String DISPLAY_AXIS                = "/sys/class/display/axis";
+    public static final String DISPLAY_MODE                 = "/sys/class/display/mode";
+    public static final String DISPLAY_AXIS                 = "/sys/class/display/axis";
 
-    private static final String VIDEO_AXIS                  = "/sys/class/video/axis";
+    public static final String VIDEO_AXIS                   = "/sys/class/video/axis";
 
-    private static final String FB0_FREE_SCALE_UPDATE       = "/sys/class/graphics/fb0/update_freescale";
-    private static final String FB0_FREE_SCALE_AXIS         = "/sys/class/graphics/fb0/free_scale_axis";
-    private static final String FB0_FREE_SCALE_MODE         = "/sys/class/graphics/fb0/freescale_mode";
-    private static final String FB0_FREE_SCALE              = "/sys/class/graphics/fb0/free_scale";
-    private static final String FB1_FREE_SCALE              = "/sys/class/graphics/fb1/free_scale";
+    public static final String FB0_FREE_SCALE_UPDATE        = "/sys/class/graphics/fb0/update_freescale";
+    public static final String FB0_FREE_SCALE_AXIS          = "/sys/class/graphics/fb0/free_scale_axis";
+    public static final String FB0_FREE_SCALE_MODE          = "/sys/class/graphics/fb0/freescale_mode";
+    public static final String FB0_FREE_SCALE               = "/sys/class/graphics/fb0/free_scale";
+    public static final String FB1_FREE_SCALE               = "/sys/class/graphics/fb1/free_scale";
 
-    private static final String FB0_REQUEST_2XSCALE         = "/sys/class/graphics/fb0/request2XScale";
-    private static final String FB0_SCALE_AXIS              = "/sys/class/graphics/fb0/scale_axis";
-    private static final String FB1_SCALE_AXIS              = "/sys/class/graphics/fb1/scale_axis";
-    private static final String FB1_SCALE                   = "/sys/class/graphics/fb1/scale";
+    public static final String FB0_REQUEST_2XSCALE          = "/sys/class/graphics/fb0/request2XScale";
+    public static final String FB0_SCALE_AXIS               = "/sys/class/graphics/fb0/scale_axis";
+    public static final String FB1_SCALE_AXIS               = "/sys/class/graphics/fb1/scale_axis";
+    public static final String FB1_SCALE                    = "/sys/class/graphics/fb1/scale";
 
-    private static final String FB0_WINDOW_AXIS             = "/sys/class/graphics/fb0/window_axis";
-    private static final String FB0_BLANK                   = "/sys/class/graphics/fb0/blank";
+    public static final String FB0_WINDOW_AXIS              = "/sys/class/graphics/fb0/window_axis";
+    public static final String FB0_BLANK                    = "/sys/class/graphics/fb0/blank";
 
-    private static final String ENV_CVBS_MODE               = "ubootenv.var.cvbsmode";
-    private static final String ENV_HDMI_MODE               = "ubootenv.var.hdmimode";
-    private static final String ENV_OUTPUT_MODE             = "ubootenv.var.outputmode";
-    private static final String ENV_DIGIT_AUDIO             = "ubootenv.var.digitaudiooutput";
-    private static final String ENV_IS_BEST_MODE            = "ubootenv.var.is.bestmode";
+    public static final String ENV_CVBS_MODE                = "ubootenv.var.cvbsmode";
+    public static final String ENV_HDMI_MODE                = "ubootenv.var.hdmimode";
+    public static final String ENV_OUTPUT_MODE              = "ubootenv.var.outputmode";
+    public static final String ENV_DIGIT_AUDIO              = "ubootenv.var.digitaudiooutput";
+    public static final String ENV_IS_BEST_MODE             = "ubootenv.var.is.bestmode";
 
     private final static String ENV_480I_X                  = "ubootenv.var.480ioutputx";
     private final static String ENV_480I_Y                  = "ubootenv.var.480ioutputy";
@@ -123,10 +123,10 @@ public class OutputModeManager {
     private final static String ENV_4K2KSMPTE_W             = "ubootenv.var.4k2ksmpte_width";
     private final static String ENV_4K2KSMPTE_H             = "ubootenv.var.4k2ksmpte_height";
 
-    private final static String PROP_BEST_OUTPUT_MODE       = "ro.platform.best_outputmode";
-    private final static String PROP_REAL_OUTPUT_MODE       = "ro.platform.has.realoutputmode";
-    private final static String PROP_HDMI_ONLY              = "ro.platform.hdmionly";
-    private final static String PROP_HAS_NATIVE_720         = "ro.platform.has.native720";
+    public static final String PROP_BEST_OUTPUT_MODE        = "ro.platform.best_outputmode";
+    public static final String PROP_REAL_OUTPUT_MODE        = "ro.platform.has.realoutputmode";
+    public static final String PROP_HDMI_ONLY               = "ro.platform.hdmionly";
+    public static final String PROP_HAS_NATIVE_720          = "ro.platform.has.native720";
 
     private static final String[] COMMON_MODE_VALUE_LIST    = {
         "480i", "480p", "576i", "576p", "720p",
