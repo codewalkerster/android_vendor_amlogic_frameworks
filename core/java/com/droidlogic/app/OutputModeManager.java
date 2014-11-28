@@ -943,6 +943,27 @@ public class OutputModeManager {
         }
     }
 
+    public int getDigitalVoiceMode(){
+        final int IS_AUTO  = 0x10;
+        final int IS_PCM   = 0x01;
+        final int IS_HDMI  = 0x02;
+        final int IS_SPDIF = 0x04;
+        int ret = 0;
+
+        String value = getBootenv(ENV_DIGIT_AUDIO, "PCM");
+        if (value.contains(":auto")) {
+            ret = ret | IS_AUTO;
+        }
+        if (value.contains("PCM")) {
+            ret = ret | IS_PCM;
+        }else if (value.contains("HDMI")) {
+            ret = ret | IS_HDMI;
+        }else if (value.contains("SPDIF")) {
+            ret = ret | IS_SPDIF;
+        }
+        return ret;
+    }
+
     public int autoSwitchHdmiPassthough () {
         String mAudioCapInfo = readSysfsTotal(SYS_AUDIO_CAP);
         if (mAudioCapInfo.contains("Dobly_Digital+")) {
