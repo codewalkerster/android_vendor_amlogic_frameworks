@@ -69,7 +69,7 @@ int SystemControl::permissionCheck() {
     const int pid = ipc->getCallingPid();
     const int uid = ipc->getCallingUid();
 
-    if ((uid != AID_MEDIA) &&
+    if ((uid != AID_GRAPHICS) && (uid != AID_MEDIA) &&
             !PermissionCache::checkPermission(String16("droidlogic.permission.SYSTEM_CONTROL"), pid, uid)) {
         ALOGE("Permission Denial: "
                 "can't use system control service pid=%d, uid=%d", pid, uid);
