@@ -54,3 +54,20 @@ endif
 LOCAL_MODULE:= libhdmiin
 
 include $(BUILD_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+
+LOCAL_SRC_FILES := \
+	droid_logic_DisplaySetting.cpp
+
+LOCAL_C_INCLUDES := $(JNI_H_INCLUDE)
+
+LOCAL_MODULE    := libdisplaysetting
+
+LOCAL_SHARED_LIBRARIES := \
+    liblog \
+    libcutils \
+    libgui \
+    libnativehelper
+
+include $(BUILD_SHARED_LIBRARY)
