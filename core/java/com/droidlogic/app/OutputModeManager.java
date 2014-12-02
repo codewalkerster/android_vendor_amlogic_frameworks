@@ -35,8 +35,6 @@ public class OutputModeManager {
      */
     public static final String EXTRA_HDMI_MODE              = "mode";
 
-    public final static String DEFAULT_OUTPUT_MODE          = "1080p";
-
     public static final String SYS_DIGITAL_RAW              = "/sys/class/audiodsp/digital_raw";
     public static final String SYS_AUDIO_CAP                = "/sys/class/amhdmitx/amhdmitx0/aud_cap";
     public static final String SYS_AUIDO_HDMI               = "/sys/class/amhdmitx/amhdmitx0/config";
@@ -155,7 +153,9 @@ public class OutputModeManager {
     private static final String FREQ_DEFAULT                = "";
     private static final String FREQ_SETTING                = "50hz";
 
-    private static boolean ifModeSetting = false;
+    private String DEFAULT_OUTPUT_MODE                      = "1080p";
+    private String mSupportModes = null;
+    private boolean ifModeSetting = false;
     private final Context mContext;
     final Object mLock = new Object[0];
 
@@ -164,7 +164,16 @@ public class OutputModeManager {
     public OutputModeManager(Context context) {
         mContext = context;
 
-        mSystenControl = new SystemControlManager(context);
+        mSystenControl = new SystemControlManager(context);
+        SystemControlManager.DisplayInfo info;
+        info = mSystenControl.getDisplayInfo();
+        if (info.defaultUI != null) {
+            DEFAULT_OUTPUT_MODE = info.defaultUI;
+
+            if (DEBUG)
+                Log.d(TAG, "output mode, display type [1:tablet 2:MBOX 3:TV]: "
+                    + info.type + ", default output:" + info.defaultUI);
+        }
     }
 
     public void setOutputMode(final String mode) {
@@ -306,6 +315,47 @@ public class OutputModeManager {
         }
     }
 
+    public void setMatchOsdMouse() {
+        int x, y, w, h;
+        int[] curPosition = { 0, 0, 0, 0 };
+
+        String curMode = readSysfs(DISPLAY_MODE);
+        curPosition = getPosition(curMode);
+
+        if (DEBUG)
+            Log.d(TAG, "setMatchOsdMouse curMode " + curMode + " ,default output:" + DEFAULT_OUTPUT_MODE);
+
+        String displaySize = "1920 1080";
+        if (DEFAULT_OUTPUT_MODE.startsWith("720"))
+            displaySize = "1280 720";
+        else if (DEFAULT_OUTPUT_MODE.startsWith("1080"))
+            displaySize = "1920 1080";
+
+        //1080
+        if ((curMode.equals(COMMON_MODE_VALUE_LIST[5])) || (curMode.equals(COMMON_MODE_VALUE_LIST[6])) ||
+            (curMode.equals(COMMON_MODE_VALUE_LIST[8])) || (curMode.equals(COMMON_MODE_VALUE_LIST[9]))) {
+
+            x = (curPosition[0]/2)*2;
+            y = (curPosition[1]/2)*2;
+            w = (curPosition[2]/2)*2;
+            h = (curPosition[3]/2)*2;
+            writeSysfs(DISPLAY_AXIS, x + " " + y + " " + displaySize + " " + x + " "+ y + " 18 18");
+            writeSysfs(FB0_SCALE_AXIS, "0 0 " + (960 - curPosition[0]/2 - 1) + " " + (1080 - curPosition[1]/2 - 1));
+            writeSysfs(FB0_REQUEST_2XSCALE, "7 " + curPosition[2]/2 + " " + h);
+            writeSysfs(FB1_SCALE_AXIS, displaySize + " " + w + " " + h);
+            writeSysfs(FB1_SCALE, "0x10001");
+        } else {
+            x = curPosition[0];
+            y = curPosition[1];
+            w = curPosition[2];
+            h = curPosition[3];
+            writeSysfs(DISPLAY_AXIS, x + " " + y + " " + displaySize + " " + x + " "+ y + " 18 18");
+            writeSysfs(FB0_REQUEST_2XSCALE, "16 " + w + " " + h);
+            writeSysfs(FB1_SCALE_AXIS, displaySize + " " + w + " " + h);
+            writeSysfs(FB1_SCALE, "0x10001");
+        }
+    }
+
     public void setOutputWithoutFreeScaleLocked(String newMode){
         int[] curPosition = { 0, 0, 0, 0 };
         int[] oldPosition = { 0, 0, 0, 0 };
@@ -366,23 +416,6 @@ public class OutputModeManager {
                 if (DEBUG)
                     Log.d("OutputSettings", "outputmode change:curPosition[2]:"+curPosition[2]+" curPosition[3]:"+curPosition[3]+"\n");*/
             } else {
-                if ((newMode.equals(COMMON_MODE_VALUE_LIST[5])) || (newMode.equals(COMMON_MODE_VALUE_LIST[6]))
-                            || (newMode.equals(COMMON_MODE_VALUE_LIST[8])) || (newMode.equals(COMMON_MODE_VALUE_LIST[9]))) {
-                    writeSysfs(DISPLAY_AXIS, ((int)(curPosition[0]/2))*2 + " " + ((int)(curPosition[1]/2))*2
-                        + " 1280 720 "+ ((int)(curPosition[0]/2))*2 + " "+ ((int)(curPosition[1]/2))*2 + " 18 18");
-                    writeSysfs(FB0_SCALE_AXIS, "0 0 " + (960 - (int)(curPosition[0]/2) - 1)
-                        + " " + (1080 - (int)(curPosition[1]/2) - 1));
-                    writeSysfs(FB0_REQUEST_2XSCALE, "7 " + ((int)(curPosition[2]/2)) + " " + ((int)(curPosition[3]/2))*2);
-                    writeSysfs(FB1_SCALE_AXIS, "1280 720 " + ((int)(curPosition[2]/2))*2 + " " + ((int)(curPosition[3]/2))*2);
-                    writeSysfs(FB1_SCALE, "0x10001");
-                } else {
-                    writeSysfs(DISPLAY_AXIS, curPosition[0] + " " + curPosition[1]
-                        + " 1280 720 "+ curPosition[0] + " "+ curPosition[1] + " 18 18");
-                    writeSysfs(FB0_REQUEST_2XSCALE, "16 " + curPosition[2] + " " + curPosition[3]);
-                    writeSysfs(FB1_SCALE_AXIS, "1280 720 " + curPosition[2] + " " + curPosition[3]);
-                    writeSysfs(FB1_SCALE, "0x10001");
-                }
-
                 int oldX = oldPosition[0];
                 int oldY = oldPosition[1];
                 int oldWidth = oldPosition[2];
@@ -395,14 +428,16 @@ public class OutputModeManager {
                 int temp2 = curY;
                 int temp3 = curWidth;
                 int temp4 = curHeight;
+
                 if (DEBUG) {
-                    Log.d(TAG, "change2NewModeWithoutFreeScale, old is: "
+                    Log.d(TAG, "setOutputWithoutFreeScale, old is: "
                         + oldX + " " + oldY + " " + oldWidth + " " + oldHeight);
-                    Log.d(TAG, "change2NewModeWithoutFreeScale, new is: "
+                    Log.d(TAG, "setOutputWithoutFreeScale, new is: "
                         + curX + " " + curY + " " + curWidth + " " + curHeight);
-                    Log.d(TAG, "change2NewModeWithoutFreeScale, axis is: "
+                    Log.d(TAG, "setOutputWithoutFreeScale, axis is: "
                         + axis[0] + " " + axis[1] + " " + axis[2] + " " + axis[3]);
                 }
+
                 if (!((axis[0] == 0) && (axis[1] == 0) && (axis[2] == -1) && (axis[3] == -1))
                         && !((axis[0] == 0) && (axis[1] == 0) && (axis[2] == 0) && (axis[3] == 0))) {
                     temp1 = (axis[0] - oldX) * curWidth / oldWidth + curX;
@@ -410,11 +445,15 @@ public class OutputModeManager {
                     temp3 = (axis[2] - axis[0] + 1) * curWidth / oldWidth;
                     temp4 = (axis[3] - axis[1] + 1) * curHeight / oldHeight;
                 }
+
                 if (DEBUG)
-                    Log.d(TAG, "change2NewModeWithoutFreeScale, changed axis is: "
+                    Log.d(TAG, "setOutputWithoutFreeScale, changed axis is: "
                         + temp1 + " " + temp2 + " " + (temp3 + temp1 - 1) + " " + (temp4 + temp2 - 1));
+
                 writeSysfs(VIDEO_AXIS, temp1 + " " + temp2 + " "
                     + (temp3 + temp1 - 1) + " " + (temp4 + temp2 - 1));
+
+                setMatchOsdMouse();
             }
         }
     }
@@ -440,47 +479,6 @@ public class OutputModeManager {
             if (outputmode.contains("cvbs")) {
                 writeSysfs(HDMI_VDAC_UNPLUGGED,"vdac");
             }
-        }
-    }
-
-    private void setM6FreeScaleAxis(String mode) {
-        writeSysfs(FB0_FREE_SCALE_AXIS, "0 0 1279 719");
-        writeSysfs(FB0_FREE_SCALE, "1");
-    }
-
-    public String getHdmiSupportList() {
-        String str = null;
-        StringBuilder value = new StringBuilder();
-        try {
-            FileReader fr = new FileReader(HDMI_SUPPORT_LIST);
-            BufferedReader br = new BufferedReader(fr);
-            try {
-                while ((str = br.readLine()) != null) {
-                    if(str != null){
-                        if (str.contains("*")) {
-                            value.append(str.substring(0,str.length()-1));
-                        } else {
-                            value.append(str);
-                        }
-                        value.append(",");
-                    }
-                };
-                fr.close();
-                br.close();
-                if (value != null) {
-                    if (DEBUG)
-                        Log.d(TAG, "TV support list is : " + value.toString());
-                    return value.toString();
-                }
-                else
-                    return null;
-            } catch (IOException e) {
-                e.printStackTrace();
-                return null;
-            }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            return null;
         }
     }
 
@@ -601,6 +599,7 @@ public class OutputModeManager {
                 index = i;
             }
         }
+
         switch (index) {
             case 0: // 480i
             case 10: //480cvbs
@@ -675,30 +674,40 @@ public class OutputModeManager {
                 setBootenv(ENV_4K2KSMPTE_H, h);
                 break;
         }
-        if (mSystenControl.getPropertyBoolean("ro.platform.has.realoutputmode", false)) {
-            writeSysfs(VIDEO_AXIS , x+" "+y+" "+(left+width-1)+" "+(top+height-1));
+
+        if (mSystenControl.getPropertyBoolean(PROP_REAL_OUTPUT_MODE, false)) {
+            writeSysfs(VIDEO_AXIS , x + " " + y + " " + (left+width-1) + " " + (top+height-1));
         }
     }
 
+    private void setM6FreeScaleAxis(String mode) {
+        writeSysfs(FB0_FREE_SCALE_AXIS, "0 0 1279 719");
+        writeSysfs(FB0_FREE_SCALE, "1");
+    }
+
+    public String getHdmiSupportList() {
+        String list = readSupportList(HDMI_SUPPORT_LIST).replaceAll("[*]", "");
+
+        if (DEBUG)
+            Log.d(TAG, "getHdmiSupportList :" + list);
+        return list;
+    }
+
     public String getBestMatchResolution() {
+        if (DEBUG)
+            Log.d(TAG, "get best mode, if support mode contains *, that is best mode, otherwise use:" + PROP_BEST_OUTPUT_MODE);
+
         String[] supportList = null;
         String value = readSupportList(HDMI_SUPPORT_LIST);
         if (value.indexOf("480") >= 0 || value.indexOf("576") >= 0
             ||value.indexOf("720") >= 0||value.indexOf("1080") >= 0 || value.indexOf("4k2k") >= 0) {
             supportList = (value.substring(0, value.length()-1)).split(",");
-            if (DEBUG)
-                Log.d(TAG, "supportList size() is " + supportList.length);
         }
 
         if (supportList != null){
-            for (int index = 0; index < supportList.length; index++) {
-                if (DEBUG)
-                    Log.d(TAG, "suport mode : " + supportList[index]);
-                if (supportList[index].contains("*")) {
-                    if (DEBUG)
-                        Log.d(TAG, "best mode is : " + supportList[index]);
-                    String str = supportList[index];
-                    return str.substring(0,str.length()-1);
+            for (int i = 0; i < supportList.length; i++) {
+                if (supportList[i].contains("*")) {
+                    return supportList[i].substring(0, supportList[i].length()-1);
                 }
             }
         }
@@ -708,6 +717,10 @@ public class OutputModeManager {
 
     public String getSupportedResolution() {
         String curMode = getBootenv(ENV_HDMI_MODE, DEFAULT_OUTPUT_MODE);
+
+        if (DEBUG)
+            Log.d(TAG, "get supported resolution curMode:" + curMode);
+
         String value = readSupportList(HDMI_SUPPORT_LIST);
         String[] supportList = null;
 
@@ -720,14 +733,36 @@ public class OutputModeManager {
             return curMode;
         }
 
-        for (int index = 0; index < supportList.length; index++) {
-            if (supportList[index].equals(curMode)) {
+        for (int i = 0; i < supportList.length; i++) {
+            if (supportList[i].equals(curMode)) {
                 return curMode;
             }
         }
-        curMode = getBestMatchResolution();
 
-        return curMode;
+        return getBestMatchResolution();
+    }
+
+    private String readSupportList(String path) {
+        if (null != mSupportModes)
+            return mSupportModes;
+
+        String str = null;
+        String value = "";
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(path));
+            while ((str = br.readLine()) != null) {
+                if (str != null)
+                    value += str + ",";
+            }
+            br.close();
+
+            Log.d(TAG, "TV support list is :" + value);
+            mSupportModes = value;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return value;
     }
 
     private String getDisplayAxisByMode(String mode){
@@ -794,8 +829,8 @@ public class OutputModeManager {
                 if (isAutoMode) {
                     setOutputMode(filterResolution(getBestMatchResolution()));
                 } else {
-                    String mHdmiOutputMode = getSupportedResolution();
-                    setOutputMode(mHdmiOutputMode);
+                    String mode = getSupportedResolution();
+                    setOutputMode(mode);
                 }
             }
             switchHdmiPassthough();
@@ -810,25 +845,27 @@ public class OutputModeManager {
                     }
 
                 } else {
-                    String mHdmiOutputMode = getSupportedResolution();
+                    String mode = getSupportedResolution();
                     if (isFreeScaleClosed())
-                        setOutputWithoutFreeScaleLocked(mHdmiOutputMode);
+                        setOutputWithoutFreeScaleLocked(mode);
                     else
-                        setOutputMode(mHdmiOutputMode);
+                        setOutputMode(mode);
                 }
                 switchHdmiPassthough();
                 writeSysfs(FB0_BLANK, "0");
             }
         }
+
+        setMatchOsdMouse();
     }
 
     public boolean isFreeScaleClosed() {
         String freeScaleStatus = readSysfs(FB0_FREE_SCALE);
         if (freeScaleStatus.contains("0x0")) {
-            Log.d(TAG,"freescale is closed");
+            Log.d(TAG, "freescale is closed");
             return true;
         } else {
-            Log.d(TAG,"freescale is open");
+            Log.d(TAG, "freescale is open");
             return false;
         }
     }
@@ -881,36 +918,6 @@ public class OutputModeManager {
             return false;
     }
 
-    private String readSupportList(String path) {
-        String str = null;
-        StringBuilder value = new StringBuilder();
-        try {
-            FileReader fr = new FileReader(path);
-            BufferedReader br = new BufferedReader(fr);
-            try {
-                while ((str = br.readLine()) != null) {
-                    if(str != null){
-                        value.append(str);
-                        value.append(",");
-                    }
-                };
-                fr.close();
-                br.close();
-                if (value != null) {
-                    Log.d(TAG, "TV support list is : " + value.toString());
-                    return value.toString();
-                }
-                else
-                    return null;
-            } catch (IOException e) {
-                e.printStackTrace();
-                return null;
-            }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
     public boolean ifModeIsSetting() {
         return ifModeSetting;
     }
@@ -1094,25 +1101,26 @@ public class OutputModeManager {
 
     private String getBootenv(String key, String value) {
         if (DEBUG)
-            Log.i(TAG, "getBootenv key:" + key + " value:" + value);
+            Log.i(TAG, "getBootenv key:" + key + " def value:" + value);
         return mSystenControl.getBootenv(key, value);
     }
 
     private int getBootenvInt(String key, String value) {
         if (DEBUG)
-            Log.i(TAG, "getBootenvInt key:" + key + " value:" + value);
+            Log.i(TAG, "getBootenvInt key:" + key + " def value:" + value);
         return Integer.parseInt(mSystenControl.getBootenv(key, value));
     }
 
     private void setBootenv(String key, String value) {
         if (DEBUG)
-            Log.i(TAG, "setBootenv key:" + key + " value:" + value, new Throwable());
+            Log.i(TAG, "setBootenv key:" + key + " value:" + value);
         mSystenControl.setBootenv(key, value);
     }
 
     private String readSysfsTotal(String path) {
         return mSystenControl.readSysFs(path).replaceAll("\n", "");
     }
+
     private String readSysfs(String path) {
 
         return mSystenControl.readSysFs(path).replaceAll("\n", "");
