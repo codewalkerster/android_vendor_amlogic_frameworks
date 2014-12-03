@@ -30,6 +30,7 @@ public class SystemControlManager {
     private static final int GET_BOOT_ENV           = IBinder.FIRST_CALL_TRANSACTION + 8;
     private static final int SET_BOOT_ENV           = IBinder.FIRST_CALL_TRANSACTION + 9;
     private static final int GET_DISPLAY_INFO       = IBinder.FIRST_CALL_TRANSACTION + 10;
+    private static final int LOOP_MOUNT_UNMOUNT     = IBinder.FIRST_CALL_TRANSACTION + 11;
 
     private Context mContext;
     private IBinder mIBinder = null;
@@ -281,6 +282,23 @@ public class SystemControlManager {
         }
 
         return info;
+    }
+
+    public void loopMountUnmount(boolean isMount, String path){
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeInt(isMount?1:0);
+                data.writeString(path);
+                mIBinder.transact(LOOP_MOUNT_UNMOUNT, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "loop mount unmount:" + ex);
+        }
     }
 
     public static class DisplayInfo{

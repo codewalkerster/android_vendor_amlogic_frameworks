@@ -32,6 +32,8 @@
 #include "common.h"
 #include "DisplayMode.h"
 
+extern "C" int vdc_loop(int argc, char **argv);
+
 namespace android {
 // ----------------------------------------------------------------------------
 
@@ -58,6 +60,8 @@ public:
     virtual void getDroidDisplayInfo(int &type, String16& socType, String16& defaultUI,
         int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
         int &fb1w, int &fb1h, int &fb1bits, int &fb1trip);
+
+    virtual void loopMountUnmount(int &isMount, String16& path);
 
     static void instantiate(const char *cfgpath);
 

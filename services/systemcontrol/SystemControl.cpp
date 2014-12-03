@@ -171,6 +171,16 @@ void SystemControl::getDroidDisplayInfo(int &type, String16& socType, String16& 
     }
 }
 
+void SystemControl::loopMountUnmount(int &isMount, String16& path) {
+    if (NO_ERROR == permissionCheck()) {
+        traceValue(String16("loopMountUnmount"),
+            (isMount==1)?String16("mount"):String16("unmount"), path);
+
+        const char *cmd[4] = {"vdc", "loop", (isMount==1)?"mount":"unmount", String8(path).string()};
+        vdc_loop(4, (char **)cmd);
+    }
+}
+
 void SystemControl::traceValue(const String16& type, const String16& key, const String16& value) {
     if (mLogLevel > LOG_LEVEL_0) {
         String16 procName;
@@ -179,7 +189,7 @@ void SystemControl::traceValue(const String16& type, const String16& key, const 
 
         getProcName(pid, procName);
 
-        ALOGI("%s key=%s value=%s from pid=%d, uid=%d, proc name=%s",
+        ALOGI("%s [ %s ] [ %s ] from pid=%d, uid=%d, process name=%s",
             String8(type).string(), String8(key).string(), String8(value).string(),
             pid, uid,
             String8(procName).string());

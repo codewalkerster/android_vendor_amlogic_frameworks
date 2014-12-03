@@ -44,6 +44,7 @@ enum {
     GET_BOOT_ENV            = IBinder::FIRST_CALL_TRANSACTION + 8,
     SET_BOOT_ENV            = IBinder::FIRST_CALL_TRANSACTION + 9,
     GET_DISPLAY_INFO        = IBinder::FIRST_CALL_TRANSACTION + 10,
+    LOOP_MOUNT_UNMOUNT      = IBinder::FIRST_CALL_TRANSACTION + 11,
 };
 
 // ----------------------------------------------------------------------------
@@ -70,6 +71,8 @@ public:
     virtual void getDroidDisplayInfo(int &type, String16& socType, String16& defaultUI,
         int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
         int &fb1w, int &fb1h, int &fb1bits, int &fb1trip) = 0;
+
+    virtual void loopMountUnmount(int &isMount, String16& path) = 0;
 };
 
 // ----------------------------------------------------------------------------

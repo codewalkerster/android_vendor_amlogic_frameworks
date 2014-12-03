@@ -23,22 +23,23 @@ LOCAL_CFLAGS += -DMESON8_ENVSIZE
 endif
 
 LOCAL_SRC_FILES:= \
-	main_systemcontrol.cpp \
-	ubootenv.c \
-	SysWrite.cpp \
-	SystemControl.cpp \
-	DisplayMode.cpp \
-	SysTokenizer.cpp
+  main_systemcontrol.cpp \
+  ubootenv.c \
+  VdcLoop.c \
+  SysWrite.cpp \
+  SystemControl.cpp \
+  DisplayMode.cpp \
+  SysTokenizer.cpp
 
 LOCAL_SHARED_LIBRARIES := \
-	libsystemcontrolservice \
-	libcutils \
-	libutils \
-	liblog \
-	libbinder
+  libsystemcontrolservice \
+  libcutils \
+  libutils \
+  liblog \
+  libbinder
 
 LOCAL_C_INCLUDES := \
-    external/zlib
+  external/zlib
 
 LOCAL_MODULE:= systemcontrol
 

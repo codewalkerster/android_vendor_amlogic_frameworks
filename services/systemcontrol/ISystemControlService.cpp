@@ -219,10 +219,10 @@ public:
     {
         Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
-        ALOGV("getDisplayInfo\n");
+        ALOGV("getDroidDisplayInfo\n");
 
         if (remote()->transact(GET_DISPLAY_INFO, data, &reply) != NO_ERROR) {
-            ALOGE("getDisplayInfo could not contact remote\n");
+            ALOGE("getDroidDisplayInfo could not contact remote\n");
             return;
         }
 
@@ -237,6 +237,20 @@ public:
         fb1h = reply.readInt32();
         fb1bits = reply.readInt32();
         fb1trip = reply.readInt32();
+    }
+
+    virtual void loopMountUnmount(int &isMount, String16& path)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(isMount);
+        data.writeString16(path);
+        ALOGV("loop mount unmount isMount:%d, path:%s\n", isMount, String8(path).string());
+
+        if (remote()->transact(LOOP_MOUNT_UNMOUNT, data, &reply) != NO_ERROR) {
+            ALOGE("loopMountUnmount could not contact remote\n");
+            return;
+        }
     }
 };
 
@@ -349,6 +363,13 @@ status_t BnISystemControlService::onTransact(
             reply->writeInt32(fb1h);
             reply->writeInt32(fb1bits);
             reply->writeInt32(fb1trip);
+            return NO_ERROR;
+        }
+        case LOOP_MOUNT_UNMOUNT: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int isMount = data.readInt32();
+            String16 path = data.readString16();
+            loopMountUnmount(isMount, path);
             return NO_ERROR;
         }
         default: {
