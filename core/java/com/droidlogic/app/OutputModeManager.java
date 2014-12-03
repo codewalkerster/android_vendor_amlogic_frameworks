@@ -76,50 +76,50 @@ public class OutputModeManager {
     public static final String ENV_DIGIT_AUDIO              = "ubootenv.var.digitaudiooutput";
     public static final String ENV_IS_BEST_MODE             = "ubootenv.var.is.bestmode";
 
-    private final static String ENV_480I_X                  = "ubootenv.var.480ioutputx";
-    private final static String ENV_480I_Y                  = "ubootenv.var.480ioutputy";
-    private final static String ENV_480I_W                  = "ubootenv.var.480ioutputwidth";
-    private final static String ENV_480I_H                  = "ubootenv.var.480ioutputheight";
-    private final static String ENV_480P_X                  = "ubootenv.var.480poutputx";
-    private final static String ENV_480P_Y                  = "ubootenv.var.480poutputy";
-    private final static String ENV_480P_W                  = "ubootenv.var.480poutputwidth";
-    private final static String ENV_480P_H                  = "ubootenv.var.480poutputheight";
-    private final static String ENV_576I_X                  = "ubootenv.var.576ioutputx";
-    private final static String ENV_576I_Y                  = "ubootenv.var.576ioutputy";
-    private final static String ENV_576I_W                  = "ubootenv.var.576ioutputwidth";
-    private final static String ENV_576I_H                  = "ubootenv.var.576ioutputheight";
-    private final static String ENV_576P_X                  = "ubootenv.var.576poutputx";
-    private final static String ENV_576P_Y                  = "ubootenv.var.576poutputy";
-    private final static String ENV_576P_W                  = "ubootenv.var.576poutputwidth";
-    private final static String ENV_576P_H                  = "ubootenv.var.576poutputheight";
-    private final static String ENV_720P_X                  = "ubootenv.var.720poutputx";
-    private final static String ENV_720P_Y                  = "ubootenv.var.720poutputy";
-    private final static String ENV_720P_W                  = "ubootenv.var.720poutputwidth";
-    private final static String ENV_720P_H                  = "ubootenv.var.720poutputheight";
-    private final static String ENV_1080I_X                 = "ubootenv.var.1080ioutputx";
-    private final static String ENV_1080I_Y                 = "ubootenv.var.1080ioutputy";
-    private final static String ENV_1080I_W                 = "ubootenv.var.1080ioutputwidth";
-    private final static String ENV_1080I_H                 = "ubootenv.var.1080ioutputheight";
-    private final static String ENV_1080P_X                 = "ubootenv.var.1080poutputx";
-    private final static String ENV_1080P_Y                 = "ubootenv.var.1080poutputy";
-    private final static String ENV_1080P_W                 = "ubootenv.var.1080poutputwidth";
-    private final static String ENV_1080P_H                 = "ubootenv.var.1080poutputheight";
+    private final static String ENV_480I_X                  = "ubootenv.var.480i_x";
+    private final static String ENV_480I_Y                  = "ubootenv.var.480i_y";
+    private final static String ENV_480I_W                  = "ubootenv.var.480i_w";
+    private final static String ENV_480I_H                  = "ubootenv.var.480i_h";
+    private final static String ENV_480P_X                  = "ubootenv.var.480p_x";
+    private final static String ENV_480P_Y                  = "ubootenv.var.480p_y";
+    private final static String ENV_480P_W                  = "ubootenv.var.480p_w";
+    private final static String ENV_480P_H                  = "ubootenv.var.480p_h";
+    private final static String ENV_576I_X                  = "ubootenv.var.576i_x";
+    private final static String ENV_576I_Y                  = "ubootenv.var.576i_y";
+    private final static String ENV_576I_W                  = "ubootenv.var.576i_w";
+    private final static String ENV_576I_H                  = "ubootenv.var.576i_h";
+    private final static String ENV_576P_X                  = "ubootenv.var.576p_x";
+    private final static String ENV_576P_Y                  = "ubootenv.var.576p_y";
+    private final static String ENV_576P_W                  = "ubootenv.var.576p_w";
+    private final static String ENV_576P_H                  = "ubootenv.var.576p_h";
+    private final static String ENV_720P_X                  = "ubootenv.var.720p_x";
+    private final static String ENV_720P_Y                  = "ubootenv.var.720p_y";
+    private final static String ENV_720P_W                  = "ubootenv.var.720p_w";
+    private final static String ENV_720P_H                  = "ubootenv.var.720ph";
+    private final static String ENV_1080I_X                 = "ubootenv.var.1080i_x";
+    private final static String ENV_1080I_Y                 = "ubootenv.var.1080i_y";
+    private final static String ENV_1080I_W                 = "ubootenv.var.1080i_w";
+    private final static String ENV_1080I_H                 = "ubootenv.var.1080i_h";
+    private final static String ENV_1080P_X                 = "ubootenv.var.1080p_x";
+    private final static String ENV_1080P_Y                 = "ubootenv.var.1080p_y";
+    private final static String ENV_1080P_W                 = "ubootenv.var.1080p_w";
+    private final static String ENV_1080P_H                 = "ubootenv.var.1080p_h";
     private final static String ENV_4K2K24HZ_X              = "ubootenv.var.4k2k24hz_x";
     private final static String ENV_4K2K24HZ_Y              = "ubootenv.var.4k2k24hz_y";
-    private final static String ENV_4K2K24HZ_W              = "ubootenv.var.4k2k24hz_width";
-    private final static String ENV_4K2K24HZ_H              = "ubootenv.var.4k2k24hz_height";
+    private final static String ENV_4K2K24HZ_W              = "ubootenv.var.4k2k24hz_w";
+    private final static String ENV_4K2K24HZ_H              = "ubootenv.var.4k2k24hz_h";
     private final static String ENV_4K2K25HZ_X              = "ubootenv.var.4k2k25hz_x";
     private final static String ENV_4K2K25HZ_Y              = "ubootenv.var.4k2k25hz_y";
-    private final static String ENV_4K2K25HZ_W              = "ubootenv.var.4k2k25hz_width";
-    private final static String ENV_4K2K25HZ_H              = "ubootenv.var.4k2k25hz_height";
+    private final static String ENV_4K2K25HZ_W              = "ubootenv.var.4k2k25hz_w";
+    private final static String ENV_4K2K25HZ_H              = "ubootenv.var.4k2k25hz_h";
     private final static String ENV_4K2K30HZ_X              = "ubootenv.var.4k2k30hz_x";
     private final static String ENV_4K2K30HZ_Y              = "ubootenv.var.4k2k30hz_y";
-    private final static String ENV_4K2K30HZ_W              = "ubootenv.var.4k2k30hz_width";
-    private final static String ENV_4K2K30HZ_H              = "ubootenv.var.4k2k30hz_height";
+    private final static String ENV_4K2K30HZ_W              = "ubootenv.var.4k2k30hz_w";
+    private final static String ENV_4K2K30HZ_H              = "ubootenv.var.4k2k30hz_h";
     private final static String ENV_4K2KSMPTE_X             = "ubootenv.var.4k2ksmpte_x";
     private final static String ENV_4K2KSMPTE_Y             = "ubootenv.var.4k2ksmpte_y";
-    private final static String ENV_4K2KSMPTE_W             = "ubootenv.var.4k2ksmpte_width";
-    private final static String ENV_4K2KSMPTE_H             = "ubootenv.var.4k2ksmpte_height";
+    private final static String ENV_4K2KSMPTE_W             = "ubootenv.var.4k2ksmpte_w";
+    private final static String ENV_4K2KSMPTE_H             = "ubootenv.var.4k2ksmpte_h";
 
     public static final String PROP_BEST_OUTPUT_MODE        = "ro.platform.best_outputmode";
     public static final String PROP_REAL_OUTPUT_MODE        = "ro.platform.has.realoutputmode";
@@ -307,6 +307,7 @@ public class OutputModeManager {
 
             setBootenv(ENV_OUTPUT_MODE, newMode);
             saveNewMode2Prop(newMode);
+            setOsdMouseByEnv();
 
             Intent intent = new Intent(ACTION_HDMI_MODE_CHANGED);
             //intent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT);
@@ -315,7 +316,7 @@ public class OutputModeManager {
         }
     }
 
-    public void setMatchOsdMouse() {
+    public void setOsdMouseByEnv() {
         int x, y, w, h;
         int[] curPosition = { 0, 0, 0, 0 };
 
@@ -323,37 +324,33 @@ public class OutputModeManager {
         curPosition = getPosition(curMode);
 
         if (DEBUG)
-            Log.d(TAG, "setMatchOsdMouse curMode " + curMode + " ,default output:" + DEFAULT_OUTPUT_MODE);
+            Log.d(TAG, "setOsdMouseByEnv curMode " + curMode + " ,default output:" + DEFAULT_OUTPUT_MODE);
 
+        x = curPosition[0];
+        y = curPosition[1];
+        w = curPosition[2];
+        h = curPosition[3];
+        setOsdMouse(x, y, w, h);
+    }
+
+    public void setOsdMouse(int x, int y, int w, int h) {
         String displaySize = "1920 1080";
         if (DEFAULT_OUTPUT_MODE.startsWith("720"))
             displaySize = "1280 720";
         else if (DEFAULT_OUTPUT_MODE.startsWith("1080"))
             displaySize = "1920 1080";
 
-        //1080
-        if ((curMode.equals(COMMON_MODE_VALUE_LIST[5])) || (curMode.equals(COMMON_MODE_VALUE_LIST[6])) ||
-            (curMode.equals(COMMON_MODE_VALUE_LIST[8])) || (curMode.equals(COMMON_MODE_VALUE_LIST[9]))) {
-
-            x = (curPosition[0]/2)*2;
-            y = (curPosition[1]/2)*2;
-            w = (curPosition[2]/2)*2;
-            h = (curPosition[3]/2)*2;
-            writeSysfs(DISPLAY_AXIS, x + " " + y + " " + displaySize + " " + x + " "+ y + " 18 18");
-            writeSysfs(FB0_SCALE_AXIS, "0 0 " + (960 - curPosition[0]/2 - 1) + " " + (1080 - curPosition[1]/2 - 1));
-            writeSysfs(FB0_REQUEST_2XSCALE, "7 " + curPosition[2]/2 + " " + h);
-            writeSysfs(FB1_SCALE_AXIS, displaySize + " " + w + " " + h);
-            writeSysfs(FB1_SCALE, "0x10001");
-        } else {
-            x = curPosition[0];
-            y = curPosition[1];
-            w = curPosition[2];
-            h = curPosition[3];
-            writeSysfs(DISPLAY_AXIS, x + " " + y + " " + displaySize + " " + x + " "+ y + " 18 18");
-            writeSysfs(FB0_REQUEST_2XSCALE, "16 " + w + " " + h);
-            writeSysfs(FB1_SCALE_AXIS, displaySize + " " + w + " " + h);
-            writeSysfs(FB1_SCALE, "0x10001");
+        String curMode = readSysfs(DISPLAY_MODE);
+        if ((curMode.equals(COMMON_MODE_VALUE_LIST[0])) || (curMode.equals(COMMON_MODE_VALUE_LIST[2])) ||
+            (curMode.equals(COMMON_MODE_VALUE_LIST[5])) || (curMode.equals(COMMON_MODE_VALUE_LIST[8])) ||
+            (curMode.equals(COMMON_MODE_VALUE_LIST[10])) || (curMode.equals(COMMON_MODE_VALUE_LIST[11]))) {
+            y /= 2;
+            h /= 2;
         }
+
+        writeSysfs(DISPLAY_AXIS, x + " " + y + " " + displaySize + " " + x + " "+ y + " 18 18");
+        writeSysfs(FB1_SCALE_AXIS, displaySize + " " + w + " " + h);
+        writeSysfs(FB1_SCALE, "0x10001");
     }
 
     public void setOutputWithoutFreeScaleLocked(String newMode){
@@ -452,9 +449,8 @@ public class OutputModeManager {
 
                 writeSysfs(VIDEO_AXIS, temp1 + " " + temp2 + " "
                     + (temp3 + temp1 - 1) + " " + (temp4 + temp2 - 1));
-
-                setMatchOsdMouse();
             }
+            setOsdMouseByEnv();
         }
     }
 
@@ -785,6 +781,7 @@ public class OutputModeManager {
             if (!curMode.contains("cvbs"))
                 setHdmiUnPlugged();
         }
+        setOsdMouseByEnv();
     }
 
     public void setHdmiUnPlugged(){
@@ -855,8 +852,6 @@ public class OutputModeManager {
                 writeSysfs(FB0_BLANK, "0");
             }
         }
-
-        setMatchOsdMouse();
     }
 
     public boolean isFreeScaleClosed() {

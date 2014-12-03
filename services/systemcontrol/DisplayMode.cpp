@@ -284,13 +284,8 @@ void DisplayMode::setMboxDisplay() {
     const char *prefix = UBOOTENV_PREFIX;
     const char *suffix_x = "_x";
     const char *suffix_y = "_y";
-    const char *suffix_w = "_width";
-    const char *suffix_h = "_height";
-
-    const char *suffix_x2 = "outputx";
-    const char *suffix_y2 = "outputy";
-    const char *suffix_w2 = "outputwidth";
-    const char *suffix_h2 = "outputheight";
+    const char *suffix_w = "_w";
+    const char *suffix_h = "_h";
 
     char hpdstate[MAX_STR_LEN] = {0};
     char current_mode[MAX_STR_LEN] = {0};
@@ -360,23 +355,6 @@ void DisplayMode::setMboxDisplay() {
 
             strcpy(key_prefix, prefix);
             strcat(key_prefix, outputmode);
-
-            strcpy(key, key_prefix);
-            if (getBootEnv(strcat(key, suffix_x), value))
-                outputx = atoi(value);
-
-            strcpy(key, key_prefix);
-            if (getBootEnv(strcat(key, suffix_y), value))
-                outputy = atoi(value);
-
-            strcpy(key, key_prefix);
-            if (getBootEnv(strcat(key, suffix_w), value))
-                outputwidth = atoi(value);
-
-            strcpy(key, key_prefix);
-            if (getBootEnv(strcat(key, suffix_h), value))
-                outputheight = atoi(value);
-
             hasRead = true;
             break;
         }
@@ -388,23 +366,6 @@ void DisplayMode::setMboxDisplay() {
             if (!strcmp(outputmode, MODE_480CVBS)) {
                 strcpy(key_prefix, prefix);
                 strcat(key_prefix, MODE_480I);
-
-                strcpy(key, key_prefix);
-                if (getBootEnv(strcat(key, suffix_x2), value))
-                    outputx = atoi(value);
-
-                strcpy(key, key_prefix);
-                if (getBootEnv(strcat(key, suffix_y2), value))
-                    outputy = atoi(value);
-
-                strcpy(key, key_prefix);
-                if (getBootEnv(strcat(key, suffix_w2), value))
-                    outputwidth = atoi(value);
-
-                strcpy(key, key_prefix);
-                if (getBootEnv(strcat(key, suffix_h2), value))
-                    outputheight = atoi(value);
-
                 hasRead = true;
             }
             break;
@@ -418,23 +379,6 @@ void DisplayMode::setMboxDisplay() {
             if (!strcmp(outputmode, MODE_576CVBS)) {
                 strcpy(key_prefix, prefix);
                 strcat(key_prefix, MODE_576I);
-
-                strcpy(key, key_prefix);
-                if (getBootEnv(strcat(key, suffix_x2), value))
-                    outputx = atoi(value);
-
-                strcpy(key, key_prefix);
-                if (getBootEnv(strcat(key, suffix_y2), value))
-                    outputy = atoi(value);
-
-                strcpy(key, key_prefix);
-                if (getBootEnv(strcat(key, suffix_w2), value))
-                    outputwidth = atoi(value);
-
-                strcpy(key, key_prefix);
-                if (getBootEnv(strcat(key, suffix_h2), value))
-                    outputheight = atoi(value);
-
                 hasRead = true;
             }
             break;
@@ -443,6 +387,11 @@ void DisplayMode::setMboxDisplay() {
             !strcmp(outputmode, MODE_720P50HZ)) {
             defaultwidth = outputwidth = 1280;
             defaultheight = outputheight = 720;
+            if (!strcmp(outputmode, MODE_720P50HZ)) {
+                strcpy(key_prefix, prefix);
+                strcat(key_prefix, MODE_720P);
+                hasRead = true;
+            }
             break;
         }
         else if (!strcmp(outputmode, MODE_1080P) ||
@@ -452,6 +401,16 @@ void DisplayMode::setMboxDisplay() {
             !strcmp(outputmode, MODE_1080P50HZ)) {
             defaultwidth = outputwidth = 1920;
             defaultheight = outputheight = 1080;
+            if (!strcmp(outputmode, MODE_1080P24HZ) ||
+                !strcmp(outputmode, MODE_1080P50HZ)) {
+                strcpy(key_prefix, prefix);
+                strcat(key_prefix, MODE_1080P);
+                hasRead = true;
+            } else if (!strcmp(outputmode, MODE_1080I50HZ)){
+                strcpy(key_prefix, prefix);
+                strcat(key_prefix, MODE_1080I);
+                hasRead = true;
+            }
             break;
         }
         else {
@@ -478,23 +437,22 @@ void DisplayMode::setMboxDisplay() {
     if (!hasRead) {
         strcpy(key_prefix, prefix);
         strcat(key_prefix, outputmode);
-
-        strcpy(key, key_prefix);
-        if (getBootEnv(strcat(key, suffix_x2), value))
-            outputx = atoi(value);
-
-        strcpy(key, key_prefix);
-        if (getBootEnv(strcat(key, suffix_y2), value))
-            outputy = atoi(value);
-
-        strcpy(key, key_prefix);
-        if (getBootEnv(strcat(key, suffix_w2), value))
-            outputwidth = atoi(value);
-
-        strcpy(key, key_prefix);
-        if (getBootEnv(strcat(key, suffix_h2), value))
-            outputheight = atoi(value);
     }
+    strcpy(key, key_prefix);
+    if (getBootEnv(strcat(key, suffix_x), value))
+        outputx = atoi(value);
+
+    strcpy(key, key_prefix);
+    if (getBootEnv(strcat(key, suffix_y), value))
+        outputy = atoi(value);
+
+    strcpy(key, key_prefix);
+    if (getBootEnv(strcat(key, suffix_w), value))
+        outputwidth = atoi(value);
+
+    strcpy(key, key_prefix);
+    if (getBootEnv(strcat(key, suffix_h), value))
+        outputheight = atoi(value);
 
     if ((!strcmp(outputmode, MODE_480I) || !strcmp(outputmode, MODE_576I)) &&
         (pSysWrite->getPropertyBoolean(PROP_HAS_CVBS_MODE, false))) {

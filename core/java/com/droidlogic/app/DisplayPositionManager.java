@@ -183,7 +183,7 @@ public class DisplayPositionManager {
         int right =  r;
         int bottom =  b;
         int width = mCurrentWidth;
-        int hight = mCurrentHeight;
+        int height = mCurrentHeight;
 
         if (left < 0) {
             left = 0 ;
@@ -203,6 +203,8 @@ public class DisplayPositionManager {
             writeFile(PPMGR_PPSCALER_RECT, str);
             writeFile(FB0_FREE_SCALE_UPDATE, "1");
         }
+        om.savePosition(left, top, width, height);
+        om.setOsdMouse(left, top, width, height);
     }
 
     public boolean isScreenPositionChanged(){
