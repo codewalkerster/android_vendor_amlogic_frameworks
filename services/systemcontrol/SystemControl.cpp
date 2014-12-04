@@ -177,7 +177,7 @@ void SystemControl::loopMountUnmount(int &isMount, String16& path) {
             (isMount==1)?String16("mount"):String16("unmount"), path);
 
         const char *cmd[4] = {"vdc", "loop", (isMount==1)?"mount":"unmount", String8(path).string()};
-        vdc_loop(4, (char **)cmd);
+        vdc_loop((isMount==1)?4:3, (char **)cmd);
     }
 }
 
