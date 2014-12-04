@@ -26,9 +26,6 @@
 #include "SysWrite.h"
 #include "common.h"
 
-#define SOURCE_OUTPUT_WIDTH             1920
-#define SOURCE_OUTPUT_HEIGHT            1080
-
 #define DEVICE_STR_MID                  "MID"
 #define DEVICE_STR_MBOX                 "MBOX"
 #define DEVICE_STR_TV                   "TV"

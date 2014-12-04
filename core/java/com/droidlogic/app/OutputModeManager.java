@@ -122,9 +122,7 @@ public class OutputModeManager {
     private final static String ENV_4K2KSMPTE_H             = "ubootenv.var.4k2ksmpte_h";
 
     public static final String PROP_BEST_OUTPUT_MODE        = "ro.platform.best_outputmode";
-    public static final String PROP_REAL_OUTPUT_MODE        = "ro.platform.has.realoutputmode";
     public static final String PROP_HDMI_ONLY               = "ro.platform.hdmionly";
-    public static final String PROP_HAS_NATIVE_720          = "ro.platform.has.native720";
 
     private static final String[] COMMON_MODE_VALUE_LIST    = {
         "480i", "480p", "576i", "576p", "720p",
@@ -160,19 +158,19 @@ public class OutputModeManager {
     final Object mLock = new Object[0];
 
     private SystemControlManager mSystenControl;
+    SystemControlManager.DisplayInfo mDisplayInfo;
 
     public OutputModeManager(Context context) {
         mContext = context;
 
         mSystenControl = new SystemControlManager(context);
-        SystemControlManager.DisplayInfo info;
-        info = mSystenControl.getDisplayInfo();
-        if (info.defaultUI != null) {
-            DEFAULT_OUTPUT_MODE = info.defaultUI;
+        mDisplayInfo = mSystenControl.getDisplayInfo();
+        if (mDisplayInfo.defaultUI != null) {
+            DEFAULT_OUTPUT_MODE = mDisplayInfo.defaultUI;
 
             if (DEBUG)
                 Log.d(TAG, "output mode, display type [1:tablet 2:MBOX 3:TV]: "
-                    + info.type + ", default output:" + info.defaultUI);
+                    + mDisplayInfo.type + ", default output:" + mDisplayInfo.defaultUI);
         }
     }
 
@@ -228,8 +226,8 @@ public class OutputModeManager {
 
             String mWinAxis = curPosition[0]+" "+curPosition[1]+" "+(curPosition[0]+curPosition[2]-1)+" "+(curPosition[1]+curPosition[3]-1);
 
-            if (getPropertyBoolean(PROP_REAL_OUTPUT_MODE, false)) {
-                if (getPropertyBoolean(PROP_HAS_NATIVE_720, false)) {
+            if (mDisplayInfo.socType.contains("meson8")) {
+                if (mDisplayInfo.defaultUI.contains("720")) {
                     if (newMode.contains("1080")) {
                         writeSysfs(FB0_FREE_SCALE_MODE,"1");
                         writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1279 719");
@@ -258,7 +256,36 @@ public class OutputModeManager {
                         Log.e(TAG,"can't support this mode : " + newMode);
                         return;
                     }
-                }else {
+                } else if (mDisplayInfo.defaultUI.contains("4k2k")) {
+                    if (newMode.contains("1080")) {
+                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
+                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 3839 2159");
+                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
+                        writeSysfs(VIDEO_AXIS,mWinAxis);
+                        writeSysfs(FB0_FREE_SCALE,"0x10001");
+                    } else if (newMode.contains("720")) {
+                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
+                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 3839 2159");
+                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
+                        writeSysfs(VIDEO_AXIS,mWinAxis);
+                        writeSysfs(FB0_FREE_SCALE,"0x10001");
+                    } else if (newMode.contains("576")) {
+                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
+                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 3839 2159");
+                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
+                        writeSysfs(VIDEO_AXIS,mWinAxis);
+                        writeSysfs(FB0_FREE_SCALE,"0x10001");
+                    } else if (newMode.contains("480")) {
+                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
+                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 0 0 3839 2159");
+                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
+                        writeSysfs(VIDEO_AXIS,mWinAxis);
+                        writeSysfs(FB0_FREE_SCALE,"0x10001");
+                    } else {
+                        Log.e(TAG,"can't support this mode : " + newMode);
+                        return;
+                    }
+                } else {
                     if (newMode.contains("4k2k")) {
                         //open freescale ,  scale up from 1080p to 4k
                         writeSysfs(FB0_FREE_SCALE_MODE,"1");
@@ -405,7 +432,7 @@ public class OutputModeManager {
                 }
             }
 
-            if (getPropertyBoolean(PROP_REAL_OUTPUT_MODE, false)) {
+            if (mDisplayInfo.socType.contains("meson8")) {
                /* String display_value = curPosition[0] + " "+ curPosition[1] + " "
                         + 1920+ " "+ 1080+ " "
                         + curPosition[0]+ " " + curPosition[1]+ " " + 18+ " " + 18;
@@ -671,7 +698,7 @@ public class OutputModeManager {
                 break;
         }
 
-        if (mSystenControl.getPropertyBoolean(PROP_REAL_OUTPUT_MODE, false)) {
+        if (mDisplayInfo.socType.contains("meson8")) {
             writeSysfs(VIDEO_AXIS , x + " " + y + " " + (left+width-1) + " " + (top+height-1));
         }
     }
@@ -787,7 +814,7 @@ public class OutputModeManager {
     public void setHdmiUnPlugged(){
         Log.d(TAG, "setHdmiUnPlugged");
 
-        if (getPropertyBoolean(PROP_REAL_OUTPUT_MODE, false)) {
+        if (mDisplayInfo.socType.contains("meson8")) {
             if (getPropertyBoolean(PROP_HDMI_ONLY, true)) {
                 String cvbsmode = getBootenv(ENV_CVBS_MODE, "576cvbs");
                 setOutputMode(cvbsmode);
@@ -820,7 +847,7 @@ public class OutputModeManager {
         }
         */
         Log.d(TAG, "setHdmiPlugged auto mode: " + isAutoMode);
-        if (getPropertyBoolean(PROP_REAL_OUTPUT_MODE, false)) {
+        if (mDisplayInfo.socType.contains("meson8")) {
             if (getPropertyBoolean(PROP_HDMI_ONLY, true)) {
                 writeSysfs(HDMI_VDAC_PLUGGED, "vdac");
                 if (isAutoMode) {

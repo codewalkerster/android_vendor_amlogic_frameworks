@@ -7,8 +7,9 @@ public class DisplayPositionManager {
     private final static String TAG = "DisplayPositionManager";
     private final static boolean DEBUG = false;
     private Context mContext = null;
-    private SystemControlManager sw = null;
-    private OutputModeManager om = null;
+    private SystemControlManager mSystenControl = null;
+    SystemControlManager.DisplayInfo mDisplayInfo;
+    private OutputModeManager mOutputModeManager = null;
 
     private final static int MAX_Height = 100;
     private final static int MIN_Height = 80;
@@ -50,24 +51,25 @@ public class DisplayPositionManager {
 
     public DisplayPositionManager(Context context) {
         mContext = context;
-        sw = new SystemControlManager(mContext);
-        om = new OutputModeManager(mContext);
+        mSystenControl = new SystemControlManager(mContext);
+        mOutputModeManager = new OutputModeManager(mContext);
+        mDisplayInfo = mSystenControl.getDisplayInfo();
         initPostion();
     }
 
     public void initPostion() {
-        mCurrentMode = sw.readSysFs(DISPLAY_MODE).replaceAll("\n","");
+        mCurrentMode = mSystenControl.readSysFs(DISPLAY_MODE).replaceAll("\n","");
         initStep(mCurrentMode);
         initCurrentPostion();
         screen_rate = getInitialRateValue();
-        if (!sw.getPropertyBoolean("ro.platform.has.realoutputmode", false)) {
+        if (!mDisplayInfo.socType.contains("meson8")) {
             writeFile(FB0_FREE_SCALE , "1");
         }
         setScalingMinFreq(408000);
     }
 
     private void initCurrentPostion() {
-        int [] position = om.getPosition(mCurrentMode);
+        int [] position = mOutputModeManager.getPosition(mCurrentMode);
         mPreLeft = mCurrentLeft = position[0];
         mPreRight = mCurrentTop  = position[1];
         mPreWidth = mCurrentWidth = position[2];
@@ -75,7 +77,7 @@ public class DisplayPositionManager {
     }
 
     public int getInitialRateValue() {
-        mCurrentMode = sw.readSysFs(DISPLAY_MODE).replaceAll("\n","");
+        mCurrentMode = mSystenControl.readSysFs(DISPLAY_MODE).replaceAll("\n","");
         initStep(mCurrentMode);
         int m = (100*2*offsetStep)*mPreLeft ;
         if (m == 0) {
@@ -111,19 +113,19 @@ public class DisplayPositionManager {
         if ( !isScreenPositionChanged())
             return;
 
-        om.savePosition(mCurrentLeft, mCurrentTop, mCurrentWidth, mCurrentHeight);
+        mOutputModeManager.savePosition(mCurrentLeft, mCurrentTop, mCurrentWidth, mCurrentHeight);
         setScalingMinFreq(96000);
     }
 
     private void writeFile(String file, String value) {
-        sw.writeSysFs(file, value);
+        mSystenControl.writeSysFs(file, value);
     }
 
     private final void setScalingMinFreq(int scalingMinFreq) {
         int minFreq = scalingMinFreq;
         String minFreqString = Integer.toString(minFreq);
 
-        sw.writeSysFs(CPU0_SCALING_MIN_FREQ, minFreqString);
+        mSystenControl.writeSysFs(CPU0_SCALING_MIN_FREQ, minFreqString);
     }
     private void initStep(String mode) {
         if (mode.contains("480")) {
@@ -164,7 +166,7 @@ public class DisplayPositionManager {
             return ;
         }
 
-        mCurrentMode = sw.readSysFs(DISPLAY_MODE).replaceAll("\n","");
+        mCurrentMode = mSystenControl.readSysFs(DISPLAY_MODE).replaceAll("\n","");
         initStep(mCurrentMode);
 
         mCurrentLeft = (100-percent)*(mMaxRight)/(100*2*offsetStep);
@@ -195,7 +197,7 @@ public class DisplayPositionManager {
         right = Math.min(right,mMaxRight);
         bottom = Math.min(bottom,mMaxBottom);
 
-        if (sw.getPropertyBoolean("ro.platform.has.realoutputmode", false)) {
+        if (mDisplayInfo.socType.contains("meson8")) {
             writeFile(FB0_WINDOW_AXIS, left+" "+top+" "+(right-1)+" "+(bottom-1));
             //writeFile(free_scale,"0x10001");
         } else {
@@ -203,8 +205,8 @@ public class DisplayPositionManager {
             writeFile(PPMGR_PPSCALER_RECT, str);
             writeFile(FB0_FREE_SCALE_UPDATE, "1");
         }
-        om.savePosition(left, top, width, height);
-        om.setOsdMouse(left, top, width, height);
+        mOutputModeManager.savePosition(left, top, width, height);
+        mOutputModeManager.setOsdMouse(left, top, width, height);
     }
 
     public boolean isScreenPositionChanged(){

@@ -281,6 +281,9 @@ void DisplayMode::setTabletDisplay() {
 }
 
 void DisplayMode::setMboxDisplay() {
+    int source_output_width = 1920;
+    int source_output_height = 1080;
+
     const char *prefix = UBOOTENV_PREFIX;
     const char *suffix_x = "_x";
     const char *suffix_y = "_y";
@@ -324,7 +327,19 @@ void DisplayMode::setMboxDisplay() {
         current_mode,
         outputmode);
 
-    pSysWrite->setProperty(PROP_LCD_DENSITY, "240");
+    if (!strncmp(mDefaultUI, "720", 3)) {
+        source_output_width = 1280;
+        source_output_height = 720;
+        pSysWrite->setProperty(PROP_LCD_DENSITY, "160");
+    } else if (!strncmp(mDefaultUI, "1080", 4)) {
+        source_output_width = 1920;
+        source_output_height = 1080;
+        pSysWrite->setProperty(PROP_LCD_DENSITY, "240");
+    } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
+        source_output_width = 3840;
+        source_output_height = 2160;
+        pSysWrite->setProperty(PROP_LCD_DENSITY, "480");
+    }
 
     char key_prefix[MAX_STR_LEN] = {0};
     char key[MAX_STR_LEN] = {0};
@@ -477,7 +492,7 @@ void DisplayMode::setMboxDisplay() {
 
     char axis[MAX_STR_LEN] = {0};
     sprintf(axis, "%d %d %d %d",
-        0, 0, SOURCE_OUTPUT_WIDTH - 1, SOURCE_OUTPUT_HEIGHT -1);
+        0, 0, source_output_width - 1, source_output_height - 1);
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_AXIS, axis);
 
     sprintf(axis, "%d %d %d %d",
