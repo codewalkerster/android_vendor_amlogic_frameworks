@@ -227,101 +227,19 @@ public class OutputModeManager {
             String mWinAxis = curPosition[0]+" "+curPosition[1]+" "+(curPosition[0]+curPosition[2]-1)+" "+(curPosition[1]+curPosition[3]-1);
 
             if (mDisplayInfo.socType.contains("meson8")) {
+                writeSysfs(FB0_FREE_SCALE_MODE,"1");
+
                 if (mDisplayInfo.defaultUI.contains("720")) {
-                    if (newMode.contains("1080")) {
-                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
-                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1279 719");
-                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
-                        writeSysfs(VIDEO_AXIS,mWinAxis);
-                        writeSysfs(FB0_FREE_SCALE,"0x10001");
-                    } else if (newMode.contains("720")) {
-                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
-                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1279 719");
-                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
-                        writeSysfs(VIDEO_AXIS,mWinAxis);
-                        writeSysfs(FB0_FREE_SCALE,"0x10001");
-                    } else if (newMode.contains("576")) {
-                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
-                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1279 719");
-                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
-                        writeSysfs(VIDEO_AXIS,mWinAxis);
-                        writeSysfs(FB0_FREE_SCALE,"0x10001");
-                    } else if (newMode.contains("480")) {
-                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
-                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1279 719");
-                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
-                        writeSysfs(VIDEO_AXIS,mWinAxis);
-                        writeSysfs(FB0_FREE_SCALE,"0x10001");
-                    } else {
-                        Log.e(TAG,"can't support this mode : " + newMode);
-                        return;
-                    }
+                    writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1279 719");
                 } else if (mDisplayInfo.defaultUI.contains("4k2k")) {
-                    if (newMode.contains("1080")) {
-                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
-                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 3839 2159");
-                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
-                        writeSysfs(VIDEO_AXIS,mWinAxis);
-                        writeSysfs(FB0_FREE_SCALE,"0x10001");
-                    } else if (newMode.contains("720")) {
-                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
-                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 3839 2159");
-                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
-                        writeSysfs(VIDEO_AXIS,mWinAxis);
-                        writeSysfs(FB0_FREE_SCALE,"0x10001");
-                    } else if (newMode.contains("576")) {
-                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
-                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 3839 2159");
-                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
-                        writeSysfs(VIDEO_AXIS,mWinAxis);
-                        writeSysfs(FB0_FREE_SCALE,"0x10001");
-                    } else if (newMode.contains("480")) {
-                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
-                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 0 0 3839 2159");
-                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
-                        writeSysfs(VIDEO_AXIS,mWinAxis);
-                        writeSysfs(FB0_FREE_SCALE,"0x10001");
-                    } else {
-                        Log.e(TAG,"can't support this mode : " + newMode);
-                        return;
-                    }
+                    writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 3839 2159");
                 } else {
-                    if (newMode.contains("4k2k")) {
-                        //open freescale ,  scale up from 1080p to 4k
-                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
-                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1919 1079");
-                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
-                        writeSysfs(VIDEO_AXIS,mWinAxis);
-                        writeSysfs(FB0_FREE_SCALE,"0x10001");
-                    } else if (newMode.contains("1080")) {
-                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
-                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1919 1079");
-                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
-                        writeSysfs(VIDEO_AXIS,mWinAxis);
-                        writeSysfs(FB0_FREE_SCALE,"0x10001");
-                    } else if (newMode.contains("720")) {
-                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
-                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1919 1079");
-                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
-                        writeSysfs(VIDEO_AXIS,mWinAxis);
-                        writeSysfs(FB0_FREE_SCALE,"0x10001");
-                    } else if (newMode.contains("576")) {
-                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
-                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1919 1079");
-                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
-                        writeSysfs(VIDEO_AXIS,mWinAxis);
-                        writeSysfs(FB0_FREE_SCALE,"0x10001");
-                    } else if (newMode.contains("480")) {
-                        writeSysfs(FB0_FREE_SCALE_MODE,"1");
-                        writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1919 1079");
-                        writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
-                        writeSysfs(VIDEO_AXIS,mWinAxis);
-                        writeSysfs(FB0_FREE_SCALE,"0x10001");
-                    } else {
-                        Log.e(TAG, "can't support this mode : " + newMode);
-                        return;
-                    }
+                    writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1919 1079");
                 }
+
+                writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
+                writeSysfs(VIDEO_AXIS,mWinAxis);
+                writeSysfs(FB0_FREE_SCALE,"0x10001");
             }else {
                 String value = curPosition[0] + " " + curPosition[1]
                     + " " + (curPosition[2] + curPosition[0] )
@@ -802,7 +720,6 @@ public class OutputModeManager {
     public void initOutputMode(){
         String curMode = readSysfs(DISPLAY_MODE);
         if (isHDMIPlugged()) {
-            if (curMode.contains("cvbs") || !curMode.equals(getSupportedResolution()))
                 setHdmiPlugged();
         } else {
             if (!curMode.contains("cvbs"))
@@ -838,14 +755,8 @@ public class OutputModeManager {
     }
 
     public void setHdmiPlugged() {
-        boolean isAutoMode = false;
-        /*
-        try {
-            //isAutoHdmiMode = Settings.Global.getInt(mContext.getContentResolver(), DISPLAY_OUTPUTMODE_AUTO);
-        } catch (Settings.SettingNotFoundException se) {
-            Log.d(TAG, "Error: "+se);
-        }
-        */
+        boolean isAutoMode = isBestOutputmode();
+
         Log.d(TAG, "setHdmiPlugged auto mode: " + isAutoMode);
         if (mDisplayInfo.socType.contains("meson8")) {
             if (getPropertyBoolean(PROP_HDMI_ONLY, true)) {
