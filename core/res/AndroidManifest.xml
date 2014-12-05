@@ -18,6 +18,7 @@
 
     <uses-permission android:name="droidlogic.permission.SYSTEM_CONTROL" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
 
     <application android:process="system"
                  android:persistent="true"
