@@ -151,6 +151,17 @@ public class OutputModeManager {
     private static final String FREQ_DEFAULT                = "";
     private static final String FREQ_SETTING                = "50hz";
 
+    public static final String PCM                          = "PCM";
+    public static final String RAW                          = "RAW";
+    public static final String HDMI                         = "HDMI";
+    public static final String SPDIF                        = "SPDIF";
+    public static final String HDMI_RAW                     = "HDMI passthrough";
+    public static final String SPDIF_RAW                    = "SPDIF passthrough";
+    public static final int IS_AUTO                         = 0x10;
+    public static final int IS_PCM                          = 0x01;
+    public static final int IS_HDMI                         = 0x02;
+    public static final int IS_SPDIF                        = 0x04;
+
     private String DEFAULT_OUTPUT_MODE                      = "1080p";
     private String mSupportModes = null;
     private boolean ifModeSetting = false;
@@ -874,7 +885,7 @@ public class OutputModeManager {
     }
 
     private void switchHdmiPassthough() {
-        String value = getBootenv(ENV_DIGIT_AUDIO, "PCM");
+        String value = getBootenv(ENV_DIGIT_AUDIO, PCM);
 
         if (value.contains(":auto")) {
             autoSwitchHdmiPassthough();
@@ -884,21 +895,17 @@ public class OutputModeManager {
     }
 
     public int getDigitalVoiceMode(){
-        final int IS_AUTO  = 0x10;
-        final int IS_PCM   = 0x01;
-        final int IS_HDMI  = 0x02;
-        final int IS_SPDIF = 0x04;
         int ret = 0;
 
-        String value = getBootenv(ENV_DIGIT_AUDIO, "PCM");
+        String value = getBootenv(ENV_DIGIT_AUDIO, PCM);
         if (value.contains(":auto")) {
             ret = ret | IS_AUTO;
         }
-        if (value.contains("PCM")) {
+        if (value.contains(PCM)) {
             ret = ret | IS_PCM;
-        }else if (value.contains("HDMI")) {
+        }else if (value.contains(HDMI)) {
             ret = ret | IS_HDMI;
-        }else if (value.contains("SPDIF")) {
+        }else if (value.contains(SPDIF)) {
             ret = ret | IS_SPDIF;
         }
         return ret;
@@ -931,19 +938,19 @@ public class OutputModeManager {
         // value : "PCM" ,"RAW","SPDIF passthrough","HDMI passthrough"
         setBootenv(ENV_DIGIT_AUDIO, value);
 
-        if ("PCM".equals(value)) {
+        if (PCM.equals(value)) {
             writeSysfs(SYS_DIGITAL_RAW, "0");
             writeSysfs(SYS_AUIDO_SPDIF, "spdif_mute");
             writeSysfs(SYS_AUIDO_HDMI, "audio_on");
-        } else if ("RAW".equals(value)) {
+        } else if (RAW.equals(value)) {
             writeSysfs(SYS_DIGITAL_RAW, "1");
             writeSysfs(SYS_AUIDO_HDMI, "audio_off");
             writeSysfs(SYS_AUIDO_SPDIF, "spdif_unmute");
-        } else if ("SPDIF passthrough".equals(value)) {
+        } else if (SPDIF_RAW.equals(value)) {
             writeSysfs(SYS_DIGITAL_RAW, "1");
             writeSysfs(SYS_AUIDO_HDMI, "audio_off");
             writeSysfs(SYS_AUIDO_SPDIF, "spdif_unmute");
-        } else if ("HDMI passthrough".equals(value)) {
+        } else if (HDMI_RAW.equals(value)) {
             writeSysfs(SYS_DIGITAL_RAW, "2");
             writeSysfs(SYS_AUIDO_SPDIF, "spdif_mute");
             writeSysfs(SYS_AUIDO_HDMI, "audio_on");
