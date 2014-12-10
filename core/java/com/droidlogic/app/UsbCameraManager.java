@@ -79,7 +79,7 @@ public class UsbCameraManager {
     }
 
     public void UsbDeviceAttach(UsbDevice device, boolean isAttach){
-        if(isUsbCamera(device)){
+        if (isUsbCamera(device)) {
             Log.i(TAG, "usb camera attach: " + isAttach);
             new VideoDevThread(mContext, isAttach).start();
         }
@@ -128,7 +128,7 @@ public class UsbCameraManager {
     public boolean isUsbCamera(UsbDevice device) {
         int count = device.getInterfaceCount();
 
-        if(DEBUG){
+        if (DEBUG) {
             for (int i = 0; i < count; i++) {
                 UsbInterface intf = device.getInterface(i);
                 Log.i(TAG, "isCamera UsbInterface:" + intf);
@@ -170,8 +170,8 @@ public class UsbCameraManager {
         public void run() {
             boolean end = false;
             int loopCount = 0;
-            while( !end ){
-                try{
+            while ( !end ) {
+                try {
                     Thread.sleep(500);//first delay 500ms, in order to wait kernel set up video device path
                 }
                 catch (InterruptedException e){
@@ -179,31 +179,35 @@ public class UsbCameraManager {
                 }
 
                 int devNum = 0;
-                for( int i = 0; i < DEV_NUM; i++ ){
+                for ( int i = 0; i < DEV_NUM; i++ ) {
                     String path = DEV_VIDEO_prefix + i;
-                    if(new File(path).exists()){
+                    if (new File(path).exists()) {
                         devNum++;
                     }
                 }
 
-                //Log.i(TAG, "video device num:" + devNum);
-                if(mIsAttach && (devNum > mCamNum)){//device path has been set up by kernel
+                Log.i(TAG, "/dev/video* num:" + devNum);
+                if (mIsAttach &&
+                    //device path has been set up by kernel
+                    ((devNum > mCamNum) ||
+                    //video device was plugged in when boot
+                    ((devNum > 0) && (mCamNum == devNum)))) {
                     usbCameraAttach(mIsAttach);
                     for (int i = 0; i < ACTIVITIES.length; i++) {
                         enableComponent(PACKAGES[i], ACTIVITIES[i]);
                     }
                     end = true;
                 }
-                else if(!mIsAttach && (devNum < mCamNum)){//device path has been deleted by kernel
+                else if (!mIsAttach && (devNum < mCamNum)) {//device path has been deleted by kernel
                     usbCameraAttach(mIsAttach);
                     for (int i = 0; i < ACTIVITIES.length; i++) {
                         disableComponent(PACKAGES[i], ACTIVITIES[i]);
                     }
                     end = true;
                 }
-                else if((mCamNum > 0) && (mCamNum == devNum)){//video device was plugged in when boot 
+                else if ((mCamNum > 0) && (mCamNum == devNum)) {//video device was plugged in when boot
                     loopCount++;
-                    if(loopCount > 2){//1s kernel has set up or delete the device path
+                    if (loopCount > 2) {//1s kernel has set up or delete the device path
                         end = true;
                     }
                 }
