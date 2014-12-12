@@ -95,7 +95,7 @@ public class OutputModeManager {
     private final static String ENV_720P_X                  = "ubootenv.var.720p_x";
     private final static String ENV_720P_Y                  = "ubootenv.var.720p_y";
     private final static String ENV_720P_W                  = "ubootenv.var.720p_w";
-    private final static String ENV_720P_H                  = "ubootenv.var.720ph";
+    private final static String ENV_720P_H                  = "ubootenv.var.720p_h";
     private final static String ENV_1080I_X                 = "ubootenv.var.1080i_x";
     private final static String ENV_1080I_Y                 = "ubootenv.var.1080i_y";
     private final static String ENV_1080I_W                 = "ubootenv.var.1080i_w";
