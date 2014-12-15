@@ -122,7 +122,7 @@ bool SystemControl::readSysfs(const String16& path, String16& value) {
     if (NO_ERROR == permissionCheck()) {
         traceValue(String16("readSysfs"), path, value);
 
-        char buf[PROPERTY_VALUE_MAX] = {0};
+        char buf[MAX_STR_LEN] = {0};
         bool ret = pSysWrite->readSysfs(String8(path).string(), buf);
         value.setTo(String16(buf));
         return ret;

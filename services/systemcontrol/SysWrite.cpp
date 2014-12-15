@@ -121,8 +121,8 @@ void SysWrite::setProperty(const char *key, const char *value){
 }
 
 bool SysWrite::readSysfs(const char *path, char *value){
-    char buf[PROPERTY_VALUE_MAX] = {0};
-    readSys(path, (char*)buf, PROPERTY_VALUE_MAX);
+    char buf[MAX_STR_LEN] = {0};
+    readSys(path, (char*)buf, MAX_STR_LEN);
     strcpy(value, buf);
     return true;
 }
