@@ -248,6 +248,7 @@ int DisplayMode::parseConfigFile(){
 
 void DisplayMode::setTabletDisplay() {
     struct fb_var_screeninfo var_set;
+
     var_set.xres = mFb0Width;
 	var_set.yres = mFb0Height;
 	var_set.xres_virtual = mFb0Width;
@@ -258,6 +259,7 @@ void DisplayMode::setTabletDisplay() {
 	var_set.bits_per_pixel = mFb0FbBits;
     setFbParameter(DISPLAY_FB0, var_set);
 
+    pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
     var_set.xres = mFb1Width;
 	var_set.yres = mFb1Height;
 	var_set.xres_virtual = mFb1Width;
@@ -268,15 +270,13 @@ void DisplayMode::setTabletDisplay() {
 	var_set.bits_per_pixel = mFb1FbBits;
     setFbParameter(DISPLAY_FB1, var_set);
 
-    pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "panel");
-
     char axis[512] = {0};
     sprintf(axis, "%d %d %d %d %d %d %d %d",
         0, 0, mFb0Width, mFb0Height, 0, 0, mFb1Width, mFb1Height);
 
+    pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "panel");
     pSysWrite->writeSysfs(SYSFS_DISPLAY_AXIS, axis);
 
-    pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
 }
 
