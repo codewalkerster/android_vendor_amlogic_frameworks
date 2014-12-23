@@ -130,18 +130,18 @@ public class OutputModeManager {
         "4k2k24hz", "4k2k25hz", "4k2k30hz", "4k2ksmpte", "1080p24hz"
     };
 
-    private static final String FULL_WIDTH_480              = "720";
-    private static final String FULL_HEIGHT_480             = "480";
-    private static final String FULL_WIDTH_576              = "720";
-    private static final String FULL_HEIGHT_576             = "576";
-    private static final String FULL_WIDTH_720              = "1280";
-    private static final String FULL_HEIGHT_720             = "720";
-    private static final String FULL_WIDTH_1080             = "1920";
-    private static final String FULL_HEIGHT_1080            = "1080";
-    private static final String FULL_WIDTH_4K2K             = "3840";
-    private static final String FULL_HEIGHT_4K2K            = "2160";
-    private static final String FULL_WIDTH_4K2KSMPTE        = "4096";
-    private static final String FULL_HEIGHT_4K2KSMPTE       = "2160";
+    public static final String FULL_WIDTH_480              = "720";
+    public static final String FULL_HEIGHT_480             = "480";
+    public static final String FULL_WIDTH_576              = "720";
+    public static final String FULL_HEIGHT_576             = "576";
+    public static final String FULL_WIDTH_720              = "1280";
+    public static final String FULL_HEIGHT_720             = "720";
+    public static final String FULL_WIDTH_1080             = "1920";
+    public static final String FULL_HEIGHT_1080            = "1080";
+    public static final String FULL_WIDTH_4K2K             = "3840";
+    public static final String FULL_HEIGHT_4K2K            = "2160";
+    public static final String FULL_WIDTH_4K2KSMPTE        = "4096";
+    public static final String FULL_HEIGHT_4K2KSMPTE       = "2160";
 
     private static final String DISPLAY_AXIS_1080           = " 1920 1080 ";
     private static final String DISPLAY_AXIS_720            = " 1280 720 ";
