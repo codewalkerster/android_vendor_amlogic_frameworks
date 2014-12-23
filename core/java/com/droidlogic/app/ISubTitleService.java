@@ -162,6 +162,21 @@ public interface ISubTitleService extends android.os.IInterface{
                     reply.writeNoException();
                     return true;
                 }
+                case TRANSACTION_setImgSubRatio:
+                {
+                    data.enforceInterface(DESCRIPTOR);
+                    float _arg0;
+                    _arg0 = data.readFloat();
+                    float _arg1;
+                    _arg1 = data.readFloat();
+                    int _arg2;
+                    _arg2 = data.readInt();
+                    int _arg3;
+                    _arg3 = data.readInt();
+                    this.setImgSubRatio(_arg0, _arg1, _arg2, _arg3);
+                    reply.writeNoException();
+                    return true;
+                }
                 case TRANSACTION_clear:
                 {
                     data.enforceInterface(DESCRIPTOR);
@@ -473,6 +488,25 @@ public interface ISubTitleService extends android.os.IInterface{
             }
 
             @Override
+            public void setImgSubRatio(float ratioW, float ratioH, int maxW, int maxH) throws android.os.RemoteException{
+                android.os.Parcel _data = android.os.Parcel.obtain();
+                android.os.Parcel _reply = android.os.Parcel.obtain();
+                try {
+                    _data.writeInterfaceToken(DESCRIPTOR);
+                    _data.writeFloat(ratioW);
+                    _data.writeFloat(ratioH);
+                    _data.writeInt(maxW);
+                    _data.writeInt(maxH);
+                    mRemote.transact(Stub.TRANSACTION_setImgSubRatio, _data, _reply, 0);
+                    _reply.readException();
+                }
+                finally {
+                    _reply.recycle();
+                    _data.recycle();
+                }
+            }
+
+            @Override
             public void clear() throws android.os.RemoteException{
                 android.os.Parcel _data = android.os.Parcel.obtain();
                 android.os.Parcel _reply = android.os.Parcel.obtain();
@@ -585,12 +619,13 @@ public interface ISubTitleService extends android.os.IInterface{
         static final int TRANSACTION_setGravity = (android.os.IBinder.FIRST_CALL_TRANSACTION + 12);
         static final int TRANSACTION_setTextStyle = (android.os.IBinder.FIRST_CALL_TRANSACTION + 13);
         static final int TRANSACTION_setPosHeight = (android.os.IBinder.FIRST_CALL_TRANSACTION + 14);
-        static final int TRANSACTION_clear = (android.os.IBinder.FIRST_CALL_TRANSACTION + 15);
-        static final int TRANSACTION_resetForSeek = (android.os.IBinder.FIRST_CALL_TRANSACTION + 16);
-        static final int TRANSACTION_hide = (android.os.IBinder.FIRST_CALL_TRANSACTION + 17);
-        static final int TRANSACTION_display = (android.os.IBinder.FIRST_CALL_TRANSACTION + 18);
-        static final int TRANSACTION_getCurName = (android.os.IBinder.FIRST_CALL_TRANSACTION + 19);
-        static final int TRANSACTION_load = (android.os.IBinder.FIRST_CALL_TRANSACTION + 20);
+        static final int TRANSACTION_setImgSubRatio = (android.os.IBinder.FIRST_CALL_TRANSACTION + 15);
+        static final int TRANSACTION_clear = (android.os.IBinder.FIRST_CALL_TRANSACTION + 16);
+        static final int TRANSACTION_resetForSeek = (android.os.IBinder.FIRST_CALL_TRANSACTION + 17);
+        static final int TRANSACTION_hide = (android.os.IBinder.FIRST_CALL_TRANSACTION + 18);
+        static final int TRANSACTION_display = (android.os.IBinder.FIRST_CALL_TRANSACTION + 19);
+        static final int TRANSACTION_getCurName = (android.os.IBinder.FIRST_CALL_TRANSACTION + 20);
+        static final int TRANSACTION_load = (android.os.IBinder.FIRST_CALL_TRANSACTION + 21);
     }
 
     public void open(java.lang.String path) throws android.os.RemoteException;
@@ -611,6 +646,7 @@ public interface ISubTitleService extends android.os.IInterface{
     public void setGravity(int gravity) throws android.os.RemoteException;
     public void setTextStyle(int style) throws android.os.RemoteException;
     public void setPosHeight(int height) throws android.os.RemoteException;
+    public void setImgSubRatio(float ratioW, float ratioH, int maxW, int maxH) throws android.os.RemoteException;
     public void clear() throws android.os.RemoteException;
     public void resetForSeek() throws android.os.RemoteException;
     public void hide() throws android.os.RemoteException;
