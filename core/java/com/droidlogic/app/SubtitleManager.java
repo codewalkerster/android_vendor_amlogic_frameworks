@@ -480,6 +480,21 @@ public class SubtitleManager{
         }
     }
 
+    public void setImgSubRatio(float ratioW, float ratioH, int maxW, int maxH) {
+        if (disable()) {
+            return;
+        }
+        if (debug()) Log.i(TAG,"[setImgSubRatio] ratioW:" + ratioW + ", ratioH:" + ratioH + ",maxW:" + maxW + ",maxH:" + maxH);
+
+        try {
+            if (mService != null) {
+                mService.setImgSubRatio(ratioW, ratioH, maxW, maxH);
+            }
+        } catch (RemoteException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private boolean debug() {
         boolean ret = false;
         if (SystemProperties.getBoolean("sys.subtitle.debug", false)) {
