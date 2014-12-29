@@ -2,8 +2,10 @@ package com.droidlogic.app;
 
 import java.io.File;
 
+import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.usb.UsbConstants;
@@ -12,6 +14,7 @@ import android.hardware.usb.UsbInterface;
 import android.os.IBinder;
 import android.os.Parcel;
 import android.os.RemoteException;
+import android.os.UserHandle;
 import android.util.Log;
 
 public class UsbCameraManager {
@@ -75,6 +78,15 @@ public class UsbCameraManager {
             }
         } catch (RemoteException ex) {
             Log.e(TAG, "USB camera attach:" + ex);
+        }
+    }
+
+    public void bootReady(){
+        if (!hasCamera()) {
+            Log.i(TAG, "bootReady disable all camera activities");
+            for (int i = 0; i < ACTIVITIES.length; i++) {
+                disableComponent(PACKAGES[i], ACTIVITIES[i]);
+            }
         }
     }
 
@@ -204,6 +216,31 @@ public class UsbCameraManager {
                         disableComponent(PACKAGES[i], ACTIVITIES[i]);
                     }
                     end = true;
+
+                    //if plug out the usb camera, need exit camera app
+                    ActivityManager am = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
+                    ComponentName cn = am.getRunningTasks (1).get (0).topActivity;
+                    String name = cn.getClassName();
+
+                    Log.i(TAG, "usb camera plug out top activity:" + name + " pkg:" + cn.getPackageName());
+                    for (int i = 0; i < ACTIVITIES.length; i++) {
+                        if (name.equals (ACTIVITIES[i])) {
+                            Intent homeIntent = new Intent(Intent.ACTION_MAIN, null);
+                            homeIntent.addCategory(Intent.CATEGORY_HOME);
+                            homeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                                    | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                            mContext.startActivityAsUser(homeIntent, new UserHandle(UserHandle.USER_CURRENT));
+
+                            /*
+                            try{
+                                Thread.sleep(500);
+                            }catch (InterruptedException e){
+                            }
+                            Log.i(TAG, "usb camera plug out kill:" + cn.getPackageName());
+                            am.killBackgroundProcesses (cn.getPackageName());*/
+                            break;
+                        }
+                    }
                 }
                 else if ((mCamNum > 0) && (mCamNum == devNum)) {//video device was plugged in when boot
                     loopCount++;

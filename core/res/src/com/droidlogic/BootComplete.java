@@ -7,8 +7,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
-
 import android.util.Log;
+
+import com.droidlogic.app.UsbCameraManager;
 
 public class BootComplete extends BroadcastReceiver {
     private static final String TAG             = "BootComplete";
@@ -32,6 +33,9 @@ public class BootComplete extends BroadcastReceiver {
 
                 setFirstRun(context, false);
             }
+
+            //use to check whether disable camera or not
+            new UsbCameraManager(context).bootReady();
             context.startService(new Intent(context, HdmiService.class));
         }
     }
