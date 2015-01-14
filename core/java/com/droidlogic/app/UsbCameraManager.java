@@ -212,8 +212,10 @@ public class UsbCameraManager {
                 }
                 else if (!mIsAttach && (devNum < mCamNum)) {//device path has been deleted by kernel
                     usbCameraAttach(mIsAttach);
-                    for (int i = 0; i < ACTIVITIES.length; i++) {
-                        disableComponent(PACKAGES[i], ACTIVITIES[i]);
+                    if (devNum < 1) {
+                        for (int i = 0; i < ACTIVITIES.length; i++) {
+                            disableComponent(PACKAGES[i], ACTIVITIES[i]);
+                        }
                     }
                     end = true;
 
@@ -231,13 +233,13 @@ public class UsbCameraManager {
                                     | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
                             mContext.startActivityAsUser(homeIntent, new UserHandle(UserHandle.USER_CURRENT));
 
-                            /*
                             try{
                                 Thread.sleep(500);
                             }catch (InterruptedException e){
                             }
                             Log.i(TAG, "usb camera plug out kill:" + cn.getPackageName());
-                            am.killBackgroundProcesses (cn.getPackageName());*/
+                            am.forceStopPackage(cn.getPackageName());
+                            //am.killBackgroundProcesses (cn.getPackageName());
                             break;
                         }
                     }
