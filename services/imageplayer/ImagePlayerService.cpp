@@ -1040,7 +1040,7 @@ int ImagePlayerService::prepare() {
 #else
         stream = new SkFDStream(mFileDescription, false);
 #endif
-    }else if (!strncasecmp("http://", mImageUrl, 7)) {
+    } else if (!strncasecmp("http://", mImageUrl, 7) || !strncasecmp("https://", mImageUrl, 8)) {
         stream = new SkHttpStream(mImageUrl);
     } else {
         stream = new SkFILEStream(mImageUrl);
