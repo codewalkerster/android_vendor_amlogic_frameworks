@@ -213,6 +213,26 @@ public interface ISubTitleService extends android.os.IInterface{
                     reply.writeString(_result);
                     return true;
                 }
+                case TRANSACTION_getSubName:
+                {
+                    data.enforceInterface(DESCRIPTOR);
+                    int _arg0;
+                    _arg0 = data.readInt();
+                    java.lang.String _result = this.getSubName(_arg0);
+                    reply.writeNoException();
+                    reply.writeString(_result);
+                    return true;
+                }
+                case TRANSACTION_getSubLanguage:
+                {
+                    data.enforceInterface(DESCRIPTOR);
+                    int _arg0;
+                    _arg0 = data.readInt();
+                    java.lang.String _result = this.getSubLanguage(_arg0);
+                    reply.writeNoException();
+                    reply.writeString(_result);
+                    return true;
+                }
                 case TRANSACTION_load:
                 {
                     data.enforceInterface(DESCRIPTOR);
@@ -585,6 +605,44 @@ public interface ISubTitleService extends android.os.IInterface{
             }
 
             @Override
+            public java.lang.String getSubName(int idx) throws android.os.RemoteException{
+                android.os.Parcel _data = android.os.Parcel.obtain();
+                android.os.Parcel _reply = android.os.Parcel.obtain();
+                java.lang.String _result;
+                try {
+                    _data.writeInterfaceToken(DESCRIPTOR);
+                    _data.writeInt(idx);
+                    mRemote.transact(Stub.TRANSACTION_getSubName, _data, _reply, 0);
+                    _reply.readException();
+                    _result = _reply.readString();
+                }
+                finally {
+                    _reply.recycle();
+                    _data.recycle();
+                }
+                return _result;
+            }
+
+            @Override
+            public java.lang.String getSubLanguage(int idx) throws android.os.RemoteException{
+                android.os.Parcel _data = android.os.Parcel.obtain();
+                android.os.Parcel _reply = android.os.Parcel.obtain();
+                java.lang.String _result;
+                try {
+                    _data.writeInterfaceToken(DESCRIPTOR);
+                    _data.writeInt(idx);
+                    mRemote.transact(Stub.TRANSACTION_getSubLanguage, _data, _reply, 0);
+                    _reply.readException();
+                    _result = _reply.readString();
+                }
+                finally {
+                    _reply.recycle();
+                    _data.recycle();
+                }
+                return _result;
+            }
+
+            @Override
             public boolean load(java.lang.String path) throws android.os.RemoteException{
                 android.os.Parcel _data = android.os.Parcel.obtain();
                 android.os.Parcel _reply = android.os.Parcel.obtain();
@@ -625,7 +683,9 @@ public interface ISubTitleService extends android.os.IInterface{
         static final int TRANSACTION_hide = (android.os.IBinder.FIRST_CALL_TRANSACTION + 18);
         static final int TRANSACTION_display = (android.os.IBinder.FIRST_CALL_TRANSACTION + 19);
         static final int TRANSACTION_getCurName = (android.os.IBinder.FIRST_CALL_TRANSACTION + 20);
-        static final int TRANSACTION_load = (android.os.IBinder.FIRST_CALL_TRANSACTION + 21);
+        static final int TRANSACTION_getSubName = (android.os.IBinder.FIRST_CALL_TRANSACTION + 21);
+        static final int TRANSACTION_getSubLanguage = (android.os.IBinder.FIRST_CALL_TRANSACTION + 22);
+        static final int TRANSACTION_load = (android.os.IBinder.FIRST_CALL_TRANSACTION + 23);
     }
 
     public void open(java.lang.String path) throws android.os.RemoteException;
@@ -652,5 +712,7 @@ public interface ISubTitleService extends android.os.IInterface{
     public void hide() throws android.os.RemoteException;
     public void display() throws android.os.RemoteException;
     public java.lang.String getCurName() throws android.os.RemoteException;
+    public java.lang.String getSubName(int idx) throws android.os.RemoteException;
+    public java.lang.String getSubLanguage(int idx) throws android.os.RemoteException;
     public boolean load(java.lang.String path) throws android.os.RemoteException;
 }

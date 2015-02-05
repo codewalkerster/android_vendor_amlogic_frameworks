@@ -195,7 +195,7 @@ public class SubtitleManager{
             mEventHandler.removeMessages(AML_SUBTITLE_START);
         }*/
 
-        if (mThread != null){
+        if (mThread != null) {
             mThreadStop = true;
             mThread = null;
         }
@@ -364,6 +364,42 @@ public class SubtitleManager{
         }
         if (debug()) Log.i(TAG,"[getSubType] ret:"+ret);
         return ret;
+    }
+
+    public String getSubName(int idx) {
+        if (disable()) {
+            return null;
+        }
+        if (debug()) Log.i(TAG,"[getSubName]");
+
+        String name = null;
+        try {
+            if (mService != null) {
+                name = mService.getSubName(idx);
+            }
+        } catch (RemoteException e) {
+            throw new RuntimeException(e);
+        }
+        if (debug()) Log.i(TAG,"[getSubName] name["+idx+"]:"+name);
+        return name;
+    }
+
+    public String getSubLanguage(int idx) {
+        if (disable()) {
+            return null;
+        }
+        if (debug()) Log.i(TAG,"[getSubLanguage]");
+
+        String language = null;
+        try {
+            if (mService != null) {
+                language = mService.getSubLanguage(idx);
+            }
+        } catch (RemoteException e) {
+            throw new RuntimeException(e);
+        }
+        if (debug()) Log.i(TAG,"[getSubLanguage] language["+idx+"]:"+language);
+        return language;
     }
 
     public String getCurName() {
