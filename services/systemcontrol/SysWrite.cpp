@@ -121,7 +121,7 @@ void SysWrite::setProperty(const char *key, const char *value){
 }
 
 bool SysWrite::readSysfs(const char *path, char *value){
-    char buf[MAX_STR_LEN] = {0};
+    char buf[MAX_STR_LEN+1] = {0};
     readSys(path, (char*)buf, MAX_STR_LEN);
     strcpy(value, buf);
     return true;
@@ -154,28 +154,39 @@ exit:
 }
 
 void SysWrite::readSys(const char *path, char *buf, int count){
-    int fd, r;
+    int fd, len;
 
-    if( NULL == buf ){
+    if ( NULL == buf ) {
         SYS_LOGE("buf is NULL");
         return;
     }
 
-    if((fd = open(path, O_RDONLY)) < 0) {
+    if ((fd = open(path, O_RDONLY)) < 0) {
         SYS_LOGE("readSysFs, open %s fail.", path);
         goto exit;
     }
 
-    r = read(fd, buf, count);
-    if (r < 0) {
+    len = read(fd, buf, count);
+    if (len < 0) {
         SYS_LOGE("read error: %s, %s\n", path, strerror(errno));
+        goto exit;
     }
 
-    if(0x0a == buf[r-1])
-        buf[r-1] = 0;
+    if (0x0a == buf[len-1])
+        buf[len-1] = 0;
 
-    if(mLogLevel > LOG_LEVEL_1)
-        SYS_LOGI("read %s, val:%s\n", path, buf);
+    for (int i = 0; i < len; i++) {
+        //change '\0' to 0x20(spacing), otherwise the string buffer will be cut off
+        if (0x0 == buf[i]) {
+            buf[i] = 0x20;
+
+            if (mLogLevel > LOG_LEVEL_1)
+                SYS_LOGI("read buffer index:%d is a 0x0, replace to spacing \n", i);
+        }
+    }
+
+    if (mLogLevel > LOG_LEVEL_1)
+        SYS_LOGI("read %s, result length:%d, val:%s\n", path, len, buf);
 
 exit:
     close(fd);
