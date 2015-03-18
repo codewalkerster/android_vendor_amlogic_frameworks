@@ -766,7 +766,7 @@ public class OutputModeManager {
     }
 
     public void setHdmiPlugged() {
-        boolean isAutoMode = isBestOutputmode();
+        boolean isAutoMode = isBestOutputmode() || readSupportList(HDMI_SUPPORT_LIST).contains("null edid");
 
         Log.d(TAG, "setHdmiPlugged auto mode: " + isAutoMode);
         if (mDisplayInfo.socType.contains("meson8")) {
