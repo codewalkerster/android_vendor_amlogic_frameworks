@@ -4,8 +4,6 @@ package com.droidlogic;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -22,7 +20,7 @@ public class BootComplete extends BroadcastReceiver {
 
         if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
             //set default show_ime_with_hard_keyboard 1, then first boot can show the ime.
-            if (getFirstRun(context)) {
+            if (SettingsPref.getFirstRun(context)) {
                 Log.i(TAG, "first running: " + context.getPackageName());
                 try {
                     Settings.Secure.putInt(context.getContentResolver(),
@@ -31,25 +29,13 @@ public class BootComplete extends BroadcastReceiver {
                     Log.e(TAG, "could not find hard keyboard ", e);
                 }
 
-                setFirstRun(context, false);
+                SettingsPref.setFirstRun(context, false);
             }
 
             //use to check whether disable camera or not
             new UsbCameraManager(context).bootReady();
             context.startService(new Intent(context, HdmiService.class));
         }
-    }
-
-    public void setFirstRun(Context c, boolean firstRun){
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
-        SharedPreferences.Editor editor = sp.edit();
-        editor.putBoolean(FIRST_RUN, firstRun);
-        editor.commit();
-    }
-
-    public boolean getFirstRun(Context c){
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
-        return sp.getBoolean(FIRST_RUN, true);
     }
 }
 
