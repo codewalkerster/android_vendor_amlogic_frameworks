@@ -38,6 +38,12 @@
             </intent-filter>
         </receiver>
 
+        <service android:name="com.droidlogic.CecService" >
+            <intent-filter>
+                <action android:name="CEC_LANGUAGE_AUTO_SWITCH" />
+            </intent-filter>
+        </service>
+
         <service android:name="com.droidlogic.HdmiService" />
         <receiver android:name="com.droidlogic.BootComplete">
             <intent-filter>
