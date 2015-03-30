@@ -76,72 +76,21 @@ public class OutputModeManager {
     public static final String ENV_DIGIT_AUDIO              = "ubootenv.var.digitaudiooutput";
     public static final String ENV_IS_BEST_MODE             = "ubootenv.var.is.bestmode";
 
-    private final static String ENV_480I_X                  = "ubootenv.var.480i_x";
-    private final static String ENV_480I_Y                  = "ubootenv.var.480i_y";
-    private final static String ENV_480I_W                  = "ubootenv.var.480i_w";
-    private final static String ENV_480I_H                  = "ubootenv.var.480i_h";
-    private final static String ENV_480P_X                  = "ubootenv.var.480p_x";
-    private final static String ENV_480P_Y                  = "ubootenv.var.480p_y";
-    private final static String ENV_480P_W                  = "ubootenv.var.480p_w";
-    private final static String ENV_480P_H                  = "ubootenv.var.480p_h";
-    private final static String ENV_576I_X                  = "ubootenv.var.576i_x";
-    private final static String ENV_576I_Y                  = "ubootenv.var.576i_y";
-    private final static String ENV_576I_W                  = "ubootenv.var.576i_w";
-    private final static String ENV_576I_H                  = "ubootenv.var.576i_h";
-    private final static String ENV_576P_X                  = "ubootenv.var.576p_x";
-    private final static String ENV_576P_Y                  = "ubootenv.var.576p_y";
-    private final static String ENV_576P_W                  = "ubootenv.var.576p_w";
-    private final static String ENV_576P_H                  = "ubootenv.var.576p_h";
-    private final static String ENV_720P_X                  = "ubootenv.var.720p_x";
-    private final static String ENV_720P_Y                  = "ubootenv.var.720p_y";
-    private final static String ENV_720P_W                  = "ubootenv.var.720p_w";
-    private final static String ENV_720P_H                  = "ubootenv.var.720p_h";
-    private final static String ENV_1080I_X                 = "ubootenv.var.1080i_x";
-    private final static String ENV_1080I_Y                 = "ubootenv.var.1080i_y";
-    private final static String ENV_1080I_W                 = "ubootenv.var.1080i_w";
-    private final static String ENV_1080I_H                 = "ubootenv.var.1080i_h";
-    private final static String ENV_1080P_X                 = "ubootenv.var.1080p_x";
-    private final static String ENV_1080P_Y                 = "ubootenv.var.1080p_y";
-    private final static String ENV_1080P_W                 = "ubootenv.var.1080p_w";
-    private final static String ENV_1080P_H                 = "ubootenv.var.1080p_h";
-    private final static String ENV_4K2K24HZ_X              = "ubootenv.var.4k2k24hz_x";
-    private final static String ENV_4K2K24HZ_Y              = "ubootenv.var.4k2k24hz_y";
-    private final static String ENV_4K2K24HZ_W              = "ubootenv.var.4k2k24hz_w";
-    private final static String ENV_4K2K24HZ_H              = "ubootenv.var.4k2k24hz_h";
-    private final static String ENV_4K2K25HZ_X              = "ubootenv.var.4k2k25hz_x";
-    private final static String ENV_4K2K25HZ_Y              = "ubootenv.var.4k2k25hz_y";
-    private final static String ENV_4K2K25HZ_W              = "ubootenv.var.4k2k25hz_w";
-    private final static String ENV_4K2K25HZ_H              = "ubootenv.var.4k2k25hz_h";
-    private final static String ENV_4K2K30HZ_X              = "ubootenv.var.4k2k30hz_x";
-    private final static String ENV_4K2K30HZ_Y              = "ubootenv.var.4k2k30hz_y";
-    private final static String ENV_4K2K30HZ_W              = "ubootenv.var.4k2k30hz_w";
-    private final static String ENV_4K2K30HZ_H              = "ubootenv.var.4k2k30hz_h";
-    private final static String ENV_4K2KSMPTE_X             = "ubootenv.var.4k2ksmpte_x";
-    private final static String ENV_4K2KSMPTE_Y             = "ubootenv.var.4k2ksmpte_y";
-    private final static String ENV_4K2KSMPTE_W             = "ubootenv.var.4k2ksmpte_w";
-    private final static String ENV_4K2KSMPTE_H             = "ubootenv.var.4k2ksmpte_h";
-
     public static final String PROP_BEST_OUTPUT_MODE        = "ro.platform.best_outputmode";
     public static final String PROP_HDMI_ONLY               = "ro.platform.hdmionly";
 
-    private static final String[] COMMON_MODE_VALUE_LIST    = {
-        "480i", "480p", "576i", "576p", "720p",
-        "1080i", "1080p", "720p50hz", "1080i50hz", "1080p50hz", "480cvbs", "576cvbs",
-        "4k2k24hz", "4k2k25hz", "4k2k30hz", "4k2ksmpte", "1080p24hz"
-    };
-
-    public static final String FULL_WIDTH_480              = "720";
-    public static final String FULL_HEIGHT_480             = "480";
-    public static final String FULL_WIDTH_576              = "720";
-    public static final String FULL_HEIGHT_576             = "576";
-    public static final String FULL_WIDTH_720              = "1280";
-    public static final String FULL_HEIGHT_720             = "720";
-    public static final String FULL_WIDTH_1080             = "1920";
-    public static final String FULL_HEIGHT_1080            = "1080";
-    public static final String FULL_WIDTH_4K2K             = "3840";
-    public static final String FULL_HEIGHT_4K2K            = "2160";
-    public static final String FULL_WIDTH_4K2KSMPTE        = "4096";
-    public static final String FULL_HEIGHT_4K2KSMPTE       = "2160";
+    public static final String FULL_WIDTH_480               = "720";
+    public static final String FULL_HEIGHT_480              = "480";
+    public static final String FULL_WIDTH_576               = "720";
+    public static final String FULL_HEIGHT_576              = "576";
+    public static final String FULL_WIDTH_720               = "1280";
+    public static final String FULL_HEIGHT_720              = "720";
+    public static final String FULL_WIDTH_1080              = "1920";
+    public static final String FULL_HEIGHT_1080             = "1080";
+    public static final String FULL_WIDTH_4K2K              = "3840";
+    public static final String FULL_HEIGHT_4K2K             = "2160";
+    public static final String FULL_WIDTH_4K2KSMPTE         = "4096";
+    public static final String FULL_HEIGHT_4K2KSMPTE        = "2160";
 
     private static final String DISPLAY_AXIS_1080           = " 1920 1080 ";
     private static final String DISPLAY_AXIS_720            = " 1280 720 ";
@@ -174,7 +123,7 @@ public class OutputModeManager {
     public OutputModeManager(Context context) {
         mContext = context;
 
-        mSystenControl = new SystemControlManager(context);
+        mSystenControl = new SystemControlManager(context);
         mDisplayInfo = mSystenControl.getDisplayInfo();
         if (mDisplayInfo.defaultUI != null) {
             DEFAULT_OUTPUT_MODE = mDisplayInfo.defaultUI;
@@ -235,7 +184,8 @@ public class OutputModeManager {
             int[] curPosition = getPosition(newMode);
             int[] oldPosition = getPosition(curMode);
 
-            String mWinAxis = curPosition[0]+" "+curPosition[1]+" "+(curPosition[0]+curPosition[2]-1)+" "+(curPosition[1]+curPosition[3]-1);
+            String winAxis = curPosition[0] + " " + curPosition[1] + " " +
+                (curPosition[0] + curPosition[2] - 1) + " " + (curPosition[1] + curPosition[3] - 1);
 
             if (mDisplayInfo.socType.contains("meson8")) {
                 writeSysfs(FB0_FREE_SCALE_MODE,"1");
@@ -248,13 +198,13 @@ public class OutputModeManager {
                     writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1919 1079");
                 }
 
-                writeSysfs(FB0_WINDOW_AXIS,mWinAxis);
-                writeSysfs(VIDEO_AXIS,mWinAxis);
+                writeSysfs(FB0_WINDOW_AXIS,winAxis);
+                writeSysfs(VIDEO_AXIS,winAxis);
                 writeSysfs(FB0_FREE_SCALE,"0x10001");
-            }else {
+            } else {
                 String value = curPosition[0] + " " + curPosition[1]
-                    + " " + (curPosition[2] + curPosition[0] )
-                    + " " + (curPosition[3] + curPosition[1] )+ " " + 0;
+                    + " " + (curPosition[2] + curPosition[0])
+                    + " " + (curPosition[3] + curPosition[1]) + " " + 0;
                 setM6FreeScaleAxis(newMode);
                 writeSysfs(DISPLAY_MODE,newMode);
                 writeSysfs(SYS_PPSCALER_RECT, value);
@@ -263,7 +213,7 @@ public class OutputModeManager {
 
             setBootenv(ENV_OUTPUT_MODE, newMode);
             saveNewMode2Prop(newMode);
-            setOsdMouseByEnv();
+            setOsdMouse(curMode);
 
             Intent intent = new Intent(ACTION_HDMI_MODE_CHANGED);
             //intent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT);
@@ -272,41 +222,14 @@ public class OutputModeManager {
         }
     }
 
-    public void setOsdMouseByEnv() {
-        int x, y, w, h;
-        int[] curPosition = { 0, 0, 0, 0 };
-
-        String curMode = readSysfs(DISPLAY_MODE);
-        curPosition = getPosition(curMode);
-
+    public void setOsdMouse(String curMode) {
         if (DEBUG)
-            Log.d(TAG, "setOsdMouseByEnv curMode " + curMode + " ,default output:" + DEFAULT_OUTPUT_MODE);
-
-        x = curPosition[0];
-        y = curPosition[1];
-        w = curPosition[2];
-        h = curPosition[3];
-        setOsdMouse(x, y, w, h);
+            Log.d(TAG, "set osd mouse curMode " + curMode);
+        mSystenControl.setOsdMouseMode(curMode);
     }
 
     public void setOsdMouse(int x, int y, int w, int h) {
-        String displaySize = "1920 1080";
-        if (DEFAULT_OUTPUT_MODE.startsWith("720"))
-            displaySize = "1280 720";
-        else if (DEFAULT_OUTPUT_MODE.startsWith("1080"))
-            displaySize = "1920 1080";
-
-        String curMode = readSysfs(DISPLAY_MODE);
-        if ((curMode.equals(COMMON_MODE_VALUE_LIST[0])) || (curMode.equals(COMMON_MODE_VALUE_LIST[2])) ||
-            (curMode.equals(COMMON_MODE_VALUE_LIST[5])) || (curMode.equals(COMMON_MODE_VALUE_LIST[8])) ||
-            (curMode.equals(COMMON_MODE_VALUE_LIST[10])) || (curMode.equals(COMMON_MODE_VALUE_LIST[11]))) {
-            y /= 2;
-            h /= 2;
-        }
-
-        writeSysfs(DISPLAY_AXIS, x + " " + y + " " + displaySize + " " + x + " "+ y + " 18 18");
-        writeSysfs(FB1_SCALE_AXIS, displaySize + " " + w + " " + h);
-        writeSysfs(FB1_SCALE, "0x10001");
+        mSystenControl.setOsdMousePara(x, y, w, h);
     }
 
     public void setOutputWithoutFreeScaleLocked(String newMode){
@@ -406,7 +329,7 @@ public class OutputModeManager {
                 writeSysfs(VIDEO_AXIS, temp1 + " " + temp2 + " "
                     + (temp3 + temp1 - 1) + " " + (temp4 + temp2 - 1));
             }
-            setOsdMouseByEnv();
+            setOsdMouse(curMode);
         }
     }
 
@@ -435,201 +358,11 @@ public class OutputModeManager {
     }
 
     public int[] getPosition(String mode) {
-        int[] curPosition = { 0, 0, 1280, 720 };
-        int index = 4; // 720p
-        for (int i = 0; i < COMMON_MODE_VALUE_LIST.length; i++) {
-            if (mode.equalsIgnoreCase(COMMON_MODE_VALUE_LIST[i]))
-                 index = i;
-        }
-
-        switch (index) {
-        case 0: // 480i
-            curPosition[0] = getBootenvInt(ENV_480I_X, "0");
-            curPosition[1] = getBootenvInt(ENV_480I_Y, "0");
-            curPosition[2] = getBootenvInt(ENV_480I_W, FULL_WIDTH_480);
-            curPosition[3] = getBootenvInt(ENV_480I_H, FULL_HEIGHT_480);
-            break;
-        case 1: // 480p
-            curPosition[0] = getBootenvInt(ENV_480P_X, "0");
-            curPosition[1] = getBootenvInt(ENV_480P_Y, "0");
-            curPosition[2] = getBootenvInt(ENV_480P_W, FULL_WIDTH_480);
-            curPosition[3] = getBootenvInt(ENV_480P_H, FULL_HEIGHT_480);
-            break;
-        case 2: // 576i
-            curPosition[0] = getBootenvInt(ENV_576I_X, "0");
-            curPosition[1] = getBootenvInt(ENV_576I_Y, "0");
-            curPosition[2] = getBootenvInt(ENV_576I_W, FULL_WIDTH_576);
-            curPosition[3] = getBootenvInt(ENV_576I_H, FULL_HEIGHT_576);
-            break;
-        case 3: // 576p
-            curPosition[0] = getBootenvInt(ENV_576P_X, "0");
-            curPosition[1] = getBootenvInt(ENV_576P_Y, "0");
-            curPosition[2] = getBootenvInt(ENV_576P_W, FULL_WIDTH_576);
-            curPosition[3] = getBootenvInt(ENV_576P_H, FULL_HEIGHT_576);
-            break;
-        case 4: // 720p
-        case 7: // 720p50hz
-            curPosition[0] = getBootenvInt(ENV_720P_X, "0");
-            curPosition[1] = getBootenvInt(ENV_720P_Y, "0");
-            curPosition[2] = getBootenvInt(ENV_720P_W, FULL_WIDTH_720);
-            curPosition[3] = getBootenvInt(ENV_720P_H, FULL_HEIGHT_720);
-            break;
-
-        case 5: // 1080i
-        case 8: // 1080i50hz
-            curPosition[0] = getBootenvInt(ENV_1080I_X, "0");
-            curPosition[1] = getBootenvInt(ENV_1080I_Y, "0");
-            curPosition[2] = getBootenvInt(ENV_1080I_W, FULL_WIDTH_1080);
-            curPosition[3] = getBootenvInt(ENV_1080I_H, FULL_HEIGHT_1080);
-            break;
-
-        case 6: // 1080p
-        case 9: // 1080p50hz
-        case 16://1080p24hz
-            curPosition[0] = getBootenvInt(ENV_1080P_X, "0");
-            curPosition[1] = getBootenvInt(ENV_1080P_Y, "0");
-            curPosition[2] = getBootenvInt(ENV_1080P_W, FULL_WIDTH_1080);
-            curPosition[3] = getBootenvInt(ENV_1080P_H, FULL_HEIGHT_1080);
-            break;
-        case 10: // 480cvbs
-            curPosition[0] = getBootenvInt(ENV_480I_X, "0");
-            curPosition[1] = getBootenvInt(ENV_480I_Y, "0");
-            curPosition[2] = getBootenvInt(ENV_480I_W, FULL_WIDTH_480);
-            curPosition[3] = getBootenvInt(ENV_480I_H, FULL_HEIGHT_480);
-            break;
-        case 11: // 576cvbs
-            curPosition[0] = getBootenvInt(ENV_576I_X, "0");
-            curPosition[1] = getBootenvInt(ENV_576I_Y, "0");
-            curPosition[2] = getBootenvInt(ENV_576I_W, FULL_WIDTH_576);
-            curPosition[3] = getBootenvInt(ENV_576I_H, FULL_HEIGHT_576);
-            break;
-        case 12: // 4k2k24hz
-            curPosition[0] = getBootenvInt(ENV_4K2K24HZ_X, "0");
-            curPosition[1] = getBootenvInt(ENV_4K2K24HZ_Y, "0");
-            curPosition[2] = getBootenvInt(ENV_4K2K24HZ_W, FULL_WIDTH_4K2K);
-            curPosition[3] = getBootenvInt(ENV_4K2K24HZ_H, FULL_HEIGHT_4K2K);
-            break;
-        case 13: // 4k2k25hz
-            curPosition[0] = getBootenvInt(ENV_4K2K25HZ_X, "0");
-            curPosition[1] = getBootenvInt(ENV_4K2K25HZ_Y, "0");
-            curPosition[2] = getBootenvInt(ENV_4K2K25HZ_W, FULL_WIDTH_4K2K);
-            curPosition[3] = getBootenvInt(ENV_4K2K25HZ_H, FULL_HEIGHT_4K2K);
-            break;
-        case 14: // 4k2k30hz
-            curPosition[0] = getBootenvInt(ENV_4K2K30HZ_X, "0");
-            curPosition[1] = getBootenvInt(ENV_4K2K30HZ_Y, "0");
-            curPosition[2] = getBootenvInt(ENV_4K2K30HZ_W, FULL_WIDTH_4K2K);
-            curPosition[3] = getBootenvInt(ENV_4K2K30HZ_H, FULL_HEIGHT_4K2K);
-            break;
-        case 15: // 4k2ksmpte
-            curPosition[0] = getBootenvInt(ENV_4K2KSMPTE_X, "0");
-            curPosition[1] = getBootenvInt(ENV_4K2KSMPTE_Y, "0");
-            curPosition[2] = getBootenvInt(ENV_4K2KSMPTE_W, FULL_WIDTH_4K2KSMPTE);
-            curPosition[3] = getBootenvInt(ENV_4K2KSMPTE_H, FULL_HEIGHT_4K2KSMPTE);
-            break;
-        default: // 720p
-            curPosition[0] = getBootenvInt(ENV_720P_X, "0");
-            curPosition[1] = getBootenvInt(ENV_720P_Y, "0");
-            curPosition[2] = getBootenvInt(ENV_720P_W, FULL_WIDTH_720);
-            curPosition[3] = getBootenvInt(ENV_720P_H, FULL_HEIGHT_720);
-            break;
-        }
-
-        return curPosition;
+        return mSystenControl.getPosition(mode);
     }
 
     public void savePosition(int left, int top, int width, int height) {
-        int index = 4; // 720p
-        String x = String.valueOf(left);
-        String y = String.valueOf(top);
-        String w = String.valueOf(width);
-        String h = String.valueOf(height);
-        String mCurrentMode = mSystenControl.readSysFs(DISPLAY_MODE).replaceAll("\n","");
-
-        for (int i = 0; i < COMMON_MODE_VALUE_LIST.length; i++) {
-            if (mCurrentMode.equalsIgnoreCase(COMMON_MODE_VALUE_LIST[i])) {
-                index = i;
-            }
-        }
-
-        switch (index) {
-            case 0: // 480i
-            case 10: //480cvbs
-                setBootenv(ENV_480I_X, x);
-                setBootenv(ENV_480I_Y, y);
-                setBootenv(ENV_480I_W, w);
-                setBootenv(ENV_480I_H, h);
-                break;
-            case 1: // 480p
-                setBootenv(ENV_480P_X, x);
-                setBootenv(ENV_480P_Y, y);
-                setBootenv(ENV_480P_W, w);
-                setBootenv(ENV_480P_H, h);
-                break;
-            case 2: // 576i
-            case 11:    //576cvbs
-                setBootenv(ENV_576I_X, x);
-                setBootenv(ENV_576I_Y, y);
-                setBootenv(ENV_576I_W, w);
-                setBootenv(ENV_576I_H, h);
-                break;
-            case 3: // 576p
-                setBootenv(ENV_576P_X, x);
-                setBootenv(ENV_576P_Y, y);
-                setBootenv(ENV_576P_W, w);
-                setBootenv(ENV_576P_H, h);
-                break;
-            case 4: // 720p
-            case 7: // 720p50hz
-                setBootenv(ENV_720P_X, x);
-                setBootenv(ENV_720P_Y, y);
-                setBootenv(ENV_720P_W, w);
-                setBootenv(ENV_720P_H, h);
-                break;
-            case 5: // 1080i
-            case 8: // 1080i50hz
-                setBootenv(ENV_1080I_X, x);
-                setBootenv(ENV_1080I_Y, y);
-                setBootenv(ENV_1080I_W, w);
-                setBootenv(ENV_1080I_H, h);
-                break;
-            case 6: // 1080p
-            case 9: // 1080p50hz
-            case 16: //1080p24hz
-                setBootenv(ENV_1080P_X, x);
-                setBootenv(ENV_1080P_Y, y);
-                setBootenv(ENV_1080P_W, w);
-                setBootenv(ENV_1080P_H, h);
-                break;
-            case 12:    //4k2k24hz
-                setBootenv(ENV_4K2K24HZ_X, x);
-                setBootenv(ENV_4K2K24HZ_Y, y);
-                setBootenv(ENV_4K2K24HZ_W, w);
-                setBootenv(ENV_4K2K24HZ_H, h);
-                break;
-            case 13:    //4k2k25hz
-                setBootenv(ENV_4K2K25HZ_X, x);
-                setBootenv(ENV_4K2K25HZ_Y, y);
-                setBootenv(ENV_4K2K25HZ_W, w);
-                setBootenv(ENV_4K2K25HZ_H, h);
-                break;
-            case 14:    //4k2k30hz
-                setBootenv(ENV_4K2K30HZ_X, x);
-                setBootenv(ENV_4K2K30HZ_Y, y);
-                setBootenv(ENV_4K2K30HZ_W, w);
-                setBootenv(ENV_4K2K30HZ_H, h);
-                break;
-            case 15:    //4k2ksmpte
-                setBootenv(ENV_4K2KSMPTE_X, x);
-                setBootenv(ENV_4K2KSMPTE_Y, y);
-                setBootenv(ENV_4K2KSMPTE_W, w);
-                setBootenv(ENV_4K2KSMPTE_H, h);
-                break;
-        }
-
-        if (mDisplayInfo.socType.contains("meson8")) {
-            writeSysfs(VIDEO_AXIS , x + " " + y + " " + (left+width-1) + " " + (top+height-1));
-        }
+        mSystenControl.setPosition(left, top, width, height);
     }
 
     private void setM6FreeScaleAxis(String mode) {
@@ -656,7 +389,7 @@ public class OutputModeManager {
             supportList = (value.substring(0, value.length()-1)).split(",");
         }
 
-        if (supportList != null){
+        if (supportList != null) {
             for (int i = 0; i < supportList.length; i++) {
                 if (supportList[i].contains("*")) {
                     return supportList[i].substring(0, supportList[i].length()-1);
@@ -729,14 +462,16 @@ public class OutputModeManager {
     }
 
     public void initOutputMode(){
-        String curMode = readSysfs(DISPLAY_MODE);
         if (isHDMIPlugged()) {
-                setHdmiPlugged();
+            setHdmiPlugged();
         } else {
+            String curMode = readSysfs(DISPLAY_MODE);
             if (!curMode.contains("cvbs"))
                 setHdmiUnPlugged();
         }
-        setOsdMouseByEnv();
+
+        //there can not set osd mouse parameter, otherwise bootanimation logo will shake
+        //because set osd1 scaler will shake
     }
 
     public void setHdmiUnPlugged(){
@@ -958,7 +693,7 @@ public class OutputModeManager {
     }
 
     public void enableDobly_DRC (boolean enable) {
-        if (enable){       //open DRC
+        if (enable) {       //open DRC
             writeSysfs(AUIDO_DSP_AC3_DRC, "drchighcutscale 0x64");
             writeSysfs(AUIDO_DSP_AC3_DRC, "drclowboostscale 0x64");
         } else {           //close DRC
@@ -1073,7 +808,7 @@ public class OutputModeManager {
         String str = null;
         StringBuilder value = new StringBuilder();
 
-        if(DEBUG)
+        if (DEBUG)
             Log.i(TAG, "readSysfs path:" + path);
 
         try {
@@ -1081,12 +816,12 @@ public class OutputModeManager {
             BufferedReader br = new BufferedReader(fr);
             try {
                 while ((str = br.readLine()) != null) {
-                    if(str != null)
+                    if (str != null)
                         value.append(str);
                 };
                 fr.close();
                 br.close();
-                if(value != null)
+                if (value != null)
                     return value.toString();
                 else
                     return null;

@@ -181,6 +181,40 @@ void SystemControl::loopMountUnmount(int &isMount, String16& path) {
     }
 }
 
+void SystemControl::setOsdMouseMode(const String16& mode) {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("set osd mouse mode :%s", String8(mode).string());
+    }
+
+    pDisplayMode->setOsdMouse(String8(mode).string());
+}
+
+void SystemControl::setOsdMousePara(int x, int y, int w, int h) {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("set osd mouse parameter x:%d y:%d w:%d h:%d", x, y, w, h);
+    }
+    pDisplayMode->setOsdMouse(x, y, w, h);
+}
+
+void SystemControl::setPosition(int left, int top, int width, int height) {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("set position x:%d y:%d w:%d h:%d", left, top, width, height);
+    }
+    pDisplayMode->setPosition(left, top, width, height);
+}
+
+void SystemControl::getPosition(const String16& mode, int &x, int &y, int &w, int &h) {
+    int position[4] = { 0, 0, 0, 0 };
+    pDisplayMode->getPosition(String8(mode).string(), position);
+    x = position[0];
+    y = position[1];
+    w = position[2];
+    h = position[3];
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("get position x:%d y:%d w:%d h:%d", x, y, w, h);
+    }
+}
+
 void SystemControl::traceValue(const String16& type, const String16& key, const String16& value) {
     if (mLogLevel > LOG_LEVEL_0) {
         String16 procName;

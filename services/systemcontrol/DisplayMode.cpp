@@ -517,6 +517,9 @@ void DisplayMode::setMboxDisplay() {
         strcpy(audiovalue, "0");
     }
     pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, audiovalue);
+
+    //init osd mouse
+    setOsdMouse(current_mode);
 }
 
 void DisplayMode::setTVDisplay() {
@@ -532,6 +535,257 @@ void DisplayMode::setFbParameter(const char* fbdev, struct fb_var_screeninfo var
     copy_changed_values(&var_old, &var_set);
 	ioctl(fh, FBIOPUT_VSCREENINFO, &var_old);
     close(fh);
+}
+
+static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
+    "480i", "480p", "576i", "576p", "720p",
+    "1080i", "1080p", "720p50hz", "1080i50hz", "1080p50hz", "480cvbs", "576cvbs",
+    "4k2k24hz", "4k2k25hz", "4k2k30hz", "4k2ksmpte", "1080p24hz"
+};
+
+int DisplayMode::getBootenvInt(const char* key, int defaultVal) {
+    int value = defaultVal;
+    const char* p_value = bootenv_get(key);
+    if (p_value) {
+        value = atoi(p_value);
+    }
+    return value;
+}
+
+void DisplayMode::setOsdMouse(const char* curMode) {
+    SYS_LOGI("set osd mounse mode: %s", curMode);
+
+    int position[4] = { 0, 0, 0, 0 };
+    getPosition(curMode, position);
+    setOsdMouse(position[0], position[1], position[2], position[3]);
+}
+
+void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
+    SYS_LOGI("set osd mounse x:%d y:%d w:%d h:%d", x, y, w, h);
+
+    const char* displaySize = "1920 1080";
+    if (!strcmp(DEFAULT_OUTPUT_MODE, "720"))
+        displaySize = "1280 720";
+    else if (!strcmp(DEFAULT_OUTPUT_MODE, "1080"))
+        displaySize = "1920 1080";
+
+    char cur_mode[MAX_STR_LEN] = {0};
+    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, cur_mode);
+    if (!strcmp(cur_mode, DISPLAY_MODE_LIST[0]) || !strcmp(cur_mode, DISPLAY_MODE_LIST[2]) ||
+        !strcmp(cur_mode, DISPLAY_MODE_LIST[5]) || !strcmp(cur_mode, DISPLAY_MODE_LIST[8]) ||
+        !strcmp(cur_mode, DISPLAY_MODE_LIST[10]) || !strcmp(cur_mode, DISPLAY_MODE_LIST[11])) {
+        y /= 2;
+        h /= 2;
+    }
+
+    char axis[512] = {0};
+    sprintf(axis, "%d %d %s %d %d 18 18", x, y, displaySize, x, y);
+    pSysWrite->writeSysfs(SYSFS_DISPLAY_AXIS, axis);
+
+    sprintf(axis, "%s %d %d", displaySize, w, h);
+    pSysWrite->writeSysfs(DISPLAY_FB1_SCALE_AXIS, axis);
+    pSysWrite->writeSysfs(DISPLAY_FB1_SCALE, "0x10001");
+}
+
+void DisplayMode::getPosition(const char* curMode, int *position) {
+    int index = DISPLAY_MODE_720P;
+    for (int i = 0; i < DISPLAY_MODE_TOTAL; i++) {
+        if (!strcmp(curMode, DISPLAY_MODE_LIST[i]))
+             index = i;
+    }
+
+    switch (index) {
+    case DISPLAY_MODE_480I:
+        position[0] = getBootenvInt(ENV_480I_X, 0);
+        position[1] = getBootenvInt(ENV_480I_Y, 0);
+        position[2] = getBootenvInt(ENV_480I_W, FULL_WIDTH_480);
+        position[3] = getBootenvInt(ENV_480I_H, FULL_HEIGHT_480);
+        break;
+    case DISPLAY_MODE_480P: // 480p
+        position[0] = getBootenvInt(ENV_480P_X, 0);
+        position[1] = getBootenvInt(ENV_480P_Y, 0);
+        position[2] = getBootenvInt(ENV_480P_W, FULL_WIDTH_480);
+        position[3] = getBootenvInt(ENV_480P_H, FULL_HEIGHT_480);
+        break;
+    case DISPLAY_MODE_576I: // 576i
+        position[0] = getBootenvInt(ENV_576I_X, 0);
+        position[1] = getBootenvInt(ENV_576I_Y, 0);
+        position[2] = getBootenvInt(ENV_576I_W, FULL_WIDTH_576);
+        position[3] = getBootenvInt(ENV_576I_H, FULL_HEIGHT_576);
+        break;
+    case DISPLAY_MODE_576P: // 576p
+        position[0] = getBootenvInt(ENV_576P_X, 0);
+        position[1] = getBootenvInt(ENV_576P_Y, 0);
+        position[2] = getBootenvInt(ENV_576P_W, FULL_WIDTH_576);
+        position[3] = getBootenvInt(ENV_576P_H, FULL_HEIGHT_576);
+        break;
+    case DISPLAY_MODE_720P: // 720p
+    case DISPLAY_MODE_720P50HZ: // 720p50hz
+        position[0] = getBootenvInt(ENV_720P_X, 0);
+        position[1] = getBootenvInt(ENV_720P_Y, 0);
+        position[2] = getBootenvInt(ENV_720P_W, FULL_WIDTH_720);
+        position[3] = getBootenvInt(ENV_720P_H, FULL_HEIGHT_720);
+        break;
+
+    case DISPLAY_MODE_1080I: // 1080i
+    case DISPLAY_MODE_1080I50HZ: // 1080i50hz
+        position[0] = getBootenvInt(ENV_1080I_X, 0);
+        position[1] = getBootenvInt(ENV_1080I_Y, 0);
+        position[2] = getBootenvInt(ENV_1080I_W, FULL_WIDTH_1080);
+        position[3] = getBootenvInt(ENV_1080I_H, FULL_HEIGHT_1080);
+        break;
+
+    case DISPLAY_MODE_1080P: // 1080p
+    case DISPLAY_MODE_1080P50HZ: // 1080p50hz
+    case DISPLAY_MODE_1080P24HZ://1080p24hz
+        position[0] = getBootenvInt(ENV_1080P_X, 0);
+        position[1] = getBootenvInt(ENV_1080P_Y, 0);
+        position[2] = getBootenvInt(ENV_1080P_W, FULL_WIDTH_1080);
+        position[3] = getBootenvInt(ENV_1080P_H, FULL_HEIGHT_1080);
+        break;
+    case DISPLAY_MODE_480CVBS: // 480cvbs
+        position[0] = getBootenvInt(ENV_480I_X, 0);
+        position[1] = getBootenvInt(ENV_480I_Y, 0);
+        position[2] = getBootenvInt(ENV_480I_W, FULL_WIDTH_480);
+        position[3] = getBootenvInt(ENV_480I_H, FULL_HEIGHT_480);
+        break;
+    case DISPLAY_MODE_576CVBS: // 576cvbs
+        position[0] = getBootenvInt(ENV_576I_X, 0);
+        position[1] = getBootenvInt(ENV_576I_Y, 0);
+        position[2] = getBootenvInt(ENV_576I_W, FULL_WIDTH_576);
+        position[3] = getBootenvInt(ENV_576I_H, FULL_HEIGHT_576);
+        break;
+    case DISPLAY_MODE_4K2K24HZ: // 4k2k24hz
+        position[0] = getBootenvInt(ENV_4K2K24HZ_X, 0);
+        position[1] = getBootenvInt(ENV_4K2K24HZ_Y, 0);
+        position[2] = getBootenvInt(ENV_4K2K24HZ_W, FULL_WIDTH_4K2K);
+        position[3] = getBootenvInt(ENV_4K2K24HZ_H, FULL_HEIGHT_4K2K);
+        break;
+    case DISPLAY_MODE_4K2K25HZ: // 4k2k25hz
+        position[0] = getBootenvInt(ENV_4K2K25HZ_X, 0);
+        position[1] = getBootenvInt(ENV_4K2K25HZ_Y, 0);
+        position[2] = getBootenvInt(ENV_4K2K25HZ_W, FULL_WIDTH_4K2K);
+        position[3] = getBootenvInt(ENV_4K2K25HZ_H, FULL_HEIGHT_4K2K);
+        break;
+    case DISPLAY_MODE_4K2K30HZ: // 4k2k30hz
+        position[0] = getBootenvInt(ENV_4K2K30HZ_X, 0);
+        position[1] = getBootenvInt(ENV_4K2K30HZ_Y, 0);
+        position[2] = getBootenvInt(ENV_4K2K30HZ_W, FULL_WIDTH_4K2K);
+        position[3] = getBootenvInt(ENV_4K2K30HZ_H, FULL_HEIGHT_4K2K);
+        break;
+    case DISPLAY_MODE_4K2KSMPTE: // 4k2ksmpte
+        position[0] = getBootenvInt(ENV_4K2KSMPTE_X, 0);
+        position[1] = getBootenvInt(ENV_4K2KSMPTE_Y, 0);
+        position[2] = getBootenvInt(ENV_4K2KSMPTE_W, FULL_WIDTH_4K2KSMPTE);
+        position[3] = getBootenvInt(ENV_4K2KSMPTE_H, FULL_HEIGHT_4K2KSMPTE);
+        break;
+    default: // 720p
+        position[0] = getBootenvInt(ENV_720P_X, 0);
+        position[1] = getBootenvInt(ENV_720P_Y, 0);
+        position[2] = getBootenvInt(ENV_720P_W, FULL_WIDTH_720);
+        position[3] = getBootenvInt(ENV_720P_H, FULL_HEIGHT_720);
+        break;
+    }
+}
+
+void DisplayMode::setPosition(int left, int top, int width, int height) {
+    char x[512] = {0};
+    char y[512] = {0};
+    char w[512] = {0};
+    char h[512] = {0};
+    sprintf(x, "%d", left);
+    sprintf(y, "%d", top);
+    sprintf(w, "%d", width);
+    sprintf(h, "%d", height);
+
+    char cur_mode[MAX_STR_LEN] = {0};
+    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, cur_mode);
+    int index = DISPLAY_MODE_720P;
+    for (int i = 0; i < DISPLAY_MODE_TOTAL; i++) {
+        if (!strcmp(cur_mode, DISPLAY_MODE_LIST[i]))
+             index = i;
+    }
+
+    switch (index) {
+        case DISPLAY_MODE_480I: // 480i
+        case DISPLAY_MODE_480CVBS: //480cvbs
+            setBootEnv(ENV_480I_X, x);
+            setBootEnv(ENV_480I_Y, y);
+            setBootEnv(ENV_480I_W, w);
+            setBootEnv(ENV_480I_H, h);
+            break;
+        case DISPLAY_MODE_480P: // 480p
+            setBootEnv(ENV_480P_X, x);
+            setBootEnv(ENV_480P_Y, y);
+            setBootEnv(ENV_480P_W, w);
+            setBootEnv(ENV_480P_H, h);
+            break;
+        case DISPLAY_MODE_576I: // 576i
+        case DISPLAY_MODE_576CVBS:    //576cvbs
+            setBootEnv(ENV_576I_X, x);
+            setBootEnv(ENV_576I_Y, y);
+            setBootEnv(ENV_576I_W, w);
+            setBootEnv(ENV_576I_H, h);
+            break;
+        case DISPLAY_MODE_576P: // 576p
+            setBootEnv(ENV_576P_X, x);
+            setBootEnv(ENV_576P_Y, y);
+            setBootEnv(ENV_576P_W, w);
+            setBootEnv(ENV_576P_H, h);
+            break;
+        case DISPLAY_MODE_720P: // 720p
+        case DISPLAY_MODE_720P50HZ: // 720p50hz
+            setBootEnv(ENV_720P_X, x);
+            setBootEnv(ENV_720P_Y, y);
+            setBootEnv(ENV_720P_W, w);
+            setBootEnv(ENV_720P_H, h);
+            break;
+        case DISPLAY_MODE_1080I: // 1080i
+        case DISPLAY_MODE_1080I50HZ: // 1080i50hz
+            setBootEnv(ENV_1080I_X, x);
+            setBootEnv(ENV_1080I_Y, y);
+            setBootEnv(ENV_1080I_W, w);
+            setBootEnv(ENV_1080I_H, h);
+            break;
+        case DISPLAY_MODE_1080P: // 1080p
+        case DISPLAY_MODE_1080P50HZ: // 1080p50hz
+        case DISPLAY_MODE_1080P24HZ: //1080p24hz
+            setBootEnv(ENV_1080P_X, x);
+            setBootEnv(ENV_1080P_Y, y);
+            setBootEnv(ENV_1080P_W, w);
+            setBootEnv(ENV_1080P_H, h);
+            break;
+        case DISPLAY_MODE_4K2K24HZ:    //4k2k24hz
+            setBootEnv(ENV_4K2K24HZ_X, x);
+            setBootEnv(ENV_4K2K24HZ_Y, y);
+            setBootEnv(ENV_4K2K24HZ_W, w);
+            setBootEnv(ENV_4K2K24HZ_H, h);
+            break;
+        case DISPLAY_MODE_4K2K25HZ:    //4k2k25hz
+            setBootEnv(ENV_4K2K25HZ_X, x);
+            setBootEnv(ENV_4K2K25HZ_Y, y);
+            setBootEnv(ENV_4K2K25HZ_W, w);
+            setBootEnv(ENV_4K2K25HZ_H, h);
+            break;
+        case DISPLAY_MODE_4K2K30HZ:    //4k2k30hz
+            setBootEnv(ENV_4K2K30HZ_X, x);
+            setBootEnv(ENV_4K2K30HZ_Y, y);
+            setBootEnv(ENV_4K2K30HZ_W, w);
+            setBootEnv(ENV_4K2K30HZ_H, h);
+            break;
+        case DISPLAY_MODE_4K2KSMPTE:    //4k2ksmpte
+            setBootEnv(ENV_4K2KSMPTE_X, x);
+            setBootEnv(ENV_4K2KSMPTE_Y, y);
+            setBootEnv(ENV_4K2KSMPTE_W, w);
+            setBootEnv(ENV_4K2KSMPTE_H, h);
+            break;
+    }
+
+    if (!strcmp(mSocType, "meson8")) {
+        char axis[512] = {0};
+        sprintf(axis, "%d %d %d %d", left, top, left + width - 1, top + height - 1);
+        pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, axis);
+    }
 }
 
 int DisplayMode::dump(char *result) {

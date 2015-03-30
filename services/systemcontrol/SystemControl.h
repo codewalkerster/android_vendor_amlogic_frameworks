@@ -63,6 +63,11 @@ public:
 
     virtual void loopMountUnmount(int &isMount, String16& path);
 
+    virtual void setOsdMouseMode(const String16& mode);
+    virtual void setOsdMousePara(int x, int y, int w, int h);
+    virtual void setPosition(int left, int top, int width, int height);
+    virtual void getPosition(const String16& mode, int &x, int &y, int &w, int &h);
+
     static void instantiate(const char *cfgpath);
 
     virtual status_t dump(int fd, const Vector<String16>& args);

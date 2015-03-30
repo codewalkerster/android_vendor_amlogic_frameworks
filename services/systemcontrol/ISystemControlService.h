@@ -45,6 +45,11 @@ enum {
     SET_BOOT_ENV            = IBinder::FIRST_CALL_TRANSACTION + 9,
     GET_DISPLAY_INFO        = IBinder::FIRST_CALL_TRANSACTION + 10,
     LOOP_MOUNT_UNMOUNT      = IBinder::FIRST_CALL_TRANSACTION + 11,
+
+    OSD_MOUSE_MODE          = IBinder::FIRST_CALL_TRANSACTION + 12,
+    OSD_MOUSE_PARA          = IBinder::FIRST_CALL_TRANSACTION + 13,
+    SET_POSITION            = IBinder::FIRST_CALL_TRANSACTION + 14,
+    GET_POSITION            = IBinder::FIRST_CALL_TRANSACTION + 15,
 };
 
 // ----------------------------------------------------------------------------
@@ -73,6 +78,11 @@ public:
         int &fb1w, int &fb1h, int &fb1bits, int &fb1trip) = 0;
 
     virtual void loopMountUnmount(int &isMount, String16& path) = 0;
+
+    virtual void setOsdMouseMode(const String16& mode) = 0;
+    virtual void setOsdMousePara(int x, int y, int w, int h) = 0;
+    virtual void setPosition(int left, int top, int width, int height) = 0;
+    virtual void getPosition(const String16& mode, int &x, int &y, int &w, int &h) = 0;
 };
 
 // ----------------------------------------------------------------------------

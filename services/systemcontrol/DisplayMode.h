@@ -30,6 +30,7 @@
 #define DEVICE_STR_MBOX                 "MBOX"
 #define DEVICE_STR_TV                   "TV"
 
+#define DEFAULT_OUTPUT_MODE             "1080p"
 #define DISPLAY_CFG_FILE                "/system/etc/mesondisplay.cfg"
 #define DISPLAY_FB0                     "/dev/graphics/fb0"
 #define DISPLAY_FB1                     "/dev/graphics/fb1"
@@ -44,6 +45,9 @@
 #define DISPLAY_FB1_FREESCALE           "/sys/class/graphics/fb1/free_scale"
 #define DISPLAY_FB0_FREESCALE_MODE      "/sys/class/graphics/fb0/freescale_mode"
 #define DISPLAY_FB1_FREESCALE_MODE      "/sys/class/graphics/fb1/freescale_mode"
+#define DISPLAY_FB0_SCALE_AXIS          "/sys/class/graphics/fb0/scale_axis"
+#define DISPLAY_FB1_SCALE_AXIS          "/sys/class/graphics/fb1/scale_axis"
+#define DISPLAY_FB1_SCALE               "/sys/class/graphics/fb1/scale"
 
 #define DISPLAY_FB0_FREESCALE_AXIS      "/sys/class/graphics/fb0/free_scale_axis"
 #define DISPLAY_FB0_WINDOW_AXIS         "/sys/class/graphics/fb0/window_axis"
@@ -56,11 +60,90 @@
 #define PROP_LCD_DENSITY                "ro.sf.lcd_density"
 #define PROP_HAS_CVBS_MODE              "ro.platform.has.cvbsmode"
 
+#define ENV_480I_X                      "ubootenv.var.480i_x"
+#define ENV_480I_Y                      "ubootenv.var.480i_y"
+#define ENV_480I_W                      "ubootenv.var.480i_w"
+#define ENV_480I_H                      "ubootenv.var.480i_h"
+#define ENV_480P_X                      "ubootenv.var.480p_x"
+#define ENV_480P_Y                      "ubootenv.var.480p_y"
+#define ENV_480P_W                      "ubootenv.var.480p_w"
+#define ENV_480P_H                      "ubootenv.var.480p_h"
+#define ENV_576I_X                      "ubootenv.var.576i_x"
+#define ENV_576I_Y                      "ubootenv.var.576i_y"
+#define ENV_576I_W                      "ubootenv.var.576i_w"
+#define ENV_576I_H                      "ubootenv.var.576i_h"
+#define ENV_576P_X                      "ubootenv.var.576p_x"
+#define ENV_576P_Y                      "ubootenv.var.576p_y"
+#define ENV_576P_W                      "ubootenv.var.576p_w"
+#define ENV_576P_H                      "ubootenv.var.576p_h"
+#define ENV_720P_X                      "ubootenv.var.720p_x"
+#define ENV_720P_Y                      "ubootenv.var.720p_y"
+#define ENV_720P_W                      "ubootenv.var.720p_w"
+#define ENV_720P_H                      "ubootenv.var.720p_h"
+#define ENV_1080I_X                     "ubootenv.var.1080i_x"
+#define ENV_1080I_Y                     "ubootenv.var.1080i_y"
+#define ENV_1080I_W                     "ubootenv.var.1080i_w"
+#define ENV_1080I_H                     "ubootenv.var.1080i_h"
+#define ENV_1080P_X                     "ubootenv.var.1080p_x"
+#define ENV_1080P_Y                     "ubootenv.var.1080p_y"
+#define ENV_1080P_W                     "ubootenv.var.1080p_w"
+#define ENV_1080P_H                     "ubootenv.var.1080p_h"
+#define ENV_4K2K24HZ_X                  "ubootenv.var.4k2k24hz_x"
+#define ENV_4K2K24HZ_Y                  "ubootenv.var.4k2k24hz_y"
+#define ENV_4K2K24HZ_W                  "ubootenv.var.4k2k24hz_w"
+#define ENV_4K2K24HZ_H                  "ubootenv.var.4k2k24hz_h"
+#define ENV_4K2K25HZ_X                  "ubootenv.var.4k2k25hz_x"
+#define ENV_4K2K25HZ_Y                  "ubootenv.var.4k2k25hz_y"
+#define ENV_4K2K25HZ_W                  "ubootenv.var.4k2k25hz_w"
+#define ENV_4K2K25HZ_H                  "ubootenv.var.4k2k25hz_h"
+#define ENV_4K2K30HZ_X                  "ubootenv.var.4k2k30hz_x"
+#define ENV_4K2K30HZ_Y                  "ubootenv.var.4k2k30hz_y"
+#define ENV_4K2K30HZ_W                  "ubootenv.var.4k2k30hz_w"
+#define ENV_4K2K30HZ_H                  "ubootenv.var.4k2k30hz_h"
+#define ENV_4K2KSMPTE_X                 "ubootenv.var.4k2ksmpte_x"
+#define ENV_4K2KSMPTE_Y                 "ubootenv.var.4k2ksmpte_y"
+#define ENV_4K2KSMPTE_W                 "ubootenv.var.4k2ksmpte_w"
+#define ENV_4K2KSMPTE_H                 "ubootenv.var.4k2ksmpte_h"
+
+#define FULL_WIDTH_480                  720
+#define FULL_HEIGHT_480                 480
+#define FULL_WIDTH_576                  720
+#define FULL_HEIGHT_576                 576
+#define FULL_WIDTH_720                  1280
+#define FULL_HEIGHT_720                 720
+#define FULL_WIDTH_1080                 1920
+#define FULL_HEIGHT_1080                1080
+#define FULL_WIDTH_4K2K                 3840
+#define FULL_HEIGHT_4K2K                2160
+#define FULL_WIDTH_4K2KSMPTE            4096
+#define FULL_HEIGHT_4K2KSMPTE           2160
+
 enum {
-    DISPLAY_TYPE_NONE               = 0,
-    DISPLAY_TYPE_TABLET			    = 1,
-    DISPLAY_TYPE_MBOX               = 2,
-    DISPLAY_TYPE_TV                 = 3
+    DISPLAY_TYPE_NONE                   = 0,
+    DISPLAY_TYPE_TABLET                 = 1,
+    DISPLAY_TYPE_MBOX                   = 2,
+    DISPLAY_TYPE_TV                     = 3
+};
+
+enum {
+    DISPLAY_MODE_480I                   = 0,
+    DISPLAY_MODE_480P                   = 1,
+    DISPLAY_MODE_576I                   = 2,
+    DISPLAY_MODE_576P                   = 3,
+    DISPLAY_MODE_720P                   = 4,
+    DISPLAY_MODE_1080I                  = 5,
+    DISPLAY_MODE_1080P                  = 6,
+    DISPLAY_MODE_720P50HZ               = 7,
+    DISPLAY_MODE_1080I50HZ              = 8,
+    DISPLAY_MODE_1080P50HZ              = 9,
+    DISPLAY_MODE_480CVBS                = 10,
+    DISPLAY_MODE_576CVBS                = 11,
+    DISPLAY_MODE_4K2K24HZ               = 12,
+    DISPLAY_MODE_4K2K25HZ               = 13,
+    DISPLAY_MODE_4K2K30HZ               = 14,
+    DISPLAY_MODE_4K2KSMPTE              = 15,
+    DISPLAY_MODE_1080P24HZ              = 16,
+    DISPLAY_MODE_TOTAL                  = 17
 };
 
 // ----------------------------------------------------------------------------
@@ -80,6 +163,11 @@ public:
     void setLogLevel(int level);
     int dump(char *result);
 
+    void setOsdMouse(const char* curMode);
+    void setOsdMouse(int x, int y, int w, int h);
+    void setPosition(int left, int top, int width, int height);
+    void getPosition(const char* curMode, int *position);
+
 private:
 
     bool getBootEnv(const char* key, char* value);
@@ -90,6 +178,8 @@ private:
     void setMboxDisplay();
     void setTVDisplay();
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
+
+    int getBootenvInt(const char* key, int defaultVal);
 
     const char* pConfigPath;
     int mDisplayType;
