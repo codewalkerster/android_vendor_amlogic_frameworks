@@ -252,6 +252,69 @@ public:
             return;
         }
     }
+
+    virtual void setOsdMouseMode(const String16& mode)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeString16(mode);
+        ALOGV("set osd mouse mode:%s\n", String8(mode).string());
+
+        if (remote()->transact(OSD_MOUSE_MODE, data, &reply) != NO_ERROR) {
+            ALOGE("set osd mouse mode could not contact remote\n");
+            return;
+        }
+    }
+
+    virtual void setOsdMousePara(int x, int y, int w, int h)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(x);
+        data.writeInt32(y);
+        data.writeInt32(w);
+        data.writeInt32(h);
+        ALOGV("set osd mouse parameter x:%d, y:%d, w:%d, h:%d\n", x, y, w, h);
+
+        if (remote()->transact(OSD_MOUSE_PARA, data, &reply) != NO_ERROR) {
+            ALOGE("set osd mouse parameter could not contact remote\n");
+            return;
+        }
+    }
+
+    virtual void setPosition(int left, int top, int width, int height)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(left);
+        data.writeInt32(top);
+        data.writeInt32(width);
+        data.writeInt32(height);
+        ALOGV("set position x:%d, y:%d, w:%d, h:%d\n", left, top, width, height);
+
+        if (remote()->transact(SET_POSITION, data, &reply) != NO_ERROR) {
+            ALOGE("set position could not contact remote\n");
+            return;
+        }
+    }
+
+    virtual void getPosition(const String16& mode, int &x, int &y, int &w, int &h)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeString16(mode);
+
+        if (remote()->transact(GET_POSITION, data, &reply) != NO_ERROR) {
+            ALOGE("get position could not contact remote\n");
+            return;
+        }
+
+        x = reply.readInt32();
+        y = reply.readInt32();
+        w = reply.readInt32();
+        h = reply.readInt32();
+        ALOGV("get position x:%d, y:%d, w:%d, h:%d\n", x, y, w, h);
+    }
 };
 
 IMPLEMENT_META_INTERFACE(SystemControlService, "droidlogic.ISystemControlService");
@@ -370,6 +433,41 @@ status_t BnISystemControlService::onTransact(
             int isMount = data.readInt32();
             String16 path = data.readString16();
             loopMountUnmount(isMount, path);
+            return NO_ERROR;
+        }
+        case OSD_MOUSE_MODE: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            setOsdMouseMode(mode);
+            return NO_ERROR;
+        }
+        case OSD_MOUSE_PARA: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int32_t x = data.readInt32();
+            int32_t y = data.readInt32();
+            int32_t w = data.readInt32();
+            int32_t h = data.readInt32();
+            setOsdMousePara(x, y, w, h);
+            return NO_ERROR;
+        }
+        case SET_POSITION: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int32_t x = data.readInt32();
+            int32_t y = data.readInt32();
+            int32_t w = data.readInt32();
+            int32_t h = data.readInt32();
+            setPosition(x, y, w, h);
+            return NO_ERROR;
+        }
+        case GET_POSITION: {
+            int x, y, w, h;
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            getPosition(mode, x, y, w, h);
+            reply->writeInt32(x);
+            reply->writeInt32(y);
+            reply->writeInt32(w);
+            reply->writeInt32(h);
             return NO_ERROR;
         }
         default: {

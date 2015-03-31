@@ -32,6 +32,11 @@ public class SystemControlManager {
     private static final int GET_DISPLAY_INFO       = IBinder.FIRST_CALL_TRANSACTION + 10;
     private static final int LOOP_MOUNT_UNMOUNT     = IBinder.FIRST_CALL_TRANSACTION + 11;
 
+    private static final int OSD_MOUSE_MODE         = IBinder.FIRST_CALL_TRANSACTION + 12;
+    private static final int OSD_MOUSE_PARA         = IBinder.FIRST_CALL_TRANSACTION + 13;
+    private static final int SET_POSITION           = IBinder.FIRST_CALL_TRANSACTION + 14;
+    private static final int GET_POSITION           = IBinder.FIRST_CALL_TRANSACTION + 15;
+
     private Context mContext;
     private IBinder mIBinder = null;
     public SystemControlManager(Context context){
@@ -48,7 +53,7 @@ public class SystemControlManager {
         }
     }
 
-    public String getProperty(String prop){
+    public String getProperty(String prop) {
         try {
             if (null != mIBinder) {
                 Parcel data = Parcel.obtain();
@@ -69,7 +74,7 @@ public class SystemControlManager {
         return null;
     }
 
-    public String getPropertyString(String prop, String def){
+    public String getPropertyString(String prop, String def) {
         try {
             if (null != mIBinder) {
                 Parcel data = Parcel.obtain();
@@ -91,7 +96,7 @@ public class SystemControlManager {
         return null;
     }
 
-    public int getPropertyInt(String prop, int def){
+    public int getPropertyInt(String prop, int def) {
         try {
             if (null != mIBinder) {
                 Parcel data = Parcel.obtain();
@@ -112,7 +117,7 @@ public class SystemControlManager {
         return 0;
     }
 
-    public long getPropertyLong(String prop, long def){
+    public long getPropertyLong(String prop, long def) {
         try {
             if (null != mIBinder) {
                 Parcel data = Parcel.obtain();
@@ -133,7 +138,7 @@ public class SystemControlManager {
         return 0;
     }
 
-    public boolean getPropertyBoolean(String prop, boolean def){
+    public boolean getPropertyBoolean(String prop, boolean def) {
         try {
             if (null != mIBinder) {
                 Parcel data = Parcel.obtain();
@@ -154,7 +159,7 @@ public class SystemControlManager {
         return false;
     }
 
-    public void setProperty(String prop, String val){
+    public void setProperty(String prop, String val) {
         try {
             if (null != mIBinder) {
                 Parcel data = Parcel.obtain();
@@ -171,7 +176,7 @@ public class SystemControlManager {
         }
     }
 
-    public String readSysFs(String path){
+    public String readSysFs(String path) {
         try {
             if (null != mIBinder) {
                 Parcel data = Parcel.obtain();
@@ -191,7 +196,7 @@ public class SystemControlManager {
         return null;
     }
 
-    public boolean writeSysFs(String path, String val){
+    public boolean writeSysFs(String path, String val) {
         try {
             if (null != mIBinder) {
                 Parcel data = Parcel.obtain();
@@ -212,7 +217,7 @@ public class SystemControlManager {
         return false;
     }
 
-    public String getBootenv(String prop, String def){
+    public String getBootenv(String prop, String def) {
         try {
             if (null != mIBinder) {
                 Parcel data = Parcel.obtain();
@@ -224,7 +229,7 @@ public class SystemControlManager {
                 String value = reply.readString();
                 reply.recycle();
                 data.recycle();
-                if(0 == result)
+                if (0 == result)
                     return def;//have some error
                 else
                     return value;
@@ -236,7 +241,7 @@ public class SystemControlManager {
         return null;
     }
 
-    public void setBootenv(String prop, String val){
+    public void setBootenv(String prop, String val) {
         try {
             if (null != mIBinder) {
                 Parcel data = Parcel.obtain();
@@ -253,7 +258,7 @@ public class SystemControlManager {
         }
     }
 
-    public DisplayInfo getDisplayInfo(){
+    public DisplayInfo getDisplayInfo() {
         DisplayInfo info = null;
         try {
             if (null != mIBinder) {
@@ -299,6 +304,82 @@ public class SystemControlManager {
         } catch (RemoteException ex) {
             Log.e(TAG, "loop mount unmount:" + ex);
         }
+    }
+
+    public void setOsdMouseMode(String mode) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode);
+                mIBinder.transact(OSD_MOUSE_MODE, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set osd mouse mode:" + ex);
+        }
+    }
+
+    public void setOsdMousePara(int x, int y, int w, int h) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeInt(x);
+                data.writeInt(y);
+                data.writeInt(w);
+                data.writeInt(h);
+                mIBinder.transact(OSD_MOUSE_PARA, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set osd mouse parameter:" + ex);
+        }
+    }
+
+    public void setPosition(int x, int y, int w, int h) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeInt(x);
+                data.writeInt(y);
+                data.writeInt(w);
+                data.writeInt(h);
+                mIBinder.transact(SET_POSITION, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set position:" + ex);
+        }
+    }
+
+    public int[] getPosition(String mode) {
+        int[] curPosition = { 0, 0, 1280, 720 };
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode);
+                mIBinder.transact(GET_POSITION, data, reply, 0);
+                curPosition[0] = reply.readInt();
+                curPosition[1] = reply.readInt();
+                curPosition[2] = reply.readInt();
+                curPosition[3] = reply.readInt();
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "get position:" + ex);
+        }
+        return curPosition;
     }
 
     public static class DisplayInfo{
