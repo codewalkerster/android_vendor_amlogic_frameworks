@@ -50,7 +50,6 @@
 #define MODE_720P                   "720p"
 #define MODE_720P50HZ               "720p50hz"
 
-#define UBOOTENV_PREFIX             "ubootenv.var."
 #define UBOOTENV_DIGITAUDIO         "ubootenv.var.digitaudiooutput"
 #define UBOOTENV_HDMIMODE           "ubootenv.var.hdmimode"
 #define UBOOTENV_CVBSMODE           "ubootenv.var.cvbsmode"
@@ -284,12 +283,6 @@ void DisplayMode::setMboxDisplay() {
     int source_output_width = 1920;
     int source_output_height = 1080;
 
-    const char *prefix = UBOOTENV_PREFIX;
-    const char *suffix_x = "_x";
-    const char *suffix_y = "_y";
-    const char *suffix_w = "_w";
-    const char *suffix_h = "_h";
-
     char hpdstate[MAX_STR_LEN] = {0};
     char current_mode[MAX_STR_LEN] = {0};
     char outputmode[MAX_STR_LEN] = {0};
@@ -341,133 +334,18 @@ void DisplayMode::setMboxDisplay() {
         pSysWrite->setProperty(PROP_LCD_DENSITY, "480");
     }
 
-    char key_prefix[MAX_STR_LEN] = {0};
-    char key[MAX_STR_LEN] = {0};
     char value[MAX_STR_LEN] = {0};
     int outputx = 0;
     int outputy = 0;
     int outputwidth = 0;
     int outputheight = 0;
-    int defaultwidth = 0;
-    int defaultheight = 0;
-    bool hasRead = false;
-    bool usedDefault = false;
+    int position[4] = { 0, 0, 0, 0 };
 
-    while (true) {
-        if (!strcmp(outputmode, MODE_4K2K24HZ) ||
-            !strcmp(outputmode, MODE_4K2K25HZ) ||
-            !strcmp(outputmode, MODE_4K2K30HZ) ||
-            !strcmp(outputmode, MODE_4K2KSMPTE)) {
-
-            if (!strcmp(outputmode, MODE_4K2KSMPTE)) {
-                defaultwidth = outputwidth = 4096;
-            }
-            else {
-                defaultwidth = outputwidth = 3840;
-            }
-
-            defaultheight = outputheight = 2160;
-
-            strcpy(key_prefix, prefix);
-            strcat(key_prefix, outputmode);
-            hasRead = true;
-            break;
-        }
-        else if (!strcmp(outputmode, MODE_480P) ||
-            !strcmp(outputmode, MODE_480I) ||
-            !strcmp(outputmode, MODE_480CVBS)) {
-            defaultwidth = outputwidth = 720;
-            defaultheight = outputheight = 480;
-            if (!strcmp(outputmode, MODE_480CVBS)) {
-                strcpy(key_prefix, prefix);
-                strcat(key_prefix, MODE_480I);
-                hasRead = true;
-            }
-            break;
-        }
-        else if (!strcmp(outputmode, MODE_576P) ||
-            !strcmp(outputmode, MODE_576I) ||
-            !strcmp(outputmode, MODE_576CVBS)) {
-            defaultwidth = outputwidth = 720;
-            defaultheight = outputheight = 576;
-
-            if (!strcmp(outputmode, MODE_576CVBS)) {
-                strcpy(key_prefix, prefix);
-                strcat(key_prefix, MODE_576I);
-                hasRead = true;
-            }
-            break;
-        }
-        else if (!strcmp(outputmode, MODE_720P) ||
-            !strcmp(outputmode, MODE_720P50HZ)) {
-            defaultwidth = outputwidth = 1280;
-            defaultheight = outputheight = 720;
-            if (!strcmp(outputmode, MODE_720P50HZ)) {
-                strcpy(key_prefix, prefix);
-                strcat(key_prefix, MODE_720P);
-                hasRead = true;
-            }
-            break;
-        }
-        else if (!strcmp(outputmode, MODE_1080P) ||
-            !strcmp(outputmode, MODE_1080I) ||
-            !strcmp(outputmode, MODE_1080P24HZ) ||
-            !strcmp(outputmode, MODE_1080I50HZ) ||
-            !strcmp(outputmode, MODE_1080P50HZ)) {
-            defaultwidth = outputwidth = 1920;
-            defaultheight = outputheight = 1080;
-            if (!strcmp(outputmode, MODE_1080P24HZ) ||
-                !strcmp(outputmode, MODE_1080P50HZ)) {
-                strcpy(key_prefix, prefix);
-                strcat(key_prefix, MODE_1080P);
-                hasRead = true;
-            } else if (!strcmp(outputmode, MODE_1080I50HZ)){
-                strcpy(key_prefix, prefix);
-                strcat(key_prefix, MODE_1080I);
-                hasRead = true;
-            }
-            break;
-        }
-        else {
-            if (!usedDefault) {
-                SYS_LOGI("using default ui: %s", mDefaultUI);
-
-                usedDefault = true;
-                strcpy(outputmode, mDefaultUI);
-                setBootEnv(UBOOTENV_OUTPUTMODE, outputmode);
-            }
-            else {
-                SYS_LOGI("because bootenv and config default are errors, so using system default ui: %s", MODE_1080P);
-
-                defaultwidth = outputwidth = 1920;
-                defaultheight = outputheight = 1080;
-
-                strcpy(outputmode, MODE_1080P);
-                setBootEnv(UBOOTENV_OUTPUTMODE, outputmode);
-                break;
-            }
-        }
-    }
-
-    if (!hasRead) {
-        strcpy(key_prefix, prefix);
-        strcat(key_prefix, outputmode);
-    }
-    strcpy(key, key_prefix);
-    if (getBootEnv(strcat(key, suffix_x), value))
-        outputx = atoi(value);
-
-    strcpy(key, key_prefix);
-    if (getBootEnv(strcat(key, suffix_y), value))
-        outputy = atoi(value);
-
-    strcpy(key, key_prefix);
-    if (getBootEnv(strcat(key, suffix_w), value))
-        outputwidth = atoi(value);
-
-    strcpy(key, key_prefix);
-    if (getBootEnv(strcat(key, suffix_h), value))
-        outputheight = atoi(value);
+    getPosition(outputmode, position);
+    outputx = position[0];
+    outputy = position[1];
+    outputwidth = position[2];
+    outputheight = position[3];
 
     if ((!strcmp(outputmode, MODE_480I) || !strcmp(outputmode, MODE_576I)) &&
         (pSysWrite->getPropertyBoolean(PROP_HAS_CVBS_MODE, false))) {

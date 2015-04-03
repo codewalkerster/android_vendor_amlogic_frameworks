@@ -16,11 +16,6 @@ public class DisplayPositionManager {
     private static int screen_rate = MAX_Height;
 
     // sysfs path
-    private final static String DISPLAY_MODE                        = "/sys/class/display/mode";
-    private final static String FB0_FREE_SCALE_UPDATE               = "/sys/class/graphics/fb0/update_freescale";
-    private final static String FB0_FREE_SCALE                      = "/sys/class/graphics/fb0/free_scale";
-    private static final String FB0_WINDOW_AXIS                     = "/sys/class/graphics/fb0/window_axis";
-    private final static String PPMGR_PPSCALER_RECT                 = "/sys/class/ppmgr/ppscaler_rect";
     private final static String CPU0_SCALING_MIN_FREQ               = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq";
 
     private String mCurrentLeftString = null;
@@ -58,12 +53,12 @@ public class DisplayPositionManager {
     }
 
     public void initPostion() {
-        mCurrentMode = mSystenControl.readSysFs(DISPLAY_MODE).replaceAll("\n","");
+        mCurrentMode = mOutputModeManager.getCurrentOutputMode();
         initStep(mCurrentMode);
         initCurrentPostion();
         screen_rate = getInitialRateValue();
         if (!mDisplayInfo.socType.contains("meson8")) {
-            writeFile(FB0_FREE_SCALE , "1");
+            writeFile(OutputModeManager.FB0_FREE_SCALE , "1");
         }
         setScalingMinFreq(408000);
     }
@@ -77,7 +72,7 @@ public class DisplayPositionManager {
     }
 
     public int getInitialRateValue() {
-        mCurrentMode = mSystenControl.readSysFs(DISPLAY_MODE).replaceAll("\n","");
+        mCurrentMode = mOutputModeManager.getCurrentOutputMode();
         initStep(mCurrentMode);
         int m = (100*2*offsetStep)*mPreLeft ;
         if (m == 0) {
@@ -166,15 +161,15 @@ public class DisplayPositionManager {
             return ;
         }
 
-        mCurrentMode = mSystenControl.readSysFs(DISPLAY_MODE).replaceAll("\n","");
+        mCurrentMode = mOutputModeManager.getCurrentOutputMode();
         initStep(mCurrentMode);
 
         mCurrentLeft = (100-percent)*(mMaxRight)/(100*2*offsetStep);
         mCurrentTop  = (100-percent)*(mMaxBottom)/(100*2*offsetStep);
         mCurrentRight = mMaxRight - mCurrentLeft;
         mCurrentBottom = mMaxBottom - mCurrentTop;
-        mCurrentWidth = mCurrentRight - mCurrentLeft;
-        mCurrentHeight = mCurrentBottom - mCurrentTop ;
+        mCurrentWidth = mCurrentRight - mCurrentLeft + 1;
+        mCurrentHeight = mCurrentBottom - mCurrentTop + 1;
 
         setPosition(mCurrentLeft, mCurrentTop,mCurrentRight, mCurrentBottom, 0);
     }
@@ -198,12 +193,12 @@ public class DisplayPositionManager {
         bottom = Math.min(bottom,mMaxBottom);
 
         if (mDisplayInfo.socType.contains("meson8")) {
-            writeFile(FB0_WINDOW_AXIS, left+" "+top+" "+(right-1)+" "+(bottom-1));
+            writeFile(OutputModeManager.FB0_WINDOW_AXIS, left+" "+top+" "+right+" "+bottom);
             //writeFile(free_scale,"0x10001");
         } else {
             str = left + " " + top + " " + right + " " + bottom + " " + mode;
-            writeFile(PPMGR_PPSCALER_RECT, str);
-            writeFile(FB0_FREE_SCALE_UPDATE, "1");
+            writeFile(OutputModeManager.SYS_PPSCALER_RECT, str);
+            writeFile(OutputModeManager.FB0_FREE_SCALE_UPDATE, "1");
         }
         mOutputModeManager.savePosition(left, top, width, height);
         mOutputModeManager.setOsdMouse(left, top, width, height);

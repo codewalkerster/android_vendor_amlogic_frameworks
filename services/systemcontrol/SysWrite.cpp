@@ -155,6 +155,7 @@ exit:
 
 void SysWrite::readSys(const char *path, char *buf, int count){
     int fd, len;
+    char *pos;
 
     if ( NULL == buf ) {
         SYS_LOGE("buf is NULL");
@@ -172,8 +173,12 @@ void SysWrite::readSys(const char *path, char *buf, int count){
         goto exit;
     }
 
-    if (0x0a == buf[len-1])
-        buf[len-1] = 0;
+    pos = strstr(buf, "\n");
+    if (NULL != pos) {
+        *pos = 0;
+        len = strlen(buf);
+    }
+
 
     for (int i = 0; i < len -1; i++) {
         /*change '\0' to 0x20(spacing), otherwise the string buffer will be cut off
