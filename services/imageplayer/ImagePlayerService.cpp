@@ -37,21 +37,12 @@
 #include <fcntl.h>
 
 #include "RGBPicture.h"
+#include "ISystemControlService.h"
 
 #define CHECK assert
 #define CHECK_EQ(a,b) CHECK((a)==(b))
 
 #define Min(a, b) ((a) < (b) ? (a) : (b))
-
-#define RET_OK                          0
-#define RET_ERR_OPEN_SYSFS              -1
-#define RET_ERR_OPEN_FILE               -2
-#define RET_ERR_INVALID_OPERATION       -3
-#define RET_ERR_DECORDER                -4
-#define RET_ERR_PARAMETER               -5
-#define RET_ERR_BAD_VALUE               -6
-#define RET_ERR_NO_MEMORY               -7
-
 
 #define SURFACE_4K_WIDTH            3840
 #define SURFACE_4K_HEIGHT           2160
@@ -307,7 +298,7 @@ static bool isSupportedBySkImageDecoder(const char *uri, SkBitmap **bitmap) {
         return verifyBySkImageDecoder(&stream, bitmap);
     }
 
-    if (!strncasecmp("http://", uri, 7)) {
+    if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
         SkHttpStream httpStream(uri);
         return verifyBySkImageDecoder(&httpStream, bitmap);
     }
@@ -499,11 +490,12 @@ static __inline void Index8ToYUV422Row_C(const uint8_t* src_argb,
 
 static void chmodSysfs(const char *sysfs, int mode) {
     char sysCmd[1024];
-	sprintf(sysCmd, "chmod %d %s", mode, sysfs);
-	if (system(sysCmd)){
+    sprintf(sysCmd, "chmod %d %s", mode, sysfs);
+    if (system(sysCmd)) {
         ALOGE("exec cmd:%s fail\n", sysCmd);
     }
 }
+
 }  // anonymous namespace
 
 namespace android {
@@ -521,13 +513,32 @@ void ImagePlayerService::instantiate() {
 }
 
 ImagePlayerService::ImagePlayerService()
-    : mWidth(0), mHeight(0), mBitmap(NULL), mBufBitmap(NULL),mSampleSize(1),
-    mImageUrl(NULL), mDstBitmap(NULL), mFileDescription(-1),
+    : mWidth(0), mHeight(0), mBitmap(NULL), mBufBitmap(NULL),
+    mSampleSize(1), mImageUrl(NULL), mDstBitmap(NULL),
+    mFileDescription(-1),
     surfaceWidth(SURFACE_4K_WIDTH), surfaceHeight(SURFACE_4K_HEIGHT),
-    mDisplayFd(-1){
+    mParameter(NULL), mDisplayFd(-1){
 }
 
 ImagePlayerService::~ImagePlayerService() {
+}
+
+void ImagePlayerService::initVideoAxis() {
+    /*
+    char sysCmd[1024];
+    sprintf(sysCmd, "echo 0 0  0 0  > /sys/class/video/axis");
+    if (system(sysCmd)) {
+        ALOGE("exec cmd:%s fail\n", sysCmd);
+    }*/
+
+    sp<ISystemControlService> systemControl = interface_cast<ISystemControlService>(
+        defaultServiceManager()->getService(String16("system_control")));
+    if (systemControl != NULL) {
+        systemControl->writeSysfs(String16("/sys/class/video/axis"), String16("0 0  0 0"));
+    }
+    else {
+        ALOGE("Couldn't get connection to system control\n");
+    }
 }
 
 int ImagePlayerService::init() {
@@ -539,6 +550,8 @@ int ImagePlayerService::init() {
     mParameter->cropY = 0;
     mParameter->cropWidth = SURFACE_4K_WIDTH;
     mParameter->cropHeight = SURFACE_4K_HEIGHT;
+
+    initVideoAxis();
 
     if (mDisplayFd >= 0){
         close(mDisplayFd);
@@ -575,7 +588,7 @@ int ImagePlayerService::init() {
 int ImagePlayerService::setDataSource(const char *uri) {
     Mutex::Autolock autoLock(mLock);
 
-    //ALOGI("setDataSource uri:%s", uri);
+    ALOGI("setDataSource uri:%s", uri);
 
     if (mBitmap != NULL) {
         delete mBitmap;
@@ -591,14 +604,15 @@ int ImagePlayerService::setDataSource(const char *uri) {
 
     if (!strncasecmp("file://", uri, 7)) {
         strncpy(mImageUrl, uri + 7, 1024 - 1);
-    } else if (!strncasecmp("http://", uri, 7)) {
+    } else if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
         strncpy(mImageUrl, uri, 1024 - 1);
     } else {
+        ALOGE("setDataSource error uri:%s", uri);
         delete[] mImageUrl;
         return RET_ERR_INVALID_OPERATION;
     }
 
-    ALOGI("setDataSource mImageUrl:%s", mImageUrl);
+    //ALOGI("setDataSource mImageUrl:%s", mImageUrl);
 
     if (!isSupportedBySkImageDecoder(uri, &mBitmap)) {
         return RET_ERR_INVALID_OPERATION;
@@ -624,6 +638,10 @@ int ImagePlayerService::setDataSource(int fd, int64_t offset, int64_t length) {
         mBitmap = NULL;
     }
 
+    if (mFileDescription >= 0) {
+        close(mFileDescription);
+        mFileDescription = -1;
+    }
     mFileDescription = dup(fd);
 
     if (!isFdSupportedBySkImageDecoder(fd, &mBitmap)) {
@@ -1024,10 +1042,13 @@ SkBitmap* ImagePlayerService::rotateAndScale(SkBitmap *srcBitmap, float degrees,
 //render to video layer
 int ImagePlayerService::prepare() {
     Mutex::Autolock autoLock(mLock);
-
     FrameInfo_t info;
 
     ALOGI("prepare image path:%s", mImageUrl);
+    if ((mFileDescription < 0) && (mImageUrl == NULL)) {
+        ALOGE("prepare decode image url is NULL");
+        return RET_ERR_BAD_VALUE;
+    }
 
     SkStream *stream;
     if (mFileDescription >= 0) {
@@ -1126,7 +1147,7 @@ int ImagePlayerService::prepareBuf(const char *uri) {
 
     if (!strncasecmp("file://", uri, 7)) {
         strncpy(filepath, uri + 7, 1024 - 1);
-    } else if (!strncasecmp("http://", uri, 7)) {
+    } else if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
         strncpy(filepath, uri, 1024 - 1);
     } else {
         return RET_ERR_INVALID_OPERATION;

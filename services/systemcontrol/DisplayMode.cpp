@@ -553,7 +553,7 @@ int DisplayMode::getBootenvInt(const char* key, int defaultVal) {
 }
 
 void DisplayMode::setOsdMouse(const char* curMode) {
-    SYS_LOGI("set osd mounse mode: %s", curMode);
+    //SYS_LOGI("set osd mouse mode: %s", curMode);
 
     int position[4] = { 0, 0, 0, 0 };
     getPosition(curMode, position);
@@ -561,7 +561,7 @@ void DisplayMode::setOsdMouse(const char* curMode) {
 }
 
 void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
-    SYS_LOGI("set osd mounse x:%d y:%d w:%d h:%d", x, y, w, h);
+    SYS_LOGI("set osd mouse x:%d y:%d w:%d h:%d", x, y, w, h);
 
     const char* displaySize = "1920 1080";
     if (!strcmp(DEFAULT_OUTPUT_MODE, "720"))

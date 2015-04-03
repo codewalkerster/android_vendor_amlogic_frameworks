@@ -6,10 +6,11 @@
 #include <utils/String8.h>
 #include <utils/String16.h>
 #include <utils/Vector.h>
-#include <media/MediaPlayerInterface.h>
+#include <utils/Mutex.h>
+
 #include <SkBitmap.h>
 #include <SkStream.h>
-#include <binder/MemoryDealer.h>
+//#include <binder/MemoryDealer.h>
 #include <IImagePlayerService.h>
 
 
@@ -26,8 +27,7 @@ typedef struct {
     int rotate;
 }FrameInfo_t;
 
-struct InitParameter
-{
+struct InitParameter {
     float degrees;
     float scaleX;
     float scaleY;
@@ -37,11 +37,18 @@ struct InitParameter
     int cropHeight;
 };
 
-enum FileInfo {
-    StringPath,
-    FileDes
+enum RetType {
+    RET_OK                          = 0,
+    RET_ERR_OPEN_SYSFS              = -1,
+    RET_ERR_OPEN_FILE               = -2,
+    RET_ERR_INVALID_OPERATION       = -3,
+    RET_ERR_DECORDER                = -4,
+    RET_ERR_PARAMETER               = -5,
+    RET_ERR_BAD_VALUE               = -6,
+    RET_ERR_NO_MEMORY               = -7
 };
 
+/*
 enum ParameterKey {
     KEY_PARAMETER_SET_IMAGE_SAMPLESIZE_SURFACESIZE,
     KEY_PARAMETER_ROTATE,
@@ -51,6 +58,7 @@ enum ParameterKey {
     KEY_PARAMETER_DECODE_NEXT,
     KEY_PARAMETER_SHOW_NEXT
 };
+*/
 
 class ImagePlayerService :  public BnImagePlayerService {
   public:
@@ -76,6 +84,7 @@ class ImagePlayerService :  public BnImagePlayerService {
     virtual status_t dump(int fd, const Vector<String16>& args);
 
   private:
+    void initVideoAxis();
     int convertRGBA8888toRGB(void *dst, const SkBitmap *src);
     int convertARGB8888toYUYV(void *dst, const SkBitmap *src);
     int convertRGB565toYUYV(void *dst, const SkBitmap *src);
