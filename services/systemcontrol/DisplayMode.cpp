@@ -442,10 +442,13 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
     SYS_LOGI("set osd mouse x:%d y:%d w:%d h:%d", x, y, w, h);
 
     const char* displaySize = "1920 1080";
-    if (!strcmp(DEFAULT_OUTPUT_MODE, "720"))
+    if (!strncmp(mDefaultUI, "720", 3)) {
         displaySize = "1280 720";
-    else if (!strcmp(DEFAULT_OUTPUT_MODE, "1080"))
+    } else if (!strncmp(mDefaultUI, "1080", 4)) {
         displaySize = "1920 1080";
+    } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
+        displaySize = "3840 2160";
+    }
 
     char cur_mode[MAX_STR_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, cur_mode);
