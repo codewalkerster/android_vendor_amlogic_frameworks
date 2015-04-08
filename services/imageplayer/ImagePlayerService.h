@@ -98,6 +98,7 @@ class ImagePlayerService :  public BnImagePlayerService {
     bool renderAndShow(SkBitmap *bitmap);
     bool showBitmapRect(SkBitmap *bitmap, int cropX, int cropY, int cropWidth, int cropHeight);
     SkBitmap* fillSurface(SkBitmap *bitmap);
+    bool isSupportFromat(const char *uri, SkBitmap **bitmap);
 
     mutable Mutex mLock;
     int mWidth, mHeight;

@@ -12,6 +12,7 @@ LOCAL_SRC_FILES:= \
 LOCAL_SHARED_LIBRARIES := \
   libutils \
   libcutils \
+  libmedia \
   libbinder
 
 LOCAL_MODULE:= libimageplayerservice
@@ -36,6 +37,7 @@ LOCAL_SHARED_LIBRARIES := \
   liblog                      \
   libdl                       \
   libstagefright              \
+  libmedia                    \
   libsystemcontrolservice
 
 LOCAL_C_INCLUDES += \
@@ -45,6 +47,7 @@ LOCAL_C_INCLUDES += \
   external/skia/src/ports \
   external/skia/include/utils \
   frameworks/av/include \
+  frameworks/av \
   vendor/amlogic/frameworks/services/systemcontrol
 
 LOCAL_MODULE:= imageserver

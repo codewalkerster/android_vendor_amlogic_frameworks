@@ -6,25 +6,28 @@ import android.os.IBinder;
 import android.os.Parcel;
 import android.os.RemoteException;
 import android.util.Log;
+import android.view.Surface;
+import android.view.SurfaceHolder;
 
 public class ImagePlayerManager {
-    private static final String TAG             = "ImagePlayer";
+    private static final String TAG                 = "ImagePlayerManager";
 
-    private static final String IMAGE_TOKEN     = "droidlogic.IImagePlayerService";
-    public static final int REMOTE_EXCEPTION    = -0xffff;
-    int TRANSACTION_INIT                        = IBinder.FIRST_CALL_TRANSACTION;
-    int TRANSACTION_SET_DATA_SOURCE             = IBinder.FIRST_CALL_TRANSACTION + 1;
-    int TRANSACTION_SET_SAMPLE_SURFACE_SIZE     = IBinder.FIRST_CALL_TRANSACTION + 2;
-    int TRANSACTION_SET_ROTATE                  = IBinder.FIRST_CALL_TRANSACTION + 3;
-    int TRANSACTION_SET_SCALE                   = IBinder.FIRST_CALL_TRANSACTION + 4;
-    int TRANSACTION_SET_ROTATE_SCALE            = IBinder.FIRST_CALL_TRANSACTION + 5;
-    int TRANSACTION_SET_CROP_RECT               = IBinder.FIRST_CALL_TRANSACTION + 6;
-    int TRANSACTION_START                       = IBinder.FIRST_CALL_TRANSACTION + 7;
-    int TRANSACTION_PREPARE                     = IBinder.FIRST_CALL_TRANSACTION + 8;
-    int TRANSACTION_SHOW                        = IBinder.FIRST_CALL_TRANSACTION + 9;
-    int TRANSACTION_RELEASE                     = IBinder.FIRST_CALL_TRANSACTION + 10;
-    int TRANSACTION_PREPARE_BUF                 = IBinder.FIRST_CALL_TRANSACTION + 11;
-    int TRANSACTION_SHOW_BUF                    = IBinder.FIRST_CALL_TRANSACTION + 12;
+    private static final String IMAGE_TOKEN         = "droidlogic.IImagePlayerService";
+    public static final int ARGUMENTS_ERROR         = -0xfffe;
+    public static final int REMOTE_EXCEPTION        = -0xffff;
+    int TRANSACTION_INIT                            = IBinder.FIRST_CALL_TRANSACTION;
+    int TRANSACTION_SET_DATA_SOURCE                 = IBinder.FIRST_CALL_TRANSACTION + 1;
+    int TRANSACTION_SET_SAMPLE_SURFACE_SIZE         = IBinder.FIRST_CALL_TRANSACTION + 2;
+    int TRANSACTION_SET_ROTATE                      = IBinder.FIRST_CALL_TRANSACTION + 3;
+    int TRANSACTION_SET_SCALE                       = IBinder.FIRST_CALL_TRANSACTION + 4;
+    int TRANSACTION_SET_ROTATE_SCALE                = IBinder.FIRST_CALL_TRANSACTION + 5;
+    int TRANSACTION_SET_CROP_RECT                   = IBinder.FIRST_CALL_TRANSACTION + 6;
+    int TRANSACTION_START                           = IBinder.FIRST_CALL_TRANSACTION + 7;
+    int TRANSACTION_PREPARE                         = IBinder.FIRST_CALL_TRANSACTION + 8;
+    int TRANSACTION_SHOW                            = IBinder.FIRST_CALL_TRANSACTION + 9;
+    int TRANSACTION_RELEASE                         = IBinder.FIRST_CALL_TRANSACTION + 10;
+    int TRANSACTION_PREPARE_BUF                     = IBinder.FIRST_CALL_TRANSACTION + 11;
+    int TRANSACTION_SHOW_BUF                        = IBinder.FIRST_CALL_TRANSACTION + 12;
 
     private Context mContext;
     private IBinder mIBinder = null;
@@ -64,17 +67,29 @@ public class ImagePlayerManager {
         return REMOTE_EXCEPTION;
     }
 
-    public int setDataSource(Uri uri) {
-        String scheme = uri.getScheme();
-        if(scheme == null || scheme.equals("file")) {
-           return _setDataSource("file://" + uri.getPath());
+    /* can not get method, because method is package visiable region
+    private IBinder getHttpServiceBinder(String url) {
+        try {
+            Object object = Class.forName("android.media.MediaHTTPService")
+                    .getMethod("createHttpServiceBinderIfNecessary", new Class[] { String.class })
+                    .invoke(null, new Object[] { url });
+            return (IBinder)object;
+        }
+        catch (Exception ex) {
+            Log.e(TAG, "get http service binder fail:" + ex);
         }
 
-        return REMOTE_EXCEPTION;
-    }
+        return null;
+    }*/
 
+    //only used by local file
     public int setDataSource(String path) {
-        return _setDataSource("file://" + path);
+        if (!path.startsWith("http://") && !path.startsWith("https://")
+            && !path.startsWith("file://")) {
+            path = "file://" + path;
+        }
+
+        return _setDataSource(path);
     }
 
     private int _setDataSource(String path) {
@@ -337,5 +352,16 @@ public class ImagePlayerManager {
         }
 
         return REMOTE_EXCEPTION;
+    }
+
+    /**
+     * Sets the {@link SurfaceHolder} to use for displaying the picture
+     * that show in video layer
+     *
+     * Either a surface holder or surface must be set if a display is needed.
+     * @param sh the SurfaceHolder to use for video display
+     */
+    public void setDisplay(SurfaceHolder sh) {
+        SurfaceOverlay.setDisplay(sh);
     }
 }

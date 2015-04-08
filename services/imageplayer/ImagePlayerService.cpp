@@ -22,6 +22,10 @@
 #ifdef AM_LOLLIPOP
 #include "SkFrontBufferedStream.h"
 #include <media/IMediaHTTPService.h>
+#include <media/IMediaHTTPConnection.h>
+#include "media/libstagefright/include/NuCachedSource2.h"
+#include "media/libstagefright/include/HTTPBase.h"
+#include <media/stagefright/MediaHTTP.h>
 #endif
 
 #include <binder/IPCThreadState.h>
@@ -29,6 +33,7 @@
 #include <binder/MemoryHeapBase.h>
 #include <binder/MemoryBase.h>
 #include <media/stagefright/DataSource.h>
+
 #include <assert.h>
 
 #include <sys/ioctl.h>
@@ -57,11 +62,11 @@
 #define VIDEO_LAYER_FORMAT_ARGB     2
 
 namespace android {
-
 class SkHttpStream : public SkStream {
 public:
     SkHttpStream(const char url[] = NULL)
-        : fURL(strdup(url)), dataSource(NULL), isConnect(false), haveRead(0) {
+        : fURL(strdup(url)), dataSource(NULL),
+        isConnect(false), haveRead(0) {
         connect();
     }
 
@@ -75,18 +80,13 @@ public:
         free(fURL);
     }
 
-#ifdef AM_LOLLIPOP
-    virtual bool isAtEnd() const {
-        return false;
-    }
-#endif
-
     bool connect() {
     #ifdef AM_LOLLIPOP
         dataSource = DataSource::CreateFromURI(NULL /* XXX httpService */, fURL);
     #else
         dataSource = DataSource::CreateFromURI(fURL, NULL);
     #endif
+
         if (dataSource == NULL) {
             isConnect = false;
             return false;
@@ -124,7 +124,6 @@ public:
                 return 0;
             }
             haveRead += ret;
-
             return ret;
         } else {
             return 0;
@@ -135,7 +134,6 @@ public:
         off64_t size;
         if (isConnect && (dataSource != NULL)) {
             int ret = dataSource->getSize(&size);
-
             if (ERROR_UNSUPPORTED == ret) {
                 return 8192;
             } else {
@@ -146,11 +144,18 @@ public:
         }
     }
 
+#ifdef AM_LOLLIPOP
+    virtual bool isAtEnd() const {
+        return false;
+    }
+#endif
+
 private:
     char *fURL;
     sp<DataSource> dataSource;
     bool isConnect;
     off64_t haveRead;
+    off64_t totalSize;
 };
 
 }  // namespace android
@@ -509,7 +514,7 @@ void ImagePlayerService::instantiate() {
     }
     ALOGI("instantiate add service result:%d", ret);
 
-    chmodSysfs(PICDEC_SYSFS, 644);
+    //chmodSysfs(PICDEC_SYSFS, 644);
 }
 
 ImagePlayerService::ImagePlayerService()
@@ -524,13 +529,6 @@ ImagePlayerService::~ImagePlayerService() {
 }
 
 void ImagePlayerService::initVideoAxis() {
-    /*
-    char sysCmd[1024];
-    sprintf(sysCmd, "echo 0 0  0 0  > /sys/class/video/axis");
-    if (system(sysCmd)) {
-        ALOGE("exec cmd:%s fail\n", sysCmd);
-    }*/
-
     sp<ISystemControlService> systemControl = interface_cast<ISystemControlService>(
         defaultServiceManager()->getService(String16("system_control")));
     if (systemControl != NULL) {
@@ -602,10 +600,13 @@ int ImagePlayerService::setDataSource(const char *uri) {
     mImageUrl = new char[1024];
     memset(mImageUrl, 0, 1024);
 
+    SkStream *stream;
     if (!strncasecmp("file://", uri, 7)) {
         strncpy(mImageUrl, uri + 7, 1024 - 1);
+        stream = new SkFILEStream(uri + 7);
     } else if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
         strncpy(mImageUrl, uri, 1024 - 1);
+        stream = new SkHttpStream(uri);
     } else {
         ALOGE("setDataSource error uri:%s", uri);
         delete[] mImageUrl;
@@ -613,10 +614,12 @@ int ImagePlayerService::setDataSource(const char *uri) {
     }
 
     //ALOGI("setDataSource mImageUrl:%s", mImageUrl);
-
-    if (!isSupportedBySkImageDecoder(uri, &mBitmap)) {
+    if (!isSupportFromat(uri, &mBitmap)) {
+        ALOGE("setDataSource codec can not support it");
+        delete stream;
         return RET_ERR_INVALID_OPERATION;
     }
+    delete stream;
 
     if (mBitmap != NULL) {
         mWidth = mBitmap->width();
@@ -841,10 +844,21 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
     SkBitmap *bitmap = NULL;
 
 #ifdef AM_LOLLIPOP
+///*
     SkAutoTUnref<SkStreamRewindable> bufferedStream(
             SkFrontBufferedStream::Create(stream, BYTES_TO_BUFFER));
     SkASSERT(bufferedStream.get() != NULL);
     codec = SkImageDecoder::Factory(bufferedStream);
+    //*/
+
+    /*
+    SkFILEStream *fstream = (SkFILEStream *)stream;
+    if (!fstream->isValid()) {
+        ALOGE("SkFILEStream invalid");
+        return false;
+    }
+
+    codec = SkImageDecoder::Factory(fstream);*/
 #else
     codec = SkImageDecoder::Factory(stream);
 #endif
@@ -1080,8 +1094,8 @@ int ImagePlayerService::prepare() {
     }*/
 
     mBitmap = decode(stream, NULL);
-
     delete stream;
+
     if (mImageUrl != NULL) {
         delete[] mImageUrl;
         mImageUrl = NULL;
@@ -1141,19 +1155,18 @@ int ImagePlayerService::prepare() {
 int ImagePlayerService::prepareBuf(const char *uri) {
     Mutex::Autolock autoLock(mLock);
 
-    char filepath[1024];
-
     ALOGI("prepare buffer image path:%s", uri);
-
+    char path[1024];
+    SkStream *stream;
     if (!strncasecmp("file://", uri, 7)) {
-        strncpy(filepath, uri + 7, 1024 - 1);
+        strncpy(path, uri + 7, 1024 - 1);
+        stream = new SkFILEStream(path);
     } else if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
-        strncpy(filepath, uri, 1024 - 1);
+        strncpy(path, uri, 1024 - 1);
+        stream = new SkHttpStream(path);
     } else {
         return RET_ERR_INVALID_OPERATION;
     }
-
-    SkStream *stream = new SkFILEStream(filepath);
 
     if (mBufBitmap != NULL) {
         delete mBufBitmap;
@@ -1161,7 +1174,9 @@ int ImagePlayerService::prepareBuf(const char *uri) {
     }
 
     SkBitmap *bitmap = NULL;
-    if (!isSupportedBySkImageDecoder(uri, &bitmap)) {
+    if (!isSupportFromat(uri, &bitmap)) {
+        ALOGE("prepareBuf codec can not support it");
+        delete stream;
         return RET_ERR_INVALID_OPERATION;
     }
 
@@ -1383,6 +1398,34 @@ bool ImagePlayerService::showBitmapRect(SkBitmap *bitmap, int cropX, int cropY, 
     return true;
 }
 
+bool ImagePlayerService::isSupportFromat(const char *uri, SkBitmap **bitmap) {
+    bool ret = isPhotoByExtenName(uri);
+    if (!ret)
+        return false;
+
+    if (!strncasecmp("file://", uri, 7)) {
+        SkFILEStream stream(uri + 7);
+
+        #if 0
+            int testFd = open(uri + 7, O_RDONLY, 0755);
+            if (testFd < 0) {
+                ALOGE("testFd(%d) failure error: '%s' (%d)", testFd, strerror(errno), errno);
+                return false;
+            }
+            if (testFd >= 0)
+                close(testFd);
+        #endif
+
+        return verifyBySkImageDecoder(&stream, bitmap);
+    }
+
+    if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
+        SkHttpStream httpStream(uri);
+        return verifyBySkImageDecoder(&httpStream, bitmap);
+    }
+
+    return false;
+}
 
 int ImagePlayerService::convertRGBA8888toRGB(void *dst, const SkBitmap *src) {
     uint8_t *pDst = (uint8_t*)dst;

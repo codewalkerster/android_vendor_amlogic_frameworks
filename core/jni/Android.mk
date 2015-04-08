@@ -71,3 +71,29 @@ LOCAL_SHARED_LIBRARIES := \
     libnativehelper
 
 include $(BUILD_SHARED_LIBRARY)
+
+########### build libsurfaceoverlay_jni
+include $(CLEAR_VARS)
+
+LOCAL_SRC_FILES := \
+	droid_logic_SurfaceOverlay.cpp
+
+LOCAL_C_INCLUDES := $(JNI_H_INCLUDE)
+
+LOCAL_MODULE    := libsurfaceoverlay_jni
+
+LOCAL_SHARED_LIBRARIES := \
+    liblog \
+    libcutils \
+    libutils \
+    libgui \
+    libnativehelper \
+    libandroid_runtime \
+    libui
+
+LOCAL_C_INCLUDES += \
+    frameworks/base/include \
+    frameworks/native/include \
+    $(JNI_H_INCLUDE)
+
+include $(BUILD_SHARED_LIBRARY)
