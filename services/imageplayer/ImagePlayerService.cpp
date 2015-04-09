@@ -64,9 +64,9 @@
 namespace android {
 class SkHttpStream : public SkStream {
 public:
-    SkHttpStream(const char url[] = NULL)
+    SkHttpStream(const char url[] = NULL, const sp<IMediaHTTPService> &httpservice = NULL)
         : fURL(strdup(url)), dataSource(NULL),
-        isConnect(false), haveRead(0) {
+        isConnect(false), haveRead(0), httpsService(httpservice) {
         connect();
     }
 
@@ -82,12 +82,13 @@ public:
 
     bool connect() {
     #ifdef AM_LOLLIPOP
-        dataSource = DataSource::CreateFromURI(NULL /* XXX httpService */, fURL);
+        dataSource = DataSource::CreateFromURI(httpsService, fURL);
     #else
         dataSource = DataSource::CreateFromURI(fURL, NULL);
     #endif
 
         if (dataSource == NULL) {
+            ALOGE("data source create from URI is NULL");
             isConnect = false;
             return false;
         } else {
@@ -145,6 +146,7 @@ public:
     }
 
 #ifdef AM_LOLLIPOP
+    //if read return 0, mean the stream is end
     virtual bool isAtEnd() const {
         return false;
     }
@@ -156,6 +158,7 @@ private:
     bool isConnect;
     off64_t haveRead;
     off64_t totalSize;
+    sp<IMediaHTTPService> httpsService;
 };
 
 }  // namespace android
@@ -522,7 +525,7 @@ ImagePlayerService::ImagePlayerService()
     mSampleSize(1), mImageUrl(NULL), mDstBitmap(NULL),
     mFileDescription(-1),
     surfaceWidth(SURFACE_4K_WIDTH), surfaceHeight(SURFACE_4K_HEIGHT),
-    mParameter(NULL), mDisplayFd(-1){
+    mParameter(NULL), mDisplayFd(-1), mHttpService(NULL) {
 }
 
 ImagePlayerService::~ImagePlayerService() {
@@ -583,6 +586,18 @@ int ImagePlayerService::init() {
     return RET_OK;
 }
 
+int ImagePlayerService::setDataSource (const sp<IMediaHTTPService> &httpService, const char *srcUrl) {
+    if (httpService == NULL) {
+        ALOGE("setDataSource httpService is NULL");
+        return RET_ERR_PARAMETER;
+    }
+
+    mHttpService = httpService;
+    setDataSource(srcUrl);
+    ALOGI("setDataSource URL uri:%s", srcUrl);
+    return RET_OK;
+}
+
 int ImagePlayerService::setDataSource(const char *uri) {
     Mutex::Autolock autoLock(mLock);
 
@@ -606,7 +621,7 @@ int ImagePlayerService::setDataSource(const char *uri) {
         stream = new SkFILEStream(uri + 7);
     } else if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
         strncpy(mImageUrl, uri, 1024 - 1);
-        stream = new SkHttpStream(uri);
+        stream = new SkHttpStream(uri, mHttpService);
     } else {
         ALOGE("setDataSource error uri:%s", uri);
         delete[] mImageUrl;
@@ -1076,7 +1091,7 @@ int ImagePlayerService::prepare() {
         stream = new SkFDStream(mFileDescription, false);
 #endif
     } else if (!strncasecmp("http://", mImageUrl, 7) || !strncasecmp("https://", mImageUrl, 8)) {
-        stream = new SkHttpStream(mImageUrl);
+        stream = new SkHttpStream(mImageUrl, mHttpService);
     } else {
         stream = new SkFILEStream(mImageUrl);
     }
@@ -1163,7 +1178,7 @@ int ImagePlayerService::prepareBuf(const char *uri) {
         stream = new SkFILEStream(path);
     } else if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
         strncpy(path, uri, 1024 - 1);
-        stream = new SkHttpStream(path);
+        stream = new SkHttpStream(path, mHttpService);
     } else {
         return RET_ERR_INVALID_OPERATION;
     }
@@ -1420,7 +1435,7 @@ bool ImagePlayerService::isSupportFromat(const char *uri, SkBitmap **bitmap) {
     }
 
     if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
-        SkHttpStream httpStream(uri);
+        SkHttpStream httpStream(uri, mHttpService);
         return verifyBySkImageDecoder(&httpStream, bitmap);
     }
 

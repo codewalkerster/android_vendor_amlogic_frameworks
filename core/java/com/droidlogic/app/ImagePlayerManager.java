@@ -28,6 +28,7 @@ public class ImagePlayerManager {
     int TRANSACTION_RELEASE                         = IBinder.FIRST_CALL_TRANSACTION + 10;
     int TRANSACTION_PREPARE_BUF                     = IBinder.FIRST_CALL_TRANSACTION + 11;
     int TRANSACTION_SHOW_BUF                        = IBinder.FIRST_CALL_TRANSACTION + 12;
+    int TRANSACTION_SET_DATA_SOURCE_URL             = IBinder.FIRST_CALL_TRANSACTION + 13;
 
     private Context mContext;
     private IBinder mIBinder = null;
@@ -67,8 +68,8 @@ public class ImagePlayerManager {
         return REMOTE_EXCEPTION;
     }
 
-    /* can not get method, because method is package visiable region
     private IBinder getHttpServiceBinder(String url) {
+        /* can not get method, because method is package visiable region
         try {
             Object object = Class.forName("android.media.MediaHTTPService")
                     .getMethod("createHttpServiceBinderIfNecessary", new Class[] { String.class })
@@ -80,12 +81,42 @@ public class ImagePlayerManager {
         }
 
         return null;
-    }*/
+        */
+
+        return (new android.media.MediaHTTPService()).asBinder();
+    }
+
+    //url start with http:// or https://
+    public int setDataSourceURL(String url) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(IMAGE_TOKEN);
+
+                IBinder httpBinder = getHttpServiceBinder(url);
+                data.writeInt((httpBinder != null)?1:0);
+                if (httpBinder != null) {
+                    data.writeStrongBinder(httpBinder);
+                }
+                data.writeString(url);
+                mIBinder.transact(TRANSACTION_SET_DATA_SOURCE_URL,
+                                        data, reply, 0);
+                int result = reply.readInt();
+                reply.recycle();
+                data.recycle();
+                return result;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "_setDataSource: ImagePlayerService is dead!:" + ex);
+        }
+
+        return REMOTE_EXCEPTION;
+    }
 
     //only used by local file
     public int setDataSource(String path) {
-        if (!path.startsWith("http://") && !path.startsWith("https://")
-            && !path.startsWith("file://")) {
+        if (!path.startsWith("file://")) {
             path = "file://" + path;
         }
 

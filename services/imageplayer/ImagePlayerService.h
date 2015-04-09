@@ -67,6 +67,9 @@ class ImagePlayerService :  public BnImagePlayerService {
 
     virtual int init();
     virtual int setDataSource(const char* uri);
+    virtual int setDataSource (
+            const sp<IMediaHTTPService> &httpService,
+            const char *srcUrl);
     virtual int setDataSource(int fd, int64_t offset, int64_t length);
     virtual int setSampleSurfaceSize(int sampleSize, int surfaceW, int surfaceH);
     virtual int setRotate(float degrees, int autoCrop) ;
@@ -118,6 +121,8 @@ class ImagePlayerService :  public BnImagePlayerService {
 
     InitParameter *mParameter;
     int mDisplayFd;
+
+    sp<IMediaHTTPService> mHttpService;
 };
 
 }  // namespace android

@@ -49,6 +49,20 @@ public:
         return NO_ERROR;
     }
 
+    virtual int setDataSource (
+            const sp<IMediaHTTPService> &httpService,
+            const char *srcUrl) {
+        Parcel data, reply;
+        data.writeInterfaceToken(IImagePlayerService::getInterfaceDescriptor());
+        data.writeInt32(httpService != NULL);
+        if (httpService != NULL) {
+            data.writeStrongBinder(httpService->asBinder());
+        }
+        data.writeCString(srcUrl);
+        remote()->transact(BnImagePlayerService::IMAGE_SET_DATA_SOURCE_URL, data, &reply);
+        return reply.readInt32();
+    }
+
     virtual int setDataSource(const char* uri)
     {
         Parcel data, reply;
@@ -255,6 +269,20 @@ status_t BnImagePlayerService::onTransact(
         case IMAGE_SHOW_BUF: {
             CHECK_INTERFACE(IImagePlayerService, data, reply);
             int result = showBuf();
+            reply->writeInt32(result);
+            return NO_ERROR;
+        }
+        case IMAGE_SET_DATA_SOURCE_URL: {
+            CHECK_INTERFACE(IImagePlayerService, data, reply);
+
+            sp<IMediaHTTPService> httpService;
+            if (data.readInt32()) {
+                httpService =
+                    interface_cast<IMediaHTTPService>(data.readStrongBinder());
+            }
+            String8 srcUrl(data.readString16());
+            //const char* srcUrl = data.readCString();
+            int result = setDataSource(httpService, srcUrl);
             reply->writeInt32(result);
             return NO_ERROR;
         }
