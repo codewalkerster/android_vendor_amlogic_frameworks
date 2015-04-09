@@ -24,6 +24,9 @@
 #include <binder/IInterface.h>
 
 namespace android {
+
+struct IMediaHTTPService;
+
 // ----------------------------------------------------------------------------
 
 class IImagePlayerService: public IInterface {

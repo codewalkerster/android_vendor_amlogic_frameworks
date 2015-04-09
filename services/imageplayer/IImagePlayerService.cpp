@@ -25,6 +25,8 @@
 #include <binder/IServiceManager.h>
 #include <utils/Log.h>
 
+#include <media/IMediaHTTPService.h>
+
 #include <IImagePlayerService.h>
 
 // ---------------------------------------------------------------------------
