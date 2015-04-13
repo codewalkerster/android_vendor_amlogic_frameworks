@@ -36,6 +36,9 @@ public:
     //this used by native code
     virtual int init() = 0;
     virtual int setDataSource(const char* uri) = 0;
+    virtual int setDataSource (
+            const sp<IMediaHTTPService> &httpService,
+            const char *srcUrl) = 0;
     virtual int setSampleSurfaceSize(int sampleSize, int surfaceW, int surfaceH) = 0;
     virtual int setRotate(float degrees, int autoCrop) = 0;
     virtual int setScale(float sx, float sy, int autoCrop) = 0;
@@ -67,6 +70,7 @@ public:
         IMAGE_RELEASE,
         IMAGE_PREPARE_BUF,
         IMAGE_SHOW_BUF,
+        IMAGE_SET_DATA_SOURCE_URL,
     };
 
     virtual status_t onTransact(uint32_t code, const Parcel& data,
