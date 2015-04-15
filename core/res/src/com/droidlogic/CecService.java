@@ -21,6 +21,7 @@ import android.app.ActivityManager.RunningServiceInfo;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.UEventObserver;
 import android.os.IBinder;
@@ -138,36 +139,12 @@ public class CecService extends Service {
     }
 
     public boolean isChangeLanguageOpen(){
-        if (mSystemControlManager != null) {
-            String str = getBinaryString(mSystemControlManager.readSysFs(CEC_SYS));
-            int []funs = getBinaryArray(str);
-            if (funs.length == 4 && funs[FUN_AUTO_CHANGE_LANGUAGE] != 0) {
-                return true;
-            }
+        SharedPreferences sharedpreference = getSharedPreferences(PREFERENCE_BOX_SETTING, Context.MODE_PRIVATE);
+        String isCecLanguageOpen = sharedpreference.getString(SWITCH_AUTO_CHANGE_LANGUAGE, SWITCH_OFF);
+        if (isCecLanguageOpen.equals(SWITCH_ON)) {
+            return true;
         }
         return false;
-    }
-
-    private int[] getBinaryArray(String binaryString) {
-        int[] tmp = new int[4];
-        for (int i = 0; i < binaryString.length(); i++) {
-            String tmpString = String.valueOf(binaryString.charAt(i));
-            tmp[i] = Integer.parseInt(tmpString);
-        }
-        return tmp;
-    }
-
-    private String getBinaryString(String config) {
-        String indexString = "0123456789abcdef";
-        String configString = config.substring(config.length() - 1, config.length());
-        int indexOfConfigNum = indexString.indexOf(configString);
-        String ConfigBinary = Integer.toBinaryString(indexOfConfigNum);
-        if (ConfigBinary.length() < 4) {
-            for (int i = ConfigBinary.length(); i < 4; i++) {
-                ConfigBinary = "0" + ConfigBinary;
-            }
-        }
-        return ConfigBinary;
     }
 
     @Override
