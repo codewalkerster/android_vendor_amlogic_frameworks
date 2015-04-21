@@ -46,11 +46,9 @@ public class CecService extends Service {
     private static final String SWITCH_AUTO_CHANGE_LANGUAGE = "switch_auto_change_languace";
     private static final String SWITCH_ON = "true";
     private static final String SWITCH_OFF = "false";
-    private static final int FUN_AUTO_CHANGE_LANGUAGE = 0x03;
 
     private boolean startObServing = false;
     private String cec_config_path = "DEVPATH=/devices/virtual/switch/lang_config";
-    private SystemControlManager mSystemControlManager;
 
     public CecService() {
     }
@@ -68,7 +66,7 @@ public class CecService extends Service {
 
     @Override
     public void onCreate() {
-        mSystemControlManager = new SystemControlManager(this);
+        initCecFun();
         super.onCreate();
     }
 
@@ -117,6 +115,15 @@ public class CecService extends Service {
             }
         }
     };
+
+    public void initCecFun() {
+        SystemControlManager systemControlManager = new SystemControlManager(this);
+        String fun = systemControlManager.readSysFs(CEC_SYS);
+        if (systemControlManager != null) {
+            Log.d(TAG, "set cec fun = " + fun);
+            systemControlManager.writeSysFs(CEC_SYS, fun);
+        }
+    }
 
     public void updateLanguage(Locale locale) {
         try {
