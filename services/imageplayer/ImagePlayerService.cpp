@@ -193,6 +193,7 @@ static bool verifyBySkImageDecoder(SkStream *stream, SkBitmap **bitmap) {
 
     if (codec) {
         format = codec->getFormat();
+        //ALOGI("verify image format:%d", format);
         if (format != SkImageDecoder::kUnknown_Format) {
             if (bitmap != NULL) {
                 *bitmap = new SkBitmap();
@@ -587,6 +588,7 @@ int ImagePlayerService::init() {
 }
 
 int ImagePlayerService::setDataSource (const sp<IMediaHTTPService> &httpService, const char *srcUrl) {
+    ALOGI("setDataSource URL uri:%s", srcUrl);
     if (httpService == NULL) {
         ALOGE("setDataSource httpService is NULL");
         return RET_ERR_PARAMETER;
@@ -594,7 +596,6 @@ int ImagePlayerService::setDataSource (const sp<IMediaHTTPService> &httpService,
 
     mHttpService = httpService;
     setDataSource(srcUrl);
-    ALOGI("setDataSource URL uri:%s", srcUrl);
     return RET_OK;
 }
 
@@ -615,26 +616,20 @@ int ImagePlayerService::setDataSource(const char *uri) {
     mImageUrl = new char[1024];
     memset(mImageUrl, 0, 1024);
 
-    SkStream *stream;
     if (!strncasecmp("file://", uri, 7)) {
         strncpy(mImageUrl, uri + 7, 1024 - 1);
-        stream = new SkFILEStream(uri + 7);
     } else if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
         strncpy(mImageUrl, uri, 1024 - 1);
-        stream = new SkHttpStream(uri, mHttpService);
     } else {
         ALOGE("setDataSource error uri:%s", uri);
         delete[] mImageUrl;
         return RET_ERR_INVALID_OPERATION;
     }
 
-    //ALOGI("setDataSource mImageUrl:%s", mImageUrl);
     if (!isSupportFromat(uri, &mBitmap)) {
         ALOGE("setDataSource codec can not support it");
-        delete stream;
         return RET_ERR_INVALID_OPERATION;
     }
-    delete stream;
 
     if (mBitmap != NULL) {
         mWidth = mBitmap->width();
@@ -815,7 +810,6 @@ int ImagePlayerService::start() {
 }
 
 int ImagePlayerService::release() {
-
     ALOGI("release");
 
     if (mBitmap != NULL) {
@@ -859,7 +853,7 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
     SkBitmap *bitmap = NULL;
 
 #ifdef AM_LOLLIPOP
-///*
+    ///*
     SkAutoTUnref<SkStreamRewindable> bufferedStream(
             SkFrontBufferedStream::Create(stream, BYTES_TO_BUFFER));
     SkASSERT(bufferedStream.get() != NULL);
@@ -872,14 +866,15 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
         ALOGE("SkFILEStream invalid");
         return false;
     }
-
-    codec = SkImageDecoder::Factory(fstream);*/
+    codec = SkImageDecoder::Factory(fstream);
+    */
 #else
     codec = SkImageDecoder::Factory(stream);
 #endif
 
     if (codec) {
         format = codec->getFormat();
+        ALOGI("codec decode format:%d", format);
         if (format != SkImageDecoder::kUnknown_Format) {
             bitmap = new SkBitmap();
             if (mSampleSize > 0) {
@@ -889,6 +884,8 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
             }
 
     #ifdef AM_LOLLIPOP
+            if (SkImageDecoder::kBMP_Format == format)
+                stream->rewind();
             ret = codec->decode(stream, bitmap,
                     kN32_SkColorType,
                     SkImageDecoder::kDecodePixels_Mode);
@@ -1101,12 +1098,14 @@ int ImagePlayerService::prepare() {
         mBitmap = NULL;
     }
 
-    /* for test open file permission
+#if 0
+    //for test open file permission
     int fileFd = open(mImageUrl, O_RDONLY);
     if(fileFd < 0){
         ALOGE("prepare: open (%s) failure error: '%s' (%d)", mImageUrl, strerror(errno), errno);
         return BAD_VALUE;
-    }*/
+    }
+#endif
 
     mBitmap = decode(stream, NULL);
     delete stream;
@@ -1420,17 +1419,6 @@ bool ImagePlayerService::isSupportFromat(const char *uri, SkBitmap **bitmap) {
 
     if (!strncasecmp("file://", uri, 7)) {
         SkFILEStream stream(uri + 7);
-
-        #if 0
-            int testFd = open(uri + 7, O_RDONLY, 0755);
-            if (testFd < 0) {
-                ALOGE("testFd(%d) failure error: '%s' (%d)", testFd, strerror(errno), errno);
-                return false;
-            }
-            if (testFd >= 0)
-                close(testFd);
-        #endif
-
         return verifyBySkImageDecoder(&stream, bitmap);
     }
 
