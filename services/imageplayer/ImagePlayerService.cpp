@@ -523,8 +523,7 @@ void ImagePlayerService::instantiate() {
 
 ImagePlayerService::ImagePlayerService()
     : mWidth(0), mHeight(0), mBitmap(NULL), mBufBitmap(NULL),
-    mSampleSize(1), mImageUrl(NULL), mDstBitmap(NULL),
-    mFileDescription(-1),
+    mSampleSize(1), mFileDescription(-1),
     surfaceWidth(SURFACE_4K_WIDTH), surfaceHeight(SURFACE_4K_HEIGHT),
     mParameter(NULL), mDisplayFd(-1), mHttpService(NULL) {
 }
@@ -555,12 +554,12 @@ int ImagePlayerService::init() {
 
     initVideoAxis();
 
-    if (mDisplayFd >= 0){
+    if (mDisplayFd >= 0) {
         close(mDisplayFd);
     }
 
     mDisplayFd = open(PICDEC_SYSFS, O_RDWR);
-    if(mDisplayFd < 0){
+    if (mDisplayFd < 0) {
         ALOGE("init: mDisplayFd(%d) failure error: '%s' (%d)", mDisplayFd, strerror(errno), errno);
         return RET_ERR_OPEN_SYSFS;
     }
@@ -609,20 +608,12 @@ int ImagePlayerService::setDataSource(const char *uri) {
         mBitmap = NULL;
     }
 
-    if (NULL != mImageUrl) {
-        delete[] mImageUrl;
-        mImageUrl = NULL;
-    }
-    mImageUrl = new char[1024];
-    memset(mImageUrl, 0, 1024);
-
     if (!strncasecmp("file://", uri, 7)) {
-        strncpy(mImageUrl, uri + 7, 1024 - 1);
+        strncpy(mImageUrl, uri + 7, MAX_FILE_PATH_LEN - 1);
     } else if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
-        strncpy(mImageUrl, uri, 1024 - 1);
+        strncpy(mImageUrl, uri, MAX_FILE_PATH_LEN - 1);
     } else {
         ALOGE("setDataSource error uri:%s", uri);
-        delete[] mImageUrl;
         return RET_ERR_INVALID_OPERATION;
     }
 
@@ -762,10 +753,9 @@ int ImagePlayerService::setRotateScale(float degrees, float sx, float sy, int au
         ALOGD("After rotate and scale, Width: %d, Height: %d", dstBitmap->width(), dstBitmap->height());
         renderAndShow(dstBitmap);
         delete dstBitmap;
-    } else {
-        return RET_ERR_DECORDER;
+        return RET_OK;
     }
-    return RET_OK;
+    return RET_ERR_DECORDER;
 }
 
 int ImagePlayerService::setCropRect(int cropX, int cropY, int cropWidth, int cropHeight) {
@@ -813,21 +803,13 @@ int ImagePlayerService::release() {
     ALOGI("release");
 
     if (mBitmap != NULL) {
-        if (mBitmap == mDstBitmap) {
-            mDstBitmap = NULL;
-        }
         delete mBitmap;
         mBitmap = NULL;
     }
 
-    if (mDstBitmap != NULL) {
-        delete mDstBitmap;
-        mDstBitmap = NULL;
-    }
-
-    if (mImageUrl != NULL) {
-        delete[] mImageUrl;
-        mImageUrl = NULL;
+    if (mBufBitmap != NULL) {
+        delete mBufBitmap;
+        mBufBitmap = NULL;
     }
 
     delete mParameter;
@@ -938,7 +920,7 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
     if (bitmap != NULL ) {
         mWidth = bitmap->width();
         mHeight = bitmap->height();
-        ALOGD("Image output size, Width:%d, Height:%d", mWidth, mHeight);
+        ALOGD("Image raw size, width:%d, height:%d", mWidth, mHeight);
     }
 
     return bitmap;
@@ -1071,8 +1053,8 @@ int ImagePlayerService::prepare() {
     FrameInfo_t info;
 
     ALOGI("prepare image path:%s", mImageUrl);
-    if ((mFileDescription < 0) && (mImageUrl == NULL)) {
-        ALOGE("prepare decode image url is NULL");
+    if ((mFileDescription < 0) && (0 == strlen(mImageUrl))) {
+        ALOGE("prepare decode image fd error");
         return RET_ERR_BAD_VALUE;
     }
 
@@ -1110,22 +1092,17 @@ int ImagePlayerService::prepare() {
     mBitmap = decode(stream, NULL);
     delete stream;
 
-    if (mImageUrl != NULL) {
-        delete[] mImageUrl;
-        mImageUrl = NULL;
-    }
-
-    if (mBitmap == NULL){
-        ALOGI("prepare decode result bitmap is NULL");
+    if (mBitmap == NULL) {
+        ALOGE("prepare decode result bitmap is NULL");
         return RET_ERR_BAD_VALUE;
     }
 
-    if (mWidth <= 0 || mHeight <= 0){
-        ALOGI("prepare decode result bitmap size error");
+    if (mWidth <= 0 || mHeight <= 0) {
+        ALOGE("prepare decode result bitmap size error");
         return RET_ERR_BAD_VALUE;
     }
 
-    if(mDisplayFd < 0){
+    if (mDisplayFd < 0) {
         ALOGE("render, but displayFd can not ready");
         return RET_ERR_BAD_VALUE;
     }
@@ -1170,13 +1147,13 @@ int ImagePlayerService::prepareBuf(const char *uri) {
     Mutex::Autolock autoLock(mLock);
 
     ALOGI("prepare buffer image path:%s", uri);
-    char path[1024];
+    char path[MAX_FILE_PATH_LEN];
     SkStream *stream;
     if (!strncasecmp("file://", uri, 7)) {
-        strncpy(path, uri + 7, 1024 - 1);
+        strncpy(path, uri + 7, MAX_FILE_PATH_LEN - 1);
         stream = new SkFILEStream(path);
     } else if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
-        strncpy(path, uri, 1024 - 1);
+        strncpy(path, uri, MAX_FILE_PATH_LEN - 1);
         stream = new SkHttpStream(path, mHttpService);
     } else {
         return RET_ERR_INVALID_OPERATION;
@@ -1189,7 +1166,7 @@ int ImagePlayerService::prepareBuf(const char *uri) {
 
     SkBitmap *bitmap = NULL;
     if (!isSupportFromat(uri, &bitmap)) {
-        ALOGE("prepareBuf codec can not support it");
+        ALOGE("prepare buffer codec can not support it");
         delete stream;
         return RET_ERR_INVALID_OPERATION;
     }
@@ -1202,13 +1179,12 @@ int ImagePlayerService::prepareBuf(const char *uri) {
     mBufBitmap = decode(stream, NULL);
     delete stream;
 
-    if (mBufBitmap == NULL){
+    if (mBufBitmap == NULL) {
         ALOGI("prepare buffer decode result bitmap is NULL");
         return RET_ERR_BAD_VALUE;
     }
 
     ALOGI("prepare buffer image w:%d, w:%d", mBufBitmap->width(), mBufBitmap->height());
-
     if (mBufBitmap->width() <= 0 || mBufBitmap->height() <= 0){
         ALOGI("prepare buffer decode result bitmap size error");
         return RET_ERR_BAD_VALUE;
@@ -1225,12 +1201,12 @@ int ImagePlayerService::prepareBuf(const char *uri) {
 
 //post buffer to display device
 int ImagePlayerService::showBuf() {
-    if(mDisplayFd < 0){
-        ALOGE("post, but displayFd can not ready");
+    if (mDisplayFd < 0) {
+        ALOGE("show buffer, but displayFd has not ready");
         return RET_ERR_BAD_VALUE;
     }
 
-    if(NULL == mBufBitmap){
+    if (NULL == mBufBitmap) {
         ALOGE("show buffer, but bitmap buffer is NULL");
         return RET_ERR_BAD_VALUE;
     }
@@ -1239,7 +1215,6 @@ int ImagePlayerService::showBuf() {
         mBufBitmap->getConfig(), mBitmap->getConfig(), SkBitmap::kARGB_8888_Config);
 
     //copy bitmap data to showing bitmap
-
     bool ret = false;
 #ifdef AM_LOLLIPOP
     ret = mBufBitmap->copyTo(mBitmap, kN32_SkColorType);
@@ -1261,24 +1236,23 @@ int ImagePlayerService::showBuf() {
 int ImagePlayerService::render(int format, SkBitmap *bitmap){
     FrameInfo_t info;
 
-    if(mDisplayFd < 0){
+    if (mDisplayFd < 0) {
         ALOGE("render, but displayFd can not ready");
         return RET_ERR_BAD_VALUE;
     }
 
-    if(NULL == bitmap){
+    if (NULL == bitmap) {
         ALOGE("render, bitmap is NULL");
         return RET_ERR_BAD_VALUE;
     }
 
-    ALOGI("render format:%d, bitmap w:%d, h;%d", format, bitmap->width(), bitmap->height());
-
-    switch(format){
+    ALOGI("render format:%d [0:RGB 1:RGBA 2:ARGB], bitmap w:%d, h;%d", format, bitmap->width(), bitmap->height());
+    switch (format) {
         case VIDEO_LAYER_FORMAT_RGB:{
             char* bitmapAddr = NULL;
             int len = bitmap->width()*bitmap->height()*3;//RGBA -> RGB
             bitmapAddr = (char*)malloc(len);
-            if(NULL == bitmapAddr){
+            if (NULL == bitmapAddr) {
                 ALOGE("render, not enough memory");
                 return RET_ERR_NO_MEMORY;
             }
@@ -1322,14 +1296,13 @@ int ImagePlayerService::render(int format, SkBitmap *bitmap){
 
 //post to display device
 int ImagePlayerService::show() {
-    if(mDisplayFd < 0){
-        ALOGE("post, but displayFd can not ready");
+    if (mDisplayFd < 0) {
+        ALOGE("show, but displayFd has not ready");
         return RET_ERR_BAD_VALUE;
     }
 
     ALOGI("show picture display fd:%d", mDisplayFd);
     ioctl(mDisplayFd, PICDEC_IOC_FRAME_POST, NULL);
-
     return RET_OK;
 }
 
@@ -1509,10 +1482,15 @@ status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
     } else {
         Mutex::Autolock lock(mLock);
 
+        result.appendFormat("ImagePlayerService: mDisplayFd:%d, mFileDescription:%d\n", mDisplayFd, mFileDescription);
         result.appendFormat("ImagePlayerService: mImageUrl:%s, mWidth:%d, mHeight:%d\n",
                 mImageUrl, mWidth, mHeight);
         result.appendFormat("ImagePlayerService: mSampleSize:%d, surfaceWidth:%d, surfaceHeight:%d\n",
                 mSampleSize, surfaceWidth, surfaceHeight);
+
+        if (NULL != mBufBitmap)
+            result.appendFormat("ImagePlayerService: mBufBitmap width:%d, height:%d\n",
+                mBufBitmap->width(), mBufBitmap->height());
 
         int n = args.size();
         for (int i = 0; i + 1 < n; i++) {
@@ -1520,15 +1498,18 @@ status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
             if (args[i] == option) {
                 String8 path(args[i+1]);
 
-                if(NULL != mBitmap){
+                if (NULL != mBitmap) {
+                    /*
                     int argbFd = open(path, O_CREAT | O_RDWR, 0755);
-                    if(argbFd < 0){
+                    if (argbFd < 0) {
                         ALOGE("argbFd(%d) failure error: '%s' (%d)", argbFd, strerror(errno), errno);
-                        break;;
+                        break;
                     }
                     write(argbFd, mBitmap->getPixels(), mBitmap->rowBytes()*mBitmap->height());
                     close(argbFd);
-
+                    */
+                    RGBA2bmp((char *)mBitmap->getPixels(),
+                        mBitmap->width(), mBitmap->height(), (char *)path.string());
                     result.appendFormat("ImagePlayerService: save RGBA data to file:%s\n", path.string());
                 }
             }
@@ -1539,60 +1520,3 @@ status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
 }
 
 }
-
-#if 0 //test code
-/*
-    char* bitmap_addr = NULL;
-#if 1
-    int len = mBitmap->width()*mBitmap->height()*3;//ARGB -> RGB
-    bitmap_addr = (char*)malloc(len);
-    if(NULL == bitmap_addr){
-        ALOGE("render, not enough memory");
-        return NO_MEMORY;
-    }
-
-    memset(bitmap_addr, 0, len);
-
-#endif
-
-    mBitmap->lockPixels();
-
-#if 0
-    int argbFd = open("/sdcard/argbdata", O_CREAT | O_RDWR, 0755);
-    if(argbFd < 0){
-        ALOGE("argbFd(%d) failure error: '%s' (%d)", argbFd, strerror(errno), errno);
-        return BAD_VALUE;
-    }
-    write(argbFd, mBitmap->getPixels(), mBitmap->rowBytes()*mBitmap->height());
-    close(argbFd);
-#endif
-    //ARGB2bmp((char *)mBitmap->getPixels(), mBitmap->width(), mBitmap->height());
-
-
-    convertRGBA8888toRGB(bitmap_addr, mBitmap);
-    //info.pBuff = (char*)mBitmap->getPixels();
-    mBitmap->unlockPixels();
-
-    info.pBuff = bitmap_addr;
-    info.format = VIDEO_LAYER_FORMAT_RGB;
-    info.frame_width = mBitmap->width();
-    info.frame_height = mBitmap->height();
-
-    ALOGI("prepare display fd:%d, frame_width:%d, frame_height:%d", mDisplayFd, info.frame_width, info.frame_height);
-    ioctl(mDisplayFd, PICDEC_IOC_FRAME_RENDER, &info);
-
-#if 0
-    int rgbFd = open("/sdcard/rgbdata", O_CREAT | O_RDWR, 0755);
-    if(rgbFd < 0){
-        ALOGE("rgbFd(%d) failure error: '%s' (%d)", rgbFd, strerror(errno), errno);
-        return BAD_VALUE;
-    }
-    write(rgbFd, info.pBuff, len);
-    close(rgbFd);
-#endif
-
-    if(NULL != bitmap_addr)
-        free(bitmap_addr);
-
-*/
-#endif

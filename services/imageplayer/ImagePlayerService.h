@@ -17,6 +17,8 @@
 #define AM_LOLLIPOP
 #define AM_KITKAT
 
+#define MAX_FILE_PATH_LEN         1024
+
 namespace android {
 
 typedef struct {
@@ -113,8 +115,7 @@ class ImagePlayerService :  public BnImagePlayerService {
     // and will contain 1/9 as many pixels as the original.
     int mSampleSize;
 
-    char *mImageUrl;
-    SkBitmap *mDstBitmap;
+    char mImageUrl[MAX_FILE_PATH_LEN];
     int mFileDescription;
     //bool isAutoCrop;
     int surfaceWidth, surfaceHeight;
