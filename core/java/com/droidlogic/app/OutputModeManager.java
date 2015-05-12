@@ -400,16 +400,7 @@ public class OutputModeManager {
             }
         }
 
-        //Most TV support 720P and 1080P, so if the EDID is null and current mode is 720p or 1080p,
-        //we don't change the output mode.
-        if (currentOutputmode.equals("720p")
-            ||currentOutputmode.equals("720p50hz")
-            || currentOutputmode.equals("1080p")
-            || currentOutputmode.equals("1080p50hz")) {
-            return getPropertyString(PROP_BEST_OUTPUT_MODE, currentOutputmode);
-        } else {
-            return getPropertyString(PROP_BEST_OUTPUT_MODE, DEFAULT_OUTPUT_MODE);
-        }
+        return getPropertyString(PROP_BEST_OUTPUT_MODE, DEFAULT_OUTPUT_MODE);
     }
 
     public String getSupportedResolution() {

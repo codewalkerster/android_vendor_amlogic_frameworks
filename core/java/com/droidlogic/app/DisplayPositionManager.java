@@ -137,8 +137,8 @@ public class DisplayPositionManager {
             mMaxBottom = 1079;
         }else if (mode.contains("4k")) {
             if (mode.contains("4k2ksmpte")) {
-                mMaxRight = 4096;
-                mMaxBottom = 2059;
+                mMaxRight = 4095;
+                mMaxBottom = 2159;
             }else {
                 mMaxRight = 3839;
                 mMaxBottom = 2159;
