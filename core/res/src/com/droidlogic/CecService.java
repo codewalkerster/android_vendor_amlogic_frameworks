@@ -47,6 +47,12 @@ public class CecService extends Service {
     private static final String SWITCH_ON = "true";
     private static final String SWITCH_OFF = "false";
 
+    private static final int MASK_FUN_CEC = 0x01;                   // bit 0
+    private static final int MASK_ONE_KEY_PLAY = 0x02;              // bit 1
+    private static final int MASK_ONE_KEY_STANDBY = 0x04;           // bit 2
+    private static final int MASK_AUTO_CHANGE_LANGUAGE = 0x20;      // bit 5
+    private static final int MASK_ALL = 0x2f;                       // all mask
+
     private boolean startObServing = false;
     private String cec_config_path = "DEVPATH=/devices/virtual/switch/lang_config";
 
@@ -60,7 +66,8 @@ public class CecService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        startListenCecDev();
+        String action = intent.getAction();
+        startListenCecDev(action);
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -70,9 +77,18 @@ public class CecService extends Service {
         super.onCreate();
     }
 
-    public void startListenCecDev() {
-        Log.d(TAG, "startListenCecDev()");
-        if (new File(CEC_DEVICE_FILE).exists() && !startObServing) {
+    public void startListenCecDev(String action) {
+        boolean exist = new File(CEC_DEVICE_FILE).exists();
+        Log.d(TAG, "startListenCecDev(), action:" + action);
+        if (action.equals("CEC_LANGUAGE_AUTO_SWITCH")) {
+            if (exist) {
+                // update current language
+                SystemControlManager systemControlManager = new SystemControlManager(this);
+                String curLanguage = systemControlManager.readSysFs(CEC_DEVICE_FILE);
+                updateCECLanguage(curLanguage);
+            }
+        }
+        if (exist && !startObServing) {
             mCedObserver.startObserving(cec_config_path);
             startObServing = true;
         }
@@ -84,37 +100,41 @@ public class CecService extends Service {
             if (DEBUG) Log.d(TAG, "onUEvent()");
 
             String mNewLanguage = event.get(SWITCH_STATE);
-            if (DEBUG) Log.d(TAG, "get the language code is : " + mNewLanguage);
-
-            if (!isChangeLanguageOpen()) {
-                if (DEBUG) Log.d(TAG, "cec language not open");
-                return;
-            }
-            int i = -1;
-            String[] cec_language_list = getResources().getStringArray(R.array.cec_language);
-            for (int j = 0; j < cec_language_list.length; j++) {
-                if (mNewLanguage != null && mNewLanguage.trim().equals(cec_language_list[j])) {
-                    i = j;
-                    break;
-                }
-            }
-            if (i >= 0) {
-                String able = getResources().getConfiguration().locale.getCountry();
-                String[] language_list = getResources().getStringArray(R.array.language);
-                String[] country_list = getResources().getStringArray(R.array.country);
-                if (able.equals(country_list[i])) {
-                    if (DEBUG) Log.d(TAG, "no need to change language");
-                    return;
-                } else {
-                    Locale l = new Locale(language_list[i], country_list[i]);
-                    if (DEBUG) Log.d(TAG, "change the language right now !!!");
-                    updateLanguage(l);
-                }
-            } else {
-                Log.d(TAG, "the language code is not support right now !!!");
-            }
+            updateCECLanguage(mNewLanguage);
         }
     };
+
+    private void updateCECLanguage(String lan) {
+        if (DEBUG) Log.d(TAG, "get the language code is : " + lan);
+
+        if (!isChangeLanguageOpen()) {
+            if (DEBUG) Log.d(TAG, "cec language not open");
+            return;
+        }
+        int i = -1;
+        String[] cec_language_list = getResources().getStringArray(R.array.cec_language);
+        for (int j = 0; j < cec_language_list.length; j++) {
+            if (lan != null && lan.trim().equals(cec_language_list[j])) {
+                i = j;
+                break;
+            }
+        }
+        if (i >= 0) {
+            String able = getResources().getConfiguration().locale.getCountry();
+            String[] language_list = getResources().getStringArray(R.array.language);
+            String[] country_list = getResources().getStringArray(R.array.country);
+            if (able.equals(country_list[i])) {
+                if (DEBUG) Log.d(TAG, "no need to change language");
+                return;
+            } else {
+                Locale l = new Locale(language_list[i], country_list[i]);
+                if (DEBUG) Log.d(TAG, "change the language right now !!!");
+                updateLanguage(l);
+            }
+        } else {
+            Log.d(TAG, "the language code is not support right now !!!");
+        }
+    }
 
     public void initCecFun() {
         SystemControlManager systemControlManager = new SystemControlManager(this);
@@ -145,13 +165,17 @@ public class CecService extends Service {
         }
     }
 
-    public boolean isChangeLanguageOpen(){
-        SharedPreferences sharedpreference = getSharedPreferences(PREFERENCE_BOX_SETTING, Context.MODE_PRIVATE);
-        String isCecLanguageOpen = sharedpreference.getString(SWITCH_AUTO_CHANGE_LANGUAGE, SWITCH_OFF);
-        if (isCecLanguageOpen.equals(SWITCH_ON)) {
-            return true;
+    public boolean isChangeLanguageOpen() {
+        boolean exist = new File(CEC_SYS).exists();
+        if (exist) {
+            SystemControlManager systemControlManager = new SystemControlManager(this);
+            String cec_cfg = systemControlManager.readSysFs(CEC_SYS);
+            int value = Integer.valueOf(cec_cfg.substring(2, cec_cfg.length()), 16);
+            Log.d(TAG, "cec_cfg:" + cec_cfg + ", value:" + value);
+            return (value & MASK_AUTO_CHANGE_LANGUAGE) != 0;
+        } else {
+            return false;
         }
-        return false;
     }
 
     @Override
