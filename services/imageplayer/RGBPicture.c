@@ -410,6 +410,12 @@ int RGBA2bmp(char *buf, int width, int height, char* filePath) {
     int ret = 0;
     int len;
 
+    if (NULL == buf) {
+        ALOGE("RGBA2bmp, [error]RGB raw data is NULL");
+        ret = -1;
+        goto _ERR;
+    }
+
     len = width * height * 3;
     rgb_matrix = (char *)malloc(len);
     if (NULL == rgb_matrix) {
@@ -451,14 +457,14 @@ int RGBA2bmp(char *buf, int width, int height, char* filePath) {
 
     fp = fopen(filePath, "wb");
     if ( NULL == fp ) {
-        ALOGE("fb, open file failure error: '%s' (%d)\n", strerror(errno), errno);
+        ALOGE("RGBA2bmp, [error]open file:%s failure error: '%s' (%d)\n", filePath, strerror(errno), errno);
         ret = -2;
         goto _ERR;
     }
 
     fwrite(p_bmp_data, bmp_file_header.bf_size, 1, fp);
     fclose(fp);
-    ALOGI("fb, save file success, file len = %d\n", (int)bmp_file_header.bf_size);
+    ALOGI("RGBA2bmp, [error]save file success, file len = %d\n", (int)bmp_file_header.bf_size);
 
 _ERR:
     if ( NULL != rgb_matrix )
