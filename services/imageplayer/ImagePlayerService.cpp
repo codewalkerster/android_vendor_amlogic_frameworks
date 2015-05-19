@@ -192,12 +192,17 @@ static bool verifyBySkImageDecoder(SkStream *stream, SkBitmap **bitmap) {
     #endif
 
     if (codec) {
+        //in order to free the pointer
+        //SkAutoTDelete<SkImageDecoder> add(codec);
         format = codec->getFormat();
         //ALOGI("verify image format:%d", format);
         if (format != SkImageDecoder::kUnknown_Format) {
             if (bitmap != NULL) {
                 *bitmap = new SkBitmap();
                 codec->setSampleSize(1);
+                if (SkImageDecoder::kBMP_Format == format ||
+                    SkImageDecoder::kGIF_Format == format)
+                    stream->rewind();
                 #ifdef AM_LOLLIPOP
                 codec->decode(stream, *bitmap,
                         kN32_SkColorType,
@@ -841,7 +846,6 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
     SkASSERT(bufferedStream.get() != NULL);
     codec = SkImageDecoder::Factory(bufferedStream);
     //*/
-
     /*
     SkFILEStream *fstream = (SkFILEStream *)stream;
     if (!fstream->isValid()) {
@@ -855,6 +859,8 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
 #endif
 
     if (codec) {
+        //in order to free the pointer
+        //SkAutoTDelete<SkImageDecoder> add(codec);
         format = codec->getFormat();
         ALOGI("codec decode format:%d", format);
         if (format != SkImageDecoder::kUnknown_Format) {
@@ -865,16 +871,29 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
                 codec->setSampleSize(1);
             }
 
+            SkBitmap decodingBitmap;
     #ifdef AM_LOLLIPOP
-            if (SkImageDecoder::kBMP_Format == format)
+            if (SkImageDecoder::kBMP_Format == format ||
+                SkImageDecoder::kGIF_Format == format)
                 stream->rewind();
-            ret = codec->decode(stream, bitmap,
+
+            ret = codec->decode(stream, &decodingBitmap,
                     kN32_SkColorType,
                     SkImageDecoder::kDecodePixels_Mode);
+            if ((int)decodingBitmap.getSize() < 4*decodingBitmap.width()* decodingBitmap.height()) {
+                ALOGW("decode: bitmap size:%d, request size:%d\n",
+                    (int)decodingBitmap.getSize(), 4*decodingBitmap.width()*decodingBitmap.height());
+            }
+            decodingBitmap.copyTo(bitmap, kN32_SkColorType);
     #else
-            ret = codec->decode(stream, *bitmap,
+            ret = codec->decode(stream, &decodingBitmap,
                     SkBitmap::kARGB_8888_Config,
                     SkImageDecoder::kDecodePixels_Mode);
+            if ((int)decodingBitmap.getSize() < 4*decodingBitmap.width()* decodingBitmap.height()) {
+                ALOGW("decode: bitmap size:%d, request size:%d\n",
+                    (int)decodingBitmap.getSize(), 4*decodingBitmap.width()*decodingBitmap.height());
+            }
+            decodingBitmap.copyTo(bitmap, SkBitmap::kARGB_8888_Config);
     #endif
             if (!ret) {
                 delete bitmap;
@@ -1508,9 +1527,15 @@ status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
                     write(argbFd, mBitmap->getPixels(), mBitmap->rowBytes()*mBitmap->height());
                     close(argbFd);
                     */
-                    RGBA2bmp((char *)mBitmap->getPixels(),
-                        mBitmap->width(), mBitmap->height(), (char *)path.string());
-                    result.appendFormat("ImagePlayerService: save RGBA data to file:%s\n", path.string());
+                    if ((int)mBitmap->getSize() < 4*mBitmap->width()*mBitmap->height()) {
+                        result.appendFormat("ImagePlayerService: [error]save RGBA data to file:%s, bitmap size:%d, request size:%d\n",
+                            path.string(), (int)mBitmap->getSize(), 4*mBitmap->width()*mBitmap->height());
+                    }
+                    else {
+                        RGBA2bmp((char *)mBitmap->getPixels(),
+                            mBitmap->width(), mBitmap->height(), (char *)path.string());
+                        result.appendFormat("ImagePlayerService: save RGBA data to file:%s\n", path.string());
+                    }
                 }
             }
         }
