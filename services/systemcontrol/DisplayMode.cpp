@@ -121,7 +121,8 @@ DisplayMode::~DisplayMode() {
 void DisplayMode::init() {
     parseConfigFile();
 
-    SYS_LOGI("display mode init type: %d [0:none 1:tablet 2:mbox 3:tv]", mDisplayType);
+    SYS_LOGI("display mode init type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s, default UI:%s",
+        mDisplayType, mSocType, mDefaultUI);
     if (DISPLAY_TYPE_TABLET == mDisplayType) {
         setTabletDisplay();
     }
@@ -319,6 +320,8 @@ void DisplayMode::setMboxDisplay() {
         hpdstate,
         current_mode,
         outputmode);
+    if (strlen(outputmode) == 0)
+        strcpy(outputmode, mDefaultUI);
 
     if (!strncmp(mDefaultUI, "720", 3)) {
         source_output_width = 1280;
