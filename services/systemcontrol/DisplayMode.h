@@ -53,12 +53,14 @@
 #define DISPLAY_FB0_WINDOW_AXIS         "/sys/class/graphics/fb0/window_axis"
 
 #define DISPLAY_HPD_STATE               "/sys/class/amhdmitx/amhdmitx0/hpd_state"
+#define DISPLAY_HDMI_EDID               "/sys/class/amhdmitx/amhdmitx0/disp_cap"
 
 #define AUDIO_DSP_DIGITAL_RAW           "/sys/class/audiodsp/digital_raw"
 
 #define PROP_HDMIONLY                   "ro.platform.hdmionly"
 #define PROP_LCD_DENSITY                "ro.sf.lcd_density"
 #define PROP_HAS_CVBS_MODE              "ro.platform.has.cvbsmode"
+#define PROP_BEST_OUTPUT_MODE           "ro.platform.best_outputmode"
 
 #define ENV_480I_X                      "ubootenv.var.480i_x"
 #define ENV_480I_Y                      "ubootenv.var.480i_y"
@@ -146,6 +148,14 @@ enum {
     DISPLAY_MODE_TOTAL                  = 17
 };
 
+
+typedef struct mbox_data {
+    char edid[MAX_STR_LEN];
+    char hpd_state[MAX_STR_LEN];
+    char current_mode[MAX_STR_LEN];
+    char ubootenv_hdmimode[MAX_STR_LEN];
+}mbox_data_t;
+
 // ----------------------------------------------------------------------------
 
 class DisplayMode
@@ -167,6 +177,7 @@ public:
     void setOsdMouse(int x, int y, int w, int h);
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
+    static void* startHdmiPlugDetectLoop(void *data);
 
 private:
 
@@ -175,7 +186,13 @@ private:
 
     int parseConfigFile();
     void setTabletDisplay();
-    void setMboxDisplay();
+    void setMboxDisplay(char* hpdstate);
+    void getBestHdmiMode(char * mode, mbox_data* data);
+    void filterHdmiMode(char * mode, mbox_data* data);
+    void getHdmiMode(char *mode, mbox_data* data);
+    bool isBestOutputmode();
+    void getCurrentHdmiData(mbox_data_t* data);
+    void startHdmiPlugDetectThread();
     void setTVDisplay();
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
 

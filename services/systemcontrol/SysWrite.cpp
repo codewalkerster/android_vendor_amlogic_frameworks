@@ -122,7 +122,15 @@ void SysWrite::setProperty(const char *key, const char *value){
 
 bool SysWrite::readSysfs(const char *path, char *value){
     char buf[MAX_STR_LEN+1] = {0};
-    readSys(path, (char*)buf, MAX_STR_LEN);
+    readSys(path, (char*)buf, MAX_STR_LEN, false);
+    strcpy(value, buf);
+    return true;
+}
+
+// get the original data from sysfs without any change.
+bool SysWrite::readSysfsOriginal(const char *path, char *value){
+    char buf[MAX_STR_LEN+1] = {0};
+    readSys(path, (char*)buf, MAX_STR_LEN, true);
     strcpy(value, buf);
     return true;
 }
@@ -153,7 +161,7 @@ exit:
     close(fd);
 }
 
-void SysWrite::readSys(const char *path, char *buf, int count){
+void SysWrite::readSys(const char *path, char *buf, int count, bool needOriginalData){
     int fd, len;
     char *pos;
 
@@ -173,25 +181,27 @@ void SysWrite::readSys(const char *path, char *buf, int count){
         goto exit;
     }
 
-    int i , j;
-    for (i = 0, j = 0; i <= len -1; i++) {
-        /*change '\0' to 0x20(spacing), otherwise the string buffer will be cut off
-        * if the last char is '\0' should not replace it
-        */
-        if (0x0 == buf[i] && i < len - 1) {
-            buf[i] = 0x20;
+    if (!needOriginalData) {
+        int i , j;
+        for (i = 0, j = 0; i <= len -1; i++) {
+            /*change '\0' to 0x20(spacing), otherwise the string buffer will be cut off
+             * if the last char is '\0' should not replace it
+             */
+            if (0x0 == buf[i] && i < len - 1) {
+                buf[i] = 0x20;
 
-            if (mLogLevel > LOG_LEVEL_1)
-                SYS_LOGI("read buffer index:%d is a 0x0, replace to spacing \n", i);
+                if (mLogLevel > LOG_LEVEL_1)
+                    SYS_LOGI("read buffer index:%d is a 0x0, replace to spacing \n", i);
+            }
+
+            /* delete all the character of '\n' */
+            if (0x0a != buf[i]) {
+                buf[j++] = buf[i];
+            }
         }
 
-        /* delete all the character of '\n' */
-        if (0x0a != buf[i]) {
-            buf[j++] = buf[i];
-        }
+        buf[j] = 0x0;
     }
-
-    buf[j] = 0x0;
 
     if (mLogLevel > LOG_LEVEL_1)
         SYS_LOGI("read %s, result length:%d, val:%s\n", path, len, buf);
