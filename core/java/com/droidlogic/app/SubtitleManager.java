@@ -235,7 +235,6 @@ public class SubtitleManager {
             try {
                 if (mService != null) {
                     mService.close();
-                    mService = null;
                 }
             } catch (RemoteException e) {
                 throw new RuntimeException (e);
@@ -524,10 +523,8 @@ public class SubtitleManager {
                 return;
             }
 
-            if (mService == null) {
-                IBinder b = ServiceManager.getService ("subtitle_service"/*Context.SUBTITLE_SERVICE*/);
-                mService = ISubTitleService.Stub.asInterface (b);
-            }
+            IBinder b = ServiceManager.getService ("subtitle_service"/*Context.SUBTITLE_SERVICE*/);
+            mService = ISubTitleService.Stub.asInterface (b);
 
             if (debug() ) {
                 Log.i (TAG, "[getService] mService:" + mService);
