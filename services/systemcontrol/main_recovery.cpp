@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "ubootenv.h"
 #include "DisplayMode.h"
@@ -36,6 +37,11 @@ int main(int argc, char** argv)
 
     DisplayMode displayMode(path);
     displayMode.init();
+
+    //don't end this progress, wait for hdmi plug detect thread.
+    while (1) {
+        usleep(10000000);
+    }
 
     return 0;
 }

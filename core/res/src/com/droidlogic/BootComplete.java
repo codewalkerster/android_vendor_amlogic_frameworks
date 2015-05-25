@@ -34,7 +34,6 @@ public class BootComplete extends BroadcastReceiver {
 
             //use to check whether disable camera or not
             new UsbCameraManager(context).bootReady();
-            context.startService(new Intent(context, HdmiService.class));
             cecLanguageCheck(context);
         }
     }

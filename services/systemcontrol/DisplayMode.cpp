@@ -24,9 +24,11 @@
 
 #include <stdio.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "ubootenv.h"
 #include "DisplayMode.h"
@@ -54,6 +56,7 @@
 #define UBOOTENV_HDMIMODE           "ubootenv.var.hdmimode"
 #define UBOOTENV_CVBSMODE           "ubootenv.var.cvbsmode"
 #define UBOOTENV_OUTPUTMODE         "ubootenv.var.outputmode"
+#define UBOOTENV_ISBESTMODE         "ubootenv.var.is.bestmode"
 
 
 static void copy_if_gt0(uint32_t *src, uint32_t *dst, unsigned cnt)
@@ -127,7 +130,8 @@ void DisplayMode::init() {
         setTabletDisplay();
     }
     else if (DISPLAY_TYPE_MBOX == mDisplayType) {
-        setMboxDisplay();
+        setMboxDisplay(NULL);
+        startHdmiPlugDetectThread();
     }
     else if (DISPLAY_TYPE_TV == mDisplayType) {
         setTVDisplay();
@@ -280,24 +284,39 @@ void DisplayMode::setTabletDisplay() {
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
 }
 
-void DisplayMode::setMboxDisplay() {
+void DisplayMode::setMboxDisplay(char* hpdstate) {
+    mbox_data_t* data = (mbox_data_t *)malloc(sizeof(mbox_data_t));
+    if (data == NULL) {
+        SYS_LOGE(" malloc memory for mboxdata failed");
+        return;
+    }
+    memset(data, 0, sizeof(mbox_data_t));
+
+    if (hpdstate == NULL) {
+        getCurrentHdmiData(data);
+        hpdstate = data->hpd_state;
+    } else {
+        strcpy(data->hpd_state, hpdstate);
+        getCurrentHdmiData(data);
+    }
+
     int source_output_width = 1920;
     int source_output_height = 1080;
 
-    char hpdstate[MAX_STR_LEN] = {0};
     char current_mode[MAX_STR_LEN] = {0};
     char outputmode[MAX_STR_LEN] = {0};
-    pSysWrite->readSysfs(DISPLAY_HPD_STATE, hpdstate);
-    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, current_mode);
 
-    if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, false)) {
+    strcpy(current_mode, data->current_mode);
+
+    if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
         if (!strcmp(hpdstate, "1")){
             if (!strcmp(current_mode, MODE_480CVBS) || !strcmp(current_mode, MODE_576CVBS)) {
                 pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
                 pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
             }
 
-            getBootEnv(UBOOTENV_HDMIMODE, outputmode);
+            getHdmiMode(outputmode, data);
+            setBootEnv(UBOOTENV_HDMIMODE, outputmode);
         }
         else {
             getBootEnv(UBOOTENV_CVBSMODE, outputmode);
@@ -401,6 +420,161 @@ void DisplayMode::setMboxDisplay() {
 
     //init osd mouse
     setOsdMouse(current_mode);
+
+    free(data);
+    data = NULL;
+}
+
+//get the best hdmi mode by edid
+void DisplayMode::getBestHdmiMode(char* mode, mbox_data_t* data) {
+    char* arrayMode[MAX_STR_LEN] = {0};
+    char* tmp;
+    int len;
+
+  /*  len = strlen(data->edid);
+    tmp = data->edid;
+    int i = 0;
+
+    do {
+        if (strlen(tmp) == 0)
+            break;
+        char* pos = strchr(tmp, 0x0a);
+        *pos = 0;
+
+        arrayMode[i] = tmp;
+        tmp = pos + 1;
+        i++;
+    } while (tmp <= data->edid + len -1);
+
+    for (int j = 0; j < i; j++) {
+        char* pos = strchr(arrayMode[j], '*');
+        if (pos != NULL) {
+            *pos = 0;
+            strcpy(mode, arrayMode[j]);
+            break;
+        }
+    }*/
+    char* pos = strchr(data->edid, '*');
+    if (pos != NULL) {
+        char* findReturn = pos;
+        while (*findReturn != 0x0a && findReturn >= data->edid) {
+            findReturn--;
+        }
+        *pos = 0;
+        strcpy(mode, findReturn + 1);
+        SYS_LOGI(" set HDMI to best edid mode: %s\n", mode);
+    }
+
+    if (strlen(mode) == 0) {
+        pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, DEFAULT_OUTPUT_MODE, mode);
+    }
+}
+
+//check if the edid support current hdmi mode
+void DisplayMode::filterHdmiMode(char* mode, mbox_data_t* data) {
+    char currentHdmiMode[MAX_STR_LEN] = {0};
+    char edid[MAX_STR_LEN] = {0};
+    char* arrayMode[MAX_STR_LEN] = {0};
+    char* tmp;
+    int len;
+
+    len = strlen(data->edid);
+    tmp = data->edid;
+
+    int i = 0;
+    do {
+        if (strlen(tmp) == 0)
+            break;
+        char* pos = strchr(tmp, 0x0a);
+        *pos = 0;
+
+        arrayMode[i] = tmp;
+        if (!strncmp(arrayMode[i], data->ubootenv_hdmimode, strlen(data->ubootenv_hdmimode))) {
+            strcpy(mode, data->ubootenv_hdmimode);
+            return;
+        }
+
+        tmp = pos + 1;
+        i++;
+    } while (tmp <= data->edid + len -1);
+
+    strcpy(mode, arrayMode[i-1]);
+}
+
+void DisplayMode::getHdmiMode(char* mode, mbox_data_t* data) {
+    if (strstr(data->edid, "null") != NULL) {
+        pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, DEFAULT_OUTPUT_MODE, mode);
+        return;
+    }
+
+    if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
+        if (isBestOutputmode()) {
+            getBestHdmiMode(mode, data);
+        } else {
+            filterHdmiMode(mode, data);
+        }
+    }
+    SYS_LOGI("set HDMI mode to %s\n", mode);
+}
+
+void DisplayMode::getCurrentHdmiData(mbox_data_t* data){;
+    if (strlen(data->hpd_state) == 0) {
+        pSysWrite->readSysfs(DISPLAY_HPD_STATE, data->hpd_state);
+    }
+
+    if (!strcmp(data->hpd_state, "1")) {
+        pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, data->edid);
+
+        int count = 0;
+        while (strlen(data->edid) == 0) {
+            if (count >= 5) {
+                strcpy(data->edid, "null edid");
+                break;
+            }
+
+            pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, data->edid);
+            count++;
+            usleep(500000);
+        }
+    }
+    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, data->current_mode);
+    getBootEnv(UBOOTENV_HDMIMODE, data->ubootenv_hdmimode);
+}
+
+void DisplayMode::startHdmiPlugDetectThread() {
+    pthread_t id;
+    int ret;
+    ret = pthread_create(&id, NULL, startHdmiPlugDetectLoop, this);
+    if (ret != 0) {
+        SYS_LOGI("Create HdmiPlugDetectThread error!\n");
+    }
+}
+
+// all the hdmi plug checking complete in this loop
+void* DisplayMode::startHdmiPlugDetectLoop(void* data){
+    DisplayMode *pThiz = (DisplayMode*)data;
+
+    char oldHpdstate[MAX_STR_LEN] = {0};
+    char currentHpdstate[MAX_STR_LEN] = {0};
+
+    pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, oldHpdstate);
+    while (1) {
+        pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, currentHpdstate);
+        if (strcmp(oldHpdstate, currentHpdstate)) {
+            SYS_LOGI("HdmiPlugDetectLoop: detected HDMI plug: change state from %s to %s\n", oldHpdstate, currentHpdstate);
+
+            pThiz->setMboxDisplay(currentHpdstate);
+            strcpy(oldHpdstate, currentHpdstate);
+        }
+        usleep(2000000);
+    }
+
+    return NULL;
+}
+
+bool DisplayMode::isBestOutputmode() {
+    char isBestMode[MAX_STR_LEN] = {0};
+    return !getBootEnv(UBOOTENV_ISBESTMODE, isBestMode) || strcmp(isBestMode, "true") == 0;
 }
 
 void DisplayMode::setTVDisplay() {
