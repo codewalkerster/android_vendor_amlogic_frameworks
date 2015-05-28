@@ -214,6 +214,7 @@ private:
     char mDefaultUI[MAX_STR_LEN];//this used for mbox
     int mLogLevel;
     SysWrite *pSysWrite = NULL;
+    bool initDisplay;
 };
 
 #endif // ANDROID_DISPLAY_MODE_H

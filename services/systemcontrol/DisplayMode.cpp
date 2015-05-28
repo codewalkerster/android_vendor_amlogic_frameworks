@@ -116,6 +116,7 @@ DisplayMode::DisplayMode(const char *path)
     SYS_LOGI("display mode config path: %s", pConfigPath);
 
     pSysWrite = new SysWrite();
+    initDisplay = true;
 }
 
 DisplayMode::~DisplayMode() {
@@ -135,6 +136,7 @@ void DisplayMode::init() {
     else if (DISPLAY_TYPE_TV == mDisplayType) {
         setTVDisplay();
     }
+    initDisplay = false;
 }
 
 void DisplayMode:: getDisplayInfo(int &type, char* socType, char* defaultUI) {
@@ -309,7 +311,8 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
 
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
         if (!strcmp(hpdstate, "1")){
-            if (!strcmp(current_mode, MODE_480CVBS) || !strcmp(current_mode, MODE_576CVBS)) {
+            if ((!strcmp(current_mode, MODE_480CVBS) || !strcmp(current_mode, MODE_576CVBS))
+                    && initDisplay) {
                 pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
                 pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
             }
@@ -334,7 +337,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
         }
     }
 
-    SYS_LOGI("init mbox display hpdstate:%s, current mode:%s outputmode:%s\n",
+    SYS_LOGI("init mbox display hpdstate:%s, old outputmode:%s, new outputmode:%s\n",
         hpdstate,
         current_mode,
         outputmode);
@@ -384,8 +387,10 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
 
 
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_MODE, "1");
-    pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE_MODE, "1");
-    pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
+    if (initDisplay) {
+        pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE_MODE, "1");
+        pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
+    }
 
     char axis[MAX_STR_LEN] = {0};
     sprintf(axis, "%d %d %d %d",
@@ -399,7 +404,8 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
 
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-    pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
+    if (initDisplay)
+        pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
 
     //audio
     getBootEnv(UBOOTENV_DIGITAUDIO, value);
@@ -416,7 +422,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, audiovalue);
 
     //init osd mouse
-    setOsdMouse(current_mode);
+    setOsdMouse(outputmode);
 
     free(data);
     data = NULL;
