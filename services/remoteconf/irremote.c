@@ -1,12 +1,38 @@
+/*
+ * Copyright (C) 2011 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *  @author   Tellen Yu
+ *  @version  2.0
+ *  @date     2015/06/01
+ *  @par function description:
+ *  - 1 IR remote
+ */
+
+#define LOG_TAG "remotecfg"
+//#define LOG_NDEBUG 0
+
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <utils/Log.h>
 #include "remote_config.h"
 #include "keydefine.h"
-#define FACTCUSTCODE_MAX 20
-#define DEVICE_NAME "/dev/amremote"
-#define DEVICE_KP  "/dev/am_adc_kpd"
+
+#define FACTCUSTCODE_MAX        20
+#define DEVICE_NAME             "/dev/amremote"
+#define DEVICE_KP               "/dev/am_adc_kpd"
 
 unsigned short key_map[256], repeat_key_map[256], mouse_map[4];
 unsigned int factory_customercode_map[FACTCUSTCODE_MAX];
@@ -61,34 +87,41 @@ unsigned int adc_move_enable = 0;
 
 int main(int argc, char* argv[])
 {
-    remote_config_t *remote;
-    FILE *fp;
-    int ret, i;
-    int device_fd;
+    int i;
     unsigned int val;
+    remote_config_t *remote = NULL;
+    int device_name_fd = -1;
+    int device_kp_fd = -1;
+    int ret = 0;
 
-    for(i =0; i < 256; i++)
+    for (i = 0; i < argc; i++)
+        ALOGI("remotecfg parameter[%d] %s \n", i, argv[i]);
+
+    for (i = 0; i < 256; i++)
         key_map[i] = KEY_RESERVED;
-    for(i =0; i < 256; i++)
+    for (i = 0; i < 256; i++)
         repeat_key_map[i] = KEY_RESERVED;
-    for(i =0; i < 4; i++)
+    for (i = 0; i < 4; i++)
         mouse_map[i] = 0xffff;
     remote = (remote_config_t *)malloc(sizeof(remote_config_t));
-    if(!remote){
-        printf("out of memory !\n");
-        return -1;
-        }
+    if (!remote) {
+        ALOGE("out of memory !\n");
+        ret = -1;
+        goto exit;
+    }
     memset((unsigned char*)remote, 0xff, sizeof(remote_config_t));
     remote->key_map = key_map;
     remote->repeat_key_map = repeat_key_map;
     remote->mouse_map = mouse_map;
-	remote->factory_customercode_map = factory_customercode_map;
-    device_fd = open(DEVICE_NAME, O_RDWR);
-    if(device_fd < 0){
-        printf("Can't open %s .\n", DEVICE_NAME);
-        return -2;
-        }
-    if(argc < 2){
+    remote->factory_customercode_map = factory_customercode_map;
+    device_name_fd = open(DEVICE_NAME, O_RDWR);
+    if (device_name_fd < 0) {
+        ALOGE("Can't open %s .\n", DEVICE_NAME);
+        ret = -2;
+        goto exit;
+    }
+
+    if (argc < 2) {
         remote->factory_code = 0x40400001;
         remote->work_mode = 1;
         remote->repeat_enable = 1;
@@ -99,65 +132,74 @@ int main(int argc, char* argv[])
         remote->repeat_peroid = 33;
         memcpy(key_map, default_key_map, sizeof(key_map));
         memcpy(mouse_map, default_mouse_map, sizeof(mouse_map));
-		memset(factory_customercode_map, 0, FACTCUSTCODE_MAX);
-        }
-    else if(argv[1][0]=='-'){
-        printf("Usage : %s configfile\n", argv[0]);
-        return -3;
-        }
+        memset(factory_customercode_map, 0, FACTCUSTCODE_MAX);
+    }
+    else if (argv[1][0] == '-') {
+        ALOGI("Usage : %s configfile\n", argv[0]);
+        ret = -3;
+        goto exit;
+    }
     else{
-        fp=fopen(argv[1], "r");
-        if(!fp){
-            printf("Open file %s is failed!!!\n", argv[1]);
-            return -4;
-            }
-        ret = get_config_from_file(fp, remote);
+        FILE *fp = fopen(argv[1], "r");
+        if (!fp) {
+            ALOGE("Open file %s is failed!!!\n", argv[1]);
+            ret = -4;
+            goto exit;
+        }
+        get_config_from_file(fp, remote);
         fclose(fp);
-        }
+    }
+
     remote->factory_code >>= 16;
-    ret = set_config(remote, device_fd);
-    ioctl(device_fd, REMOTE_IOC_RESET_KEY_MAPPING, NULL);
-    for(i = 0; i < 256; i++)
-        if(key_map[i] != KEY_RESERVED){
+    set_config(remote, device_name_fd);
+    ioctl(device_name_fd, REMOTE_IOC_RESET_KEY_MAPPING, NULL);
+    for (i = 0; i < 256; i++)
+        if (key_map[i] != KEY_RESERVED) {
             val = (i<<16) | key_map[i];
-            ioctl(device_fd, REMOTE_IOC_SET_KEY_MAPPING, &val);
-            }
-
-    for(i = 0; i < 256; i++)
-        if(repeat_key_map[i] != KEY_RESERVED){
-            val = (i<<16) | repeat_key_map[i];
-            ioctl(device_fd, REMOTE_IOC_SET_REPEAT_KEY_MAPPING, &val);
+            ioctl(device_name_fd, REMOTE_IOC_SET_KEY_MAPPING, &val);
         }
 
-    for(i = 0; i < 4; i++)
-        if(mouse_map[i] != 0xffff){
-            val = (i<<16) | mouse_map[i];
-            ioctl(device_fd, REMOTE_IOC_SET_MOUSE_MAPPING, &val);
-            }
-	for(i = 0; i < FACTCUSTCODE_MAX; i++)
-        if(factory_customercode_map[i] != 0xffffffff){
-           val = (i<<16) | factory_customercode_map[i];
-            ioctl(device_fd, REMOTE_IOC_SET_FACTORY_CUSTOMCODE, &val);
-            }
-    close(device_fd);
+    for (i = 0; i < 256; i++)
+        if (repeat_key_map[i] != KEY_RESERVED ) {
+            val = (i<<16) | repeat_key_map[i];
+            ioctl(device_name_fd, REMOTE_IOC_SET_REPEAT_KEY_MAPPING, &val);
+        }
 
-    device_fd = open(DEVICE_KP, O_RDWR);
-    if (device_fd >= 0) {
+    for (i = 0; i < 4; i++)
+        if (mouse_map[i] != 0xffff) {
+            val = (i<<16) | mouse_map[i];
+            ioctl(device_name_fd, REMOTE_IOC_SET_MOUSE_MAPPING, &val);
+        }
+
+    for (i = 0; i < FACTCUSTCODE_MAX; i++)
+        if (factory_customercode_map[i] != 0xffffffff) {
+           val = (i<<16) | factory_customercode_map[i];
+            ioctl(device_name_fd, REMOTE_IOC_SET_FACTORY_CUSTOMCODE, &val);
+        }
+
+    device_kp_fd = open(DEVICE_KP, O_RDWR);
+    if (device_kp_fd >= 0) {
         if (adc_move_enable != 0) {
-            for (i = 0; i < ARRAY_SIZE(adc_map); i++) {
+            for (i = 0; i < (int)ARRAY_SIZE(adc_map); i++) {
                 if (adc_map[i] != 0xffff) {
                     val = (i << 16) | adc_map[i];
-                    ioctl(device_fd, KEY_IOC_SET_MOVE_MAP, &val);
-                    printf("adc_map[%d] = %d ,val = %d \n", i, adc_map[i], val);
+                    ioctl(device_kp_fd, KEY_IOC_SET_MOVE_MAP, &val);
+                    ALOGI("adc_map[%d] = %d ,val = %d \n", i, adc_map[i], val);
                 }
             }
         }
 
-        ioctl(device_fd, KEY_IOC_SET_MOVE_ENABLE, &adc_move_enable);
-        printf("adc_move_enable = %d \n", adc_move_enable);
-
-        close(device_fd);
+        ioctl(device_kp_fd, KEY_IOC_SET_MOVE_ENABLE, &adc_move_enable);
+        ALOGI("adc_move_enable = %d \n", adc_move_enable);
+        close(device_kp_fd);
     }
 
-    return 0;
+exit:
+    if (NULL != remote)
+        free(remote);
+
+    if (device_name_fd >= 0)
+        close(device_name_fd);
+
+    return ret;
 }
