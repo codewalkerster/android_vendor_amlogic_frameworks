@@ -102,6 +102,14 @@
 #define ENV_4K2K30HZ_Y                  "ubootenv.var.4k2k30hz_y"
 #define ENV_4K2K30HZ_W                  "ubootenv.var.4k2k30hz_w"
 #define ENV_4K2K30HZ_H                  "ubootenv.var.4k2k30hz_h"
+#define ENV_4K2K50HZ_X                  "ubootenv.var.4k2k50hz_x"
+#define ENV_4K2K50HZ_Y                  "ubootenv.var.4k2k50hz_y"
+#define ENV_4K2K50HZ_W                  "ubootenv.var.4k2k50hz_w"
+#define ENV_4K2K50HZ_H                  "ubootenv.var.4k2k50hz_h"
+#define ENV_4K2K60HZ_X                  "ubootenv.var.4k2k60hz_x"
+#define ENV_4K2K60HZ_Y                  "ubootenv.var.4k2k60hz_y"
+#define ENV_4K2K60HZ_W                  "ubootenv.var.4k2k60hz_w"
+#define ENV_4K2K60HZ_H                  "ubootenv.var.4k2k60hz_h"
 #define ENV_4K2KSMPTE_X                 "ubootenv.var.4k2ksmpte_x"
 #define ENV_4K2KSMPTE_Y                 "ubootenv.var.4k2ksmpte_y"
 #define ENV_4K2KSMPTE_W                 "ubootenv.var.4k2ksmpte_w"
@@ -130,22 +138,26 @@ enum {
 enum {
     DISPLAY_MODE_480I                   = 0,
     DISPLAY_MODE_480P                   = 1,
-    DISPLAY_MODE_576I                   = 2,
-    DISPLAY_MODE_576P                   = 3,
-    DISPLAY_MODE_720P                   = 4,
-    DISPLAY_MODE_1080I                  = 5,
-    DISPLAY_MODE_1080P                  = 6,
-    DISPLAY_MODE_720P50HZ               = 7,
-    DISPLAY_MODE_1080I50HZ              = 8,
-    DISPLAY_MODE_1080P50HZ              = 9,
-    DISPLAY_MODE_480CVBS                = 10,
-    DISPLAY_MODE_576CVBS                = 11,
-    DISPLAY_MODE_4K2K24HZ               = 12,
-    DISPLAY_MODE_4K2K25HZ               = 13,
-    DISPLAY_MODE_4K2K30HZ               = 14,
-    DISPLAY_MODE_4K2KSMPTE              = 15,
-    DISPLAY_MODE_1080P24HZ              = 16,
-    DISPLAY_MODE_TOTAL                  = 17
+    DISPLAY_MODE_480CVBS                = 2,
+    DISPLAY_MODE_576I                   = 3,
+    DISPLAY_MODE_576P                   = 4,
+    DISPLAY_MODE_576CVBS                = 5,
+    DISPLAY_MODE_720P50HZ               = 6,
+    DISPLAY_MODE_720P                   = 7,
+    DISPLAY_MODE_1080P24HZ              = 8,
+    DISPLAY_MODE_1080I50HZ              = 9,
+    DISPLAY_MODE_1080P50HZ              = 10,
+    DISPLAY_MODE_1080I                  = 11,
+    DISPLAY_MODE_1080P                  = 12,
+    DISPLAY_MODE_4K2K24HZ               = 13,
+    DISPLAY_MODE_4K2K25HZ               = 14,
+    DISPLAY_MODE_4K2K30HZ               = 15,
+    DISPLAY_MODE_4K2K50HZ               = 16,
+    DISPLAY_MODE_4K2K50HZ420            = 17,
+    DISPLAY_MODE_4K2K60HZ               = 18,
+    DISPLAY_MODE_4K2K60HZ420            = 19,
+    DISPLAY_MODE_4K2KSMPTE              = 20,
+    DISPLAY_MODE_TOTAL                  = 21
 };
 
 
