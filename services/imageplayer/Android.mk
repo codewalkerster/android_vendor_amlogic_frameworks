@@ -55,5 +55,6 @@ LOCAL_C_INCLUDES += \
 
 LOCAL_MODULE:= imageserver
 LOCAL_REQUIRED_MODULES := libtiff
+LOCAL_32_BIT_ONLY := true
 
 include $(BUILD_EXECUTABLE)
