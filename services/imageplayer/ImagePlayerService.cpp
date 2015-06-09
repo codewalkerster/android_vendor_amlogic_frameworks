@@ -3,6 +3,7 @@
 #define LOG_TAG "ImagePlayerService"
 
 #include "utils/Log.h"
+#include "TIFF2RGBA.h"
 #include "ImagePlayerService.h"
 
 #include <stdlib.h>
@@ -225,7 +226,7 @@ static bool isPhotoByExtenName(const char *url) {
     if (!url)
         return false;
 
-    char *ptr=NULL;
+    char *ptr = NULL;
     ptr = strrchr(url, '.');
     if (ptr == NULL) {
     	ALOGE("isPhotoByExtenName ptr is NULL!!!");
@@ -249,6 +250,26 @@ static bool isPhotoByExtenName(const char *url) {
         || (strncasecmp(ptr, "ico?", 4) == 0)
         || (strcasecmp(ptr, "wbmp") == 0)
         || (strncasecmp(ptr, "wbmp?", 5) == 0)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static bool isTiffByExtenName(const char *url) {
+    if (!url)
+        return false;
+
+    char *ptr = NULL;
+    ptr = strrchr(url, '.');
+    if (ptr == NULL) {
+        ALOGE("isTiffByExtenName ptr is NULL!!!");
+        return false;
+    }
+    ptr = ptr + 1;
+
+    if ((strcasecmp(ptr, "tif") == 0)
+        || (strncasecmp(ptr, "tiff", 4) == 0)) {
         return true;
     } else {
         return false;
@@ -622,7 +643,7 @@ int ImagePlayerService::setDataSource(const char *uri) {
         return RET_ERR_INVALID_OPERATION;
     }
 
-    if (!isSupportFromat(uri, &mBitmap)) {
+    if (!isSupportFromat(uri, &mBitmap) && !isTiffByExtenName(uri)) {
         ALOGE("setDataSource codec can not support it");
         return RET_ERR_INVALID_OPERATION;
     }
@@ -1108,7 +1129,23 @@ int ImagePlayerService::prepare() {
     }
 #endif
 
-    mBitmap = decode(stream, NULL);
+    if (isTiffByExtenName(mImageUrl)) {
+        SkBitmap *bitmap = new SkBitmap();
+        int ret = TIFF2RGBA::tiffDercoder(mImageUrl, bitmap);
+        ALOGI("tiff decorder result:%d, width:%d, height:%d", ret, bitmap->width(), bitmap->height());
+
+        mWidth = bitmap->width();
+        mHeight = bitmap->height();
+        if ((bitmap->width() > 0) && (bitmap->height() > 0)) {
+            mBitmap = bitmap;
+        }
+        else {
+            delete bitmap;
+        }
+    }
+    else {
+        mBitmap = decode(stream, NULL);
+    }
     delete stream;
 
     if (mBitmap == NULL) {
@@ -1183,19 +1220,34 @@ int ImagePlayerService::prepareBuf(const char *uri) {
         mBufBitmap = NULL;
     }
 
-    SkBitmap *bitmap = NULL;
-    if (!isSupportFromat(uri, &bitmap)) {
-        ALOGE("prepare buffer codec can not support it");
-        delete stream;
-        return RET_ERR_INVALID_OPERATION;
-    }
+    if (isTiffByExtenName(uri)) {
+        SkBitmap *bitmap = new SkBitmap();
+        int ret = TIFF2RGBA::tiffDercoder(uri, bitmap);
+        ALOGI("tiff decorder result:%d, width:%d, height:%d", ret, bitmap->width(), bitmap->height());
 
-    if (bitmap != NULL) {
-        delete bitmap;
-        bitmap = NULL;
+        mWidth = bitmap->width();
+        mHeight = bitmap->height();
+        if ((bitmap->width() > 0) && (bitmap->height() > 0)) {
+            mBufBitmap = bitmap;
+        }
+        else {
+            delete bitmap;
+        }
     }
+    else {
+        SkBitmap *bitmap = NULL;
+        if (!isSupportFromat(uri, &bitmap)) {
+            ALOGE("prepare buffer codec can not support it");
+            delete stream;
+            return RET_ERR_INVALID_OPERATION;
+        }
 
-    mBufBitmap = decode(stream, NULL);
+        if (bitmap != NULL) {
+            delete bitmap;
+            bitmap = NULL;
+        }
+        mBufBitmap = decode(stream, NULL);
+    }
     delete stream;
 
     if (mBufBitmap == NULL) {

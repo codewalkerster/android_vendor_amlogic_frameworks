@@ -1,4 +1,4 @@
-/** @file RGBPicture.h
+/** @file RGBPicture.c
  *  @par Copyright:
  *  - Copyright 2011 Amlogic Inc as unpublished work
  *  All Rights Reserved

@@ -26,7 +26,8 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES:= \
   main_imageserver.cpp \
   ImagePlayerService.cpp  \
-  RGBPicture.c
+  RGBPicture.c  \
+  TIFF2RGBA.cpp
 
 LOCAL_SHARED_LIBRARIES := \
   libimageplayerservice \
@@ -38,7 +39,8 @@ LOCAL_SHARED_LIBRARIES := \
   libdl                       \
   libstagefright              \
   libmedia                    \
-  libsystemcontrolservice
+  libsystemcontrolservice     \
+  libtiff
 
 LOCAL_C_INCLUDES += \
   external/skia/include/core \
@@ -48,8 +50,10 @@ LOCAL_C_INCLUDES += \
   external/skia/include/utils \
   frameworks/av/include \
   frameworks/av \
-  vendor/amlogic/frameworks/services/systemcontrol
+  vendor/amlogic/frameworks/services/systemcontrol \
+  vendor/amlogic/external/libtiff
 
 LOCAL_MODULE:= imageserver
+LOCAL_REQUIRED_MODULES := libtiff
 
 include $(BUILD_EXECUTABLE)
