@@ -37,6 +37,8 @@ public class SystemControlManager {
     private static final int SET_POSITION           = IBinder.FIRST_CALL_TRANSACTION + 14;
     private static final int GET_POSITION           = IBinder.FIRST_CALL_TRANSACTION + 15;
 
+    private static final int REINIT                 = IBinder.FIRST_CALL_TRANSACTION + 16;
+
     private Context mContext;
     private IBinder mIBinder = null;
     public SystemControlManager(Context context){

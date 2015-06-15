@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
-
+#include <cutils/properties.h>
 #include "ubootenv.h"
 #include "DisplayMode.h"
 #include "SysTokenizer.h"
@@ -567,9 +567,16 @@ void* DisplayMode::startHdmiPlugDetectLoop(void* data){
 
     char oldHpdstate[MAX_STR_LEN] = {0};
     char currentHpdstate[MAX_STR_LEN] = {0};
+    char status[PROPERTY_VALUE_MAX]={0};
 
     pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, oldHpdstate);
     while (1) {
+        if (property_get("instaboot.status", status, "completed") &&
+           !strcmp("booting", status)){
+            usleep(2000000);
+            continue;
+        }
+
         pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, currentHpdstate);
         if (strcmp(oldHpdstate, currentHpdstate)) {
             SYS_LOGI("HdmiPlugDetectLoop: detected HDMI plug: change state from %s to %s\n", oldHpdstate, currentHpdstate);
@@ -677,8 +684,10 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
 void DisplayMode::getPosition(const char* curMode, int *position) {
     int index = DISPLAY_MODE_720P;
     for (int i = 0; i < DISPLAY_MODE_TOTAL; i++) {
-        if (!strcmp(curMode, DISPLAY_MODE_LIST[i]))
-            index = i;
+        if (!strcmp(curMode, DISPLAY_MODE_LIST[i])) {
+             index = i;
+             break;
+        }
     }
 
     switch (index) {

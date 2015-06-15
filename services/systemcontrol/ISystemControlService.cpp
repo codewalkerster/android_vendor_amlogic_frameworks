@@ -315,6 +315,16 @@ public:
         h = reply.readInt32();
         ALOGV("get position x:%d, y:%d, w:%d, h:%d\n", x, y, w, h);
     }
+
+    virtual void reInit(void) {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+
+        if (remote()->transact(REINIT, data, &reply) != NO_ERROR) {
+            ALOGE("reInit could not contact remote\n");
+            return;
+        }
+    }
 };
 
 IMPLEMENT_META_INTERFACE(SystemControlService, "droidlogic.ISystemControlService");
@@ -468,6 +478,11 @@ status_t BnISystemControlService::onTransact(
             reply->writeInt32(y);
             reply->writeInt32(w);
             reply->writeInt32(h);
+            return NO_ERROR;
+        }
+        case REINIT: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            reInit();
             return NO_ERROR;
         }
         default: {

@@ -50,6 +50,8 @@ enum {
     OSD_MOUSE_PARA          = IBinder::FIRST_CALL_TRANSACTION + 13,
     SET_POSITION            = IBinder::FIRST_CALL_TRANSACTION + 14,
     GET_POSITION            = IBinder::FIRST_CALL_TRANSACTION + 15,
+
+    REINIT                  = IBinder::FIRST_CALL_TRANSACTION + 16,
 };
 
 // ----------------------------------------------------------------------------
@@ -83,6 +85,7 @@ public:
     virtual void setOsdMousePara(int x, int y, int w, int h) = 0;
     virtual void setPosition(int left, int top, int width, int height) = 0;
     virtual void getPosition(const String16& mode, int &x, int &y, int &w, int &h) = 0;
+    virtual void reInit(void) = 0;
 };
 
 // ----------------------------------------------------------------------------

@@ -26,6 +26,7 @@ typedef struct env_attribute {
 }env_attribute;
 
 int bootenv_init();
+int bootenv_reinit();
 const char * bootenv_get(const char * key);
 int bootenv_update(const char* name, const char* value);
 void bootenv_print(void);

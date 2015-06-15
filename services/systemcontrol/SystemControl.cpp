@@ -215,6 +215,10 @@ void SystemControl::getPosition(const String16& mode, int &x, int &y, int &w, in
     }
 }
 
+void SystemControl::reInit() {
+    bootenv_reinit();
+}
+
 void SystemControl::traceValue(const String16& type, const String16& key, const String16& value) {
     if (mLogLevel > LOG_LEVEL_0) {
         String16 procName;

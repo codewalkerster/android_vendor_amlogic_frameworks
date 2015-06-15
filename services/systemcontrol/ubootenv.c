@@ -13,7 +13,7 @@
 #include <zlib.h>
 
 #include <cutils/properties.h>
-
+#include <cutils/threads.h>
 //#include "util.h"
 
 #ifdef MTD_OLD
@@ -29,7 +29,7 @@
 #define ERROR(x...)     SYS_LOGE(x)
 #define NOTICE(x...)    SYS_LOGV(x)
 #define INFO(x...)      SYS_LOGI(x)
-
+static mutex_t  env_lock = MUTEX_INITIALIZER;
 
 char BootenvPartitionName[32]={0};
 char PROFIX_UBOOTENV_VAR[32]={0};
@@ -173,6 +173,10 @@ int read_bootenv() {
 }
 
 const char * bootenv_get_value(const char * key) {
+    if (!ENT_INIT_DONE) {
+        return NULL;
+    }
+
     env_attribute *attr = &env_attribute_header;
     while (attr) {
         if (!strcmp(key,attr->key)) {
@@ -208,8 +212,9 @@ int bootenv_set_value(const char * key,  const char * value,int creat_args_flag)
         strcpy(attr->key,key);
         strcpy(attr->value,value);
         return 1;
-    }else
+    }else {
         return 0;
+    }
 }
 
 int save_bootenv() {
@@ -462,6 +467,27 @@ int bootenv_init(void) {
 
     bootenv_props_load();
     return 0;
+}
+
+int bootenv_reinit(void) {
+   mutex_lock(&env_lock);
+   if (env_data.image) {
+       free(env_data.image);
+       env_data.image = NULL;
+       env_data.crc = NULL;
+       env_data.data = NULL;
+   }
+   env_attribute * pAttr = env_attribute_header.next;
+   memset(&env_attribute_header, 0, sizeof(env_attribute));
+   env_attribute * pTmp = NULL;
+   while (pAttr) {
+       pTmp = pAttr;
+       pAttr = pAttr->next;
+       free(pTmp);
+   }
+   bootenv_init();
+   mutex_unlock(&env_lock);
+   return 0;
 }
 
 int bootenv_update(const char* name, const char* value) {
