@@ -16,10 +16,6 @@ import android.provider.MediaStore;
 import android.util.Log;
 import java.lang.Integer;
 import java.lang.Thread;
-import java.io.IOException;
-
-import com.droidlogic.SubTitleService.ISubTitleService;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -27,27 +23,55 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.FileNotFoundException;
+import com.droidlogic.SubTitleService.ISubTitleService;
 
 public class SubtitleManager {
         private String TAG = "SubtitleManager";
+        private boolean mDebug = false;
         private MediaPlayer mMediaPlayer = null;
         private ISubTitleService mService = null;
-        private EventHandler mEventHandler = null;
         private boolean mInvokeFromMp = false;
         private boolean mThreadStop = false;
-        private String mPath;
+        private String mPath = null;
         private Thread mThread = null;
 
         public SubtitleManager (MediaPlayer mp) {
-            /*Looper looper;
-            if ((looper = Looper.myLooper()) != null) {
-                mEventHandler = new EventHandler(looper);
-            } else if ((looper = Looper.getMainLooper()) != null) {
-                mEventHandler = new EventHandler(looper);
-            } else {
-                mEventHandler = null;
-            }*/
             mMediaPlayer = mp;
+            mDebug = false;
+            checkDebug();
+            if (!disable()) {
+                getService();
+            }
+        }
+
+        private boolean disable() {
+            boolean ret = false;
+            if (SystemProperties.getBoolean ("sys.subtitle.disable", false) ) {
+                ret = true;
+            }
+            return ret;
+        }
+
+        private void checkDebug() {
+            if (SystemProperties.getBoolean ("sys.subtitle.debug", false) ) {
+                mDebug = true;
+            }
+        }
+
+        private boolean optionEnable() {
+            boolean ret = false;
+            if (SystemProperties.getBoolean ("sys.subtitleOption.enable", false) ) {
+                ret = true;
+            }
+            return ret;
+        }
+
+        private void LOGI(String msg) {
+            if (mDebug) Log.i(TAG, msg);
+        }
+
+        private void LOGE(String msg) {
+            /*if (mDebug)*/ Log.e(TAG, msg);
         }
 
         public void setInvokeFromMp (boolean fromMediaPlayer) {
@@ -67,9 +91,7 @@ public class SubtitleManager {
                 return;
             }
 
-            getService();
             String scheme = uri.getScheme();
-
             if (scheme == null || scheme.equals ("file") ) {
                 mPath = uri.getPath();
                 return;
@@ -84,6 +106,8 @@ public class SubtitleManager {
                     MediaStore.Video.Media.DATA
                 };
 
+                mPath = null;
+
                 if (scheme.equals ("content") ) {
                     int idx_check = (uri.toString() ).indexOf ("media/external/video/media");
 
@@ -91,33 +115,20 @@ public class SubtitleManager {
                         int idx = mediaStorePath.lastIndexOf ("/");
                         String idStr = mediaStorePath.substring (idx + 1);
                         int id = Integer.parseInt (idStr);
-
-                        if (debug() ) {
-                            Log.i (TAG, "[setDataSource]id:" + id);
-                        }
+                        LOGI("[setSource]id:" + id);
 
                         String where = MediaStore.Video.Media._ID + "=" + id;
                         Cursor cursor = resolver.query (MediaStore.Video.Media.EXTERNAL_CONTENT_URI, cols, where , null, null);
-
                         if (cursor != null && cursor.getCount() == 1) {
                             int colidx = cursor.getColumnIndexOrThrow (MediaStore.Video.Media.DATA);
                             cursor.moveToFirst();
                             mPath = cursor.getString (colidx);
-
-                            if (debug() ) {
-                                Log.i (TAG, "[setDataSource]mediaStorePath:" + mediaStorePath + ",mPath:" + mPath);
-                            }
+                            LOGI("[setSource]mediaStorePath:" + mediaStorePath + ",mPath:" + mPath);
                         }
-                    } else {
-                        mPath = null;
                     }
-                } else {
-                    mPath = null;
                 }
             } catch (SecurityException ex) {
-            } finally
-
-            {
+                LOGE("[setSource]SecurityException ex:" + ex);
             }
         }
 
@@ -126,49 +137,34 @@ public class SubtitleManager {
                 return;
             }
 
-            getService();
             final Uri uri = Uri.parse (path);
-
             if ("file".equals (uri.getScheme() ) ) {
                 path = uri.getPath();
             }
-
             mPath = path;
         }
 
         private int open (String path) {
-            if (disable() ) {
-                return -1;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[open] path:" + path);
-            }
-
+            int ret = -1;
+            LOGI("[open] path:" + path + ", mService:" + mService);
             if (path.startsWith ("/data/") || path.equals ("") ) {
-                return -1;
+                ret = -1;
             }
 
             try {
                 if (mService != null) {
                     mService.open (path);
+                    ret = 0;
                 }
             } catch (RemoteException e) {
                 throw new RuntimeException (e);
             }
 
-            return 0;
+            return ret;
         }
 
         public void openIdx (int idx) {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[openIdx] idx:" + idx);
-            }
-
+            LOGI("[openIdx] idx:" + idx +", mService:" + mService);
             if (idx < 0) {
                 return;
             }
@@ -183,26 +179,10 @@ public class SubtitleManager {
         }
 
         public void start() {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[start] mEventHandler:" + mEventHandler + ",mPath:" + mPath);
-            }
-
-            /*
-            if (mEventHandler != null) {
-                mThreadStop = false;
-                mEventHandler.removeMessages(AML_SUBTITLE_START);
-                Message m = mEventHandler.obtainMessage(AML_SUBTITLE_START);
-                mEventHandler.sendMessageDelayed(m, 500);
-            }*/
+            LOGI("[start]mPath:" + mPath);
             mThreadStop = false;
-
             if (mPath != null) {
                 int ret = open (mPath);
-
                 if (ret == 0) {
                     show();
 
@@ -214,19 +194,7 @@ public class SubtitleManager {
         }
 
         public void close() {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[close]");
-            }
-
-            /*
-            if (mEventHandler != null) {
-                mEventHandler.removeMessages(AML_SUBTITLE_START);
-            }*/
-
+            LOGI("[close]mService:" + mService + ", mThread:" + mThread);
             if (mThread != null) {
                 mThreadStop = true;
                 mThread = null;
@@ -242,19 +210,8 @@ public class SubtitleManager {
         }
 
         private void show() {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[show] total:" + total() );
-            }
-
+            LOGI("[show]total:" + total() + ", mThread:" + mThread);
             if (total() > 0) {
-                if (debug() ) {
-                    Log.i (TAG, "[start show]mThread:" + mThread);
-                }
-
                 if (mThread == null) {
                     mThread = new Thread (runnable);
                     mThread.start();
@@ -263,14 +220,7 @@ public class SubtitleManager {
         }
 
         public void option() {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[option] ");
-            }
-
+            LOGI("[option]mService:" + mService);
             try {
                 if (mService != null) {
                     mService.option();
@@ -281,14 +231,7 @@ public class SubtitleManager {
         }
 
         public int total() {
-            if (disable() ) {
-                return 0;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[total] ");
-            }
-
+            LOGI("[total]mService:" + mService);
             int ret = 0;
 
             try {
@@ -298,23 +241,12 @@ public class SubtitleManager {
             } catch (RemoteException e) {
                 throw new RuntimeException (e);
             }
-
-            if (debug() ) {
-                Log.i (TAG, "[total] ret:" + ret);
-            }
-
+            LOGI("[total]ret:" + ret);
             return ret;
         }
 
         public void next() {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[next] ");
-            }
-
+            LOGI("[next]mService:" + mService);
             try {
                 if (mService != null) {
                     mService.nextSub();
@@ -325,14 +257,7 @@ public class SubtitleManager {
         }
 
         public void previous() {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[previous] ");
-            }
-
+            LOGI("[previous]mService:" + mService);
             try {
                 if (mService != null) {
                     mService.preSub();
@@ -343,14 +268,7 @@ public class SubtitleManager {
         }
 
         public void hide() {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[hide]");
-            }
-
+            LOGI("[hide]mService:" + mService);
             try {
                 if (mService != null) {
                     mService.hide();
@@ -361,14 +279,7 @@ public class SubtitleManager {
         }
 
         public void display() {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[display]");
-            }
-
+            LOGI("[display]mService:" + mService);
             try {
                 if (mService != null) {
                     mService.display();
@@ -379,14 +290,7 @@ public class SubtitleManager {
         }
 
         public void clear() {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[clear]");
-            }
-
+            LOGI("[clear]mService:" + mService);
             try {
                 if (mService != null) {
                     mService.clear();
@@ -397,14 +301,7 @@ public class SubtitleManager {
         }
 
         public void resetForSeek() {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[resetForSeek]");
-            }
-
+            LOGI("[resetForSeek]mService:" + mService);
             try {
                 if (mService != null) {
                     mService.resetForSeek();
@@ -415,14 +312,7 @@ public class SubtitleManager {
         }
 
         public int getSubType() {
-            if (disable() ) {
-                return -1;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[getSubType] ");
-            }
-
+            LOGI("[getSubType]mService:" + mService);
             int ret = 0;
 
             try {
@@ -433,22 +323,12 @@ public class SubtitleManager {
                 throw new RuntimeException (e);
             }
 
-            if (debug() ) {
-                Log.i (TAG, "[getSubType] ret:" + ret);
-            }
-
+            LOGI("[getSubType]ret:" + ret);
             return ret;
         }
 
         public String getSubName (int idx) {
-            if (disable() ) {
-                return null;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[getSubName]");
-            }
-
+            LOGI("[getSubName]mService:" + mService);
             String name = null;
 
             try {
@@ -459,22 +339,12 @@ public class SubtitleManager {
                 throw new RuntimeException (e);
             }
 
-            if (debug() ) {
-                Log.i (TAG, "[getSubName] name[" + idx + "]:" + name);
-            }
-
+            LOGI("[getSubName]name[" + idx + "]:" + name);
             return name;
         }
 
         public String getSubLanguage (int idx) {
-            if (disable() ) {
-                return null;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[getSubLanguage]");
-            }
-
+            LOGI("[getSubLanguage]mService:" + mService);
             String language = null;
 
             try {
@@ -485,22 +355,12 @@ public class SubtitleManager {
                 throw new RuntimeException (e);
             }
 
-            if (debug() ) {
-                Log.i (TAG, "[getSubLanguage] language[" + idx + "]:" + language);
-            }
-
+            LOGI("[getSubLanguage]language[" + idx + "]:" + language);
             return language;
         }
 
         public String getCurName() {
-            if (disable() ) {
-                return null;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[getCurName]");
-            }
-
+            LOGI("[getCurName]mService:" + mService);
             String name = null;
 
             try {
@@ -511,47 +371,22 @@ public class SubtitleManager {
                 throw new RuntimeException (e);
             }
 
-            if (debug() ) {
-                Log.i (TAG, "[getCurName] name:" + name);
-            }
-
+            LOGI("[getCurName] name:" + name);
             return name;
         }
 
         private void getService() {
-            if (disable() ) {
-                return;
-            }
-
             IBinder b = ServiceManager.getService ("subtitle_service"/*Context.SUBTITLE_SERVICE*/);
             mService = ISubTitleService.Stub.asInterface (b);
-
-            if (debug() ) {
-                Log.i (TAG, "[getService] mService:" + mService);
-            }
+            LOGI("[getService] mService:" + mService);
         }
 
         public void release() {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[release] ");
-            }
-
             close();
         }
 
         public int getSubTypeDetial() {
-            if (disable() ) {
-                return -1;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[getSubTypeDetial] ");
-            }
-
+            LOGI("[getSubTypeDetial] mService:" + mService);
             int ret = 0;
 
             try {
@@ -562,22 +397,12 @@ public class SubtitleManager {
                 throw new RuntimeException (e);
             }
 
-            if (debug() ) {
-                Log.i (TAG, "[getSubTypeDetial] ret:" + ret);
-            }
-
+            LOGI("[getSubTypeDetial] ret:" + ret);
             return ret;
         }
 
         public void setTextColor (int color) {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[setTextColor] color:" + color);
-            }
-
+            LOGI("[setTextColor] color:" + color + ", mService:" + mService);
             try {
                 if (mService != null) {
                     mService.setTextColor (color);
@@ -588,14 +413,7 @@ public class SubtitleManager {
         }
 
         public void setTextSize (int size) {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[setTextSize] size:" + size);
-            }
-
+            LOGI("[setTextSize] size:" + size + ", mService:" + mService);
             try {
                 if (mService != null) {
                     mService.setTextSize (size);
@@ -606,14 +424,7 @@ public class SubtitleManager {
         }
 
         public void setGravity (int gravity) {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[setGravity] gravity:" + gravity);
-            }
-
+            LOGI("[setGravity] gravity:" + gravity + ", mService:" + mService);
             try {
                 if (mService != null) {
                     mService.setGravity (gravity);
@@ -624,14 +435,7 @@ public class SubtitleManager {
         }
 
         public void setTextStyle (int style) {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[setTextStyle] style:" + style);
-            }
-
+            LOGI("[setTextStyle] style:" + style + ", mService:" + mService);
             try {
                 if (mService != null) {
                     mService.setTextStyle (style);
@@ -642,14 +446,7 @@ public class SubtitleManager {
         }
 
         public void setPosHeight (int height) {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[setPosHeight] height:" + height);
-            }
-
+            LOGI("[setPosHeight] height:" + height + ", mService:" + mService);
             try {
                 if (mService != null) {
                     mService.setPosHeight (height);
@@ -660,14 +457,7 @@ public class SubtitleManager {
         }
 
         public void setImgSubRatio (float ratioW, float ratioH, int maxW, int maxH) {
-            if (disable() ) {
-                return;
-            }
-
-            if (debug() ) {
-                Log.i (TAG, "[setImgSubRatio] ratioW:" + ratioW + ", ratioH:" + ratioH + ",maxW:" + maxW + ",maxH:" + maxH);
-            }
-
+            LOGI("[setImgSubRatio] ratioW:" + ratioW + ", ratioH:" + ratioH + ",maxW:" + maxW + ",maxH:" + maxH + ", mService:" + mService);
             try {
                 if (mService != null) {
                     mService.setImgSubRatio (ratioW, ratioH, maxW, maxH);
@@ -675,36 +465,6 @@ public class SubtitleManager {
             } catch (RemoteException e) {
                 throw new RuntimeException (e);
             }
-        }
-
-        private boolean debug() {
-            boolean ret = false;
-
-            if (SystemProperties.getBoolean ("sys.subtitle.debug", false) ) {
-                ret = true;
-            }
-
-            return ret;
-        }
-
-        private boolean disable() {
-            boolean ret = false;
-
-            if (SystemProperties.getBoolean ("sys.subtitle.disable", false) ) {
-                ret = true;
-            }
-
-            return ret;
-        }
-
-        private boolean optionEnable() {
-            boolean ret = false;
-
-            if (SystemProperties.getBoolean ("sys.subtitleOption.enable", false) ) {
-                ret = true;
-            }
-
-            return ret;
         }
 
         private static final int AML_SUBTITLE_START = 800; // random value
@@ -717,10 +477,7 @@ public class SubtitleManager {
                 public void handleMessage (Message msg) {
                     switch (msg.arg1) {
                         case AML_SUBTITLE_START:
-                            if (debug() ) {
-                                Log.i (TAG, "[handleMessage]AML_SUBTITLE_START mPath:" + mPath);
-                            }
-
+                            LOGI("[handleMessage]AML_SUBTITLE_START mPath:" + mPath);
                             if (mPath != null) {
                                 int ret = open (mPath);
 
@@ -732,12 +489,10 @@ public class SubtitleManager {
                                     }
                                 }
                             }
-
-                            break;
+                        break;
                     }
                 }
         }
-
 
         private String readSysfs (String path) {
             if (!new File (path).exists() ) {
@@ -782,7 +537,7 @@ public class SubtitleManager {
             int pcr = 0;
             long pcrl = 0;
             String str = readSysfs ("/sys/class/tsync/pts_pcrscr");
-            Log.i (TAG, "[getCurrentPcr]readSysfs str:" + str);
+            LOGI("[getCurrentPcr]readSysfs str:" + str);
             str = str.substring (2); // skip 0x
 
             if (str != null) {
@@ -791,7 +546,7 @@ public class SubtitleManager {
                 pcr = (int) (pcrl / 90);
             }
 
-            Log.i (TAG, "[getCurrentPcr]pcr:" + pcr);
+            LOGI("[getCurrentPcr]pcr:" + pcr);
             return pcr;
         }
 
@@ -801,14 +556,11 @@ public class SubtitleManager {
                 int pos = 0;
 
                 while (!mThreadStop) {
-                    if (disable() ) {
+                    if (disable()) {
                         mThreadStop = true;
                         break;
                     }
-
-                    if (debug() ) {
-                        Log.i (TAG, "[runnable]showSub mService:" + mService);
-                    }
+                    LOGI("[runnable]showSub mService:" + mService);
 
                     //show subtitle
                     try {
@@ -819,10 +571,7 @@ public class SubtitleManager {
                                 } else {
                                     pos = mMediaPlayer.getCurrentPosition();
                                 }
-
-                                if (debug() ) {
-                                    Log.i (TAG, "[runnable]showSub:" + pos);
-                                }
+                                LOGI("[runnable]showSub:" + pos);
                             }
 
                             mService.showSub (pos);
