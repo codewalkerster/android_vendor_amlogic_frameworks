@@ -859,22 +859,13 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
     SkImageDecoder* codec = NULL;
     bool ret = false;
     SkBitmap *bitmap = NULL;
+    int imageW = 0, imageH = 0;
 
 #ifdef AM_LOLLIPOP
-    ///*
     SkAutoTUnref<SkStreamRewindable> bufferedStream(
             SkFrontBufferedStream::Create(stream, BYTES_TO_BUFFER));
     SkASSERT(bufferedStream.get() != NULL);
     codec = SkImageDecoder::Factory(bufferedStream);
-    //*/
-    /*
-    SkFILEStream *fstream = (SkFILEStream *)stream;
-    if (!fstream->isValid()) {
-        ALOGE("SkFILEStream invalid");
-        return false;
-    }
-    codec = SkImageDecoder::Factory(fstream);
-    */
 #else
     codec = SkImageDecoder::Factory(stream);
 #endif
@@ -883,7 +874,7 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
         //in order to free the pointer
         //SkAutoTDelete<SkImageDecoder> add(codec);
         format = codec->getFormat();
-        ALOGI("codec decode format:%d", format);
+        ALOGI("decode using %s decoder", codec->getFormatName());
         if (format != SkImageDecoder::kUnknown_Format) {
             bitmap = new SkBitmap();
             if (mSampleSize > 0) {
@@ -901,6 +892,27 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
             ret = codec->decode(stream, &decodingBitmap,
                     kN32_SkColorType,
                     SkImageDecoder::kDecodePixels_Mode);
+            if (!ret) {
+                ALOGW("decode fail result:%d, try to use decodeSubset, uri:%s", ret, mImageUrl);
+
+                SkFILEStream fstream(mImageUrl);
+                SkImageDecoder* decoder = SkImageDecoder::Factory(&fstream);
+                if (NULL != decoder) {
+                    if (mSampleSize > 0)
+                        decoder->setSampleSize(mSampleSize);
+                    else
+                        decoder->setSampleSize(1);
+
+                    fstream.rewind();
+                    if (!decoder->buildTileIndex(&fstream, &imageW, &imageH)) {
+                        ALOGE("Image failed to decode using %s decoder", codec->getFormatName());
+                    }
+
+                    ret = decoder->decodeSubset(&decodingBitmap,
+                        SkIRect::MakeWH(imageW, imageH), kN32_SkColorType);
+                    SkDELETE(decoder);
+                }
+            }
             if ((int)decodingBitmap.getSize() < 4*decodingBitmap.width()* decodingBitmap.height()) {
                 ALOGW("decode: bitmap size:%d, request size:%d\n",
                     (int)decodingBitmap.getSize(), 4*decodingBitmap.width()*decodingBitmap.height());
@@ -910,6 +922,15 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
             ret = codec->decode(stream, &decodingBitmap,
                     SkBitmap::kARGB_8888_Config,
                     SkImageDecoder::kDecodePixels_Mode);
+            if (!ret) {
+                ALOGW("decode fail result:%d, try to decodeRegion", ret);
+
+                if (!codec->buildTileIndex(stream, &imageW, &imageH)) {
+                    ALOGE("Image failed to decode using %s decoder", codec->getFormatName());
+                }
+                ret = codec->decodeRegion(&decodingBitmap, SkIRect::MakeWH(imageW, imageH), SkBitmap::kARGB_8888_Config);
+                ALOGI("decodeRegion result:%d w:%d, h:%d", ret, decodingBitmap.width(), decodingBitmap.height());
+            }
             if ((int)decodingBitmap.getSize() < 4*decodingBitmap.width()* decodingBitmap.height()) {
                 ALOGW("decode: bitmap size:%d, request size:%d\n",
                     (int)decodingBitmap.getSize(), 4*decodingBitmap.width()*decodingBitmap.height());
@@ -1570,15 +1591,6 @@ status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
                 String8 path(args[i+1]);
 
                 if (NULL != mBitmap) {
-                    /*
-                    int argbFd = open(path, O_CREAT | O_RDWR, 0755);
-                    if (argbFd < 0) {
-                        ALOGE("argbFd(%d) failure error: '%s' (%d)", argbFd, strerror(errno), errno);
-                        break;
-                    }
-                    write(argbFd, mBitmap->getPixels(), mBitmap->rowBytes()*mBitmap->height());
-                    close(argbFd);
-                    */
                     if ((int)mBitmap->getSize() < 4*mBitmap->width()*mBitmap->height()) {
                         result.appendFormat("ImagePlayerService: [error]save RGBA data to file:%s, bitmap size:%d, request size:%d\n",
                             path.string(), (int)mBitmap->getSize(), 4*mBitmap->width()*mBitmap->height());
@@ -1587,6 +1599,21 @@ status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
                         RGBA2bmp((char *)mBitmap->getPixels(),
                             mBitmap->width(), mBitmap->height(), (char *)path.string());
                         result.appendFormat("ImagePlayerService: save RGBA data to file:%s\n", path.string());
+                    }
+                }
+
+                if (NULL != mBufBitmap) {
+                    char bufPath[256] = {0};
+                    strcat(bufPath, path.string());
+                    strcat(bufPath, "_buf.bmp");
+                    if ((int)mBufBitmap->getSize() < 4*mBufBitmap->width()*mBufBitmap->height()) {
+                        result.appendFormat("ImagePlayerService: [error]save RGBA data to file:%s, mBufBitmap size:%d, request size:%d\n",
+                            bufPath, (int)mBufBitmap->getSize(), 4*mBufBitmap->width()*mBufBitmap->height());
+                    }
+                    else {
+                        RGBA2bmp((char *)mBufBitmap->getPixels(),
+                            mBufBitmap->width(), mBufBitmap->height(), bufPath);
+                        result.appendFormat("ImagePlayerService: save RGBA data to file:%s\n", bufPath);
                     }
                 }
             }
