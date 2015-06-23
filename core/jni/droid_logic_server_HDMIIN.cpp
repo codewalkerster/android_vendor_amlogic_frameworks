@@ -81,17 +81,17 @@ typedef struct output_mode_info_ {
 } output_mode_info_t;
 
 output_mode_info_t output_mode_info[] = {
-    {"1080p", 1920, 1080, 720, 405, false},
+    {"1080p60hz", 1920, 1080, 720, 405, false},
     {"1080p24hz", 1920, 1080, 720, 405, false},
     {"1080p50hz", 1920, 1080, 720, 405, false},
-    {"1080i", 1920, 1080, 720, 405, true},
+    {"1080i60hz", 1920, 1080, 720, 405, true},
     {"1080i50hz", 1920, 1080, 720, 405, true},
-    {"720p", 1280, 720, 480, 270, false},
+    {"720p60hz", 1280, 720, 480, 270, false},
     {"720p50hz", 1280, 720, 480, 270, false},
-    {"480p", 720, 480, 360, 240, false},
-    {"480i", 720, 480, 360, 240, true},
-    {"576p", 720, 576, 360, 288, false},
-    {"576i", 720, 576, 360, 288, true},
+    {"480p60hz", 720, 480, 360, 240, false},
+    {"480i60hz", 720, 480, 360, 240, true},
+    {"576p50hz", 720, 576, 360, 288, false},
+    {"576i50hz", 720, 576, 360, 288, true},
 };
 
 #define OUTPUT_MODE_NUM (sizeof(output_mode_info) / sizeof(output_mode_info[0]))
