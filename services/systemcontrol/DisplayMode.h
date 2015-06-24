@@ -30,7 +30,7 @@
 #define DEVICE_STR_MBOX                 "MBOX"
 #define DEVICE_STR_TV                   "TV"
 
-#define DEFAULT_OUTPUT_MODE             "1080p"
+#define DEFAULT_OUTPUT_MODE             "1080p60hz"
 #define DISPLAY_CFG_FILE                "/system/etc/mesondisplay.cfg"
 #define DISPLAY_FB0                     "/dev/graphics/fb0"
 #define DISPLAY_FB1                     "/dev/graphics/fb1"

@@ -92,7 +92,7 @@ public class OutputModeManager {
     private static final String DISPLAY_AXIS_576            = " 720 576 ";
     private static final String DISPLAY_AXIS_480            = " 720 480 ";
 
-    private static final String FREQ_DEFAULT                = "";
+    private static final String FREQ_DEFAULT                = "60hz";
     private static final String FREQ_SETTING                = "50hz";
 
     public static final String PCM                          = "PCM";
@@ -106,7 +106,7 @@ public class OutputModeManager {
     public static final int IS_HDMI                         = 0x02;
     public static final int IS_SPDIF                        = 0x04;
 
-    private String DEFAULT_OUTPUT_MODE                      = "1080p";
+    private String DEFAULT_OUTPUT_MODE                      = "1080p60hz";
     private static String currentOutputmode = null;
     private String mSupportModes = null;
     private boolean ifModeSetting = false;
@@ -557,17 +557,17 @@ public class OutputModeManager {
 
     public String filterResolution(String resolution) {
         if (resolution.contains("480i")) {
-            resolution = "480i";
+            resolution = "480i60hz";
         } else if (resolution.contains("480cvbs")) {
             resolution = "480cvbs";
         } else if (resolution.contains("480p")) {
-            resolution = "480p";
+            resolution = "480p60hz";
         } else if (resolution.contains("576i")) {
-            resolution = "576i";
+            resolution = "576i50hz";
         } else if (resolution.contains("576cvbs")) {
             resolution = "576cvbs";
         } else if (resolution.contains("576p")) {
-            resolution = "576p";
+            resolution = "576p50hz";
         } else if (resolution.contains("720p")) {
             if (resolution.contains(FREQ_SETTING)) {
                 resolution = "720p" + FREQ_SETTING;
