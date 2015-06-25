@@ -121,12 +121,9 @@ public class OutputModeManager {
 
         mSystenControl = new SystemControlManager(context);
         mDisplayInfo = mSystenControl.getDisplayInfo();
-        if (mDisplayInfo.defaultUI != null) {
-            DEFAULT_OUTPUT_MODE = mDisplayInfo.defaultUI;
-
-            if (DEBUG)
-                Log.d(TAG, "output mode, display type [1:tablet 2:MBOX 3:TV]: "
-                    + mDisplayInfo.type + ", default output:" + mDisplayInfo.defaultUI);
+        if (DEBUG && mDisplayInfo.defaultUI != null) {
+            Log.d(TAG, "output mode, display type [1:tablet 2:MBOX 3:TV]: "
+                + mDisplayInfo.type + ", default output:" + mDisplayInfo.defaultUI);
         }
 
         currentOutputmode = readSysfs(DISPLAY_MODE);
@@ -388,7 +385,8 @@ public class OutputModeManager {
         String[] supportList = null;
         String value = readSupportList(HDMI_SUPPORT_LIST);
         if (value.indexOf("480") >= 0 || value.indexOf("576") >= 0
-            ||value.indexOf("720") >= 0||value.indexOf("1080") >= 0 || value.indexOf("4k2k") >= 0) {
+            || value.indexOf("720") >= 0 || value.indexOf("1080") >= 0
+            || value.indexOf("2160") >= 0 || value.indexOf("smpte") >= 0) {
             supportList = (value.substring(0, value.length()-1)).split(",");
         }
 
@@ -413,7 +411,8 @@ public class OutputModeManager {
         String[] supportList = null;
 
         if (value.indexOf("480") >= 0 || value.indexOf("576") >= 0
-            ||value.indexOf("720") >= 0||value.indexOf("1080") >= 0 || value.indexOf("4k2k") >= 0) {
+            || value.indexOf("720") >= 0 || value.indexOf("1080") >= 0
+            || value.indexOf("2160") >= 0 || value.indexOf("smpte") >= 0) {
             supportList = (value.substring(0, value.length()-1)).split(",");
         }
 

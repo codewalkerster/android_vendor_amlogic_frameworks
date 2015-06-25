@@ -682,7 +682,7 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
 }
 
 void DisplayMode::getPosition(const char* curMode, int *position) {
-    int index = DISPLAY_MODE_720P;
+    int index = DISPLAY_MODE_1080P;
     for (int i = 0; i < DISPLAY_MODE_TOTAL; i++) {
         if (!strcmp(curMode, DISPLAY_MODE_LIST[i])) {
              index = i;
