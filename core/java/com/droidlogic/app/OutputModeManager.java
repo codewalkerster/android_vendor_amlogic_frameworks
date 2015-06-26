@@ -87,14 +87,6 @@ public class OutputModeManager {
     public static final String FULL_WIDTH_4K2KSMPTE         = "4096";
     public static final String FULL_HEIGHT_4K2KSMPTE        = "2160";
 
-    private static final String DISPLAY_AXIS_1080           = " 1920 1080 ";
-    private static final String DISPLAY_AXIS_720            = " 1280 720 ";
-    private static final String DISPLAY_AXIS_576            = " 720 576 ";
-    private static final String DISPLAY_AXIS_480            = " 720 480 ";
-
-    private static final String FREQ_DEFAULT                = "60hz";
-    private static final String FREQ_SETTING                = "50hz";
-
     public static final String PCM                          = "PCM";
     public static final String RAW                          = "RAW";
     public static final String HDMI                         = "HDMI";
@@ -105,6 +97,17 @@ public class OutputModeManager {
     public static final int IS_PCM                          = 0x01;
     public static final int IS_HDMI                         = 0x02;
     public static final int IS_SPDIF                        = 0x04;
+
+    public static final String REAL_OUTPUT_SOC              = "meson8,meson8b,meson8m2,meson9b";
+    public static final String UI_720P                      = "720p";
+    public static final String UI_1080P                     = "1080p";
+    public static final String UI_2160P                     = "2160p";
+    public static final String HDMI_480                     = "480";
+    public static final String HDMI_576                     = "576";
+    public static final String HDMI_720                     = "720p";
+    public static final String HDMI_1080                    = "1080";
+    public static final String HDMI_4K2K                    = "2160p";
+    public static final String HDMI_SMPTE                   = "smpte";
 
     private String DEFAULT_OUTPUT_MODE                      = "1080p60hz";
     private static String currentOutputmode = null;
@@ -183,12 +186,12 @@ public class OutputModeManager {
             String winAxis = curPosition[0] + " " + curPosition[1] + " " +
                 (curPosition[0] + curPosition[2] - 1) + " " + (curPosition[1] + curPosition[3] - 1);
 
-            if (mDisplayInfo.socType.contains("meson8")) {
+            if (REAL_OUTPUT_SOC.contains(mDisplayInfo.socType)) {
                 writeSysfs(FB0_FREE_SCALE_MODE,"1");
 
-                if (mDisplayInfo.defaultUI.contains("720")) {
+                if (mDisplayInfo.defaultUI.contains(UI_720P)) {
                     writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1279 719");
-                } else if (mDisplayInfo.defaultUI.contains("4k2k")) {
+                } else if (mDisplayInfo.defaultUI.contains(UI_2160P)) {
                     writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 3839 2159");
                 } else {
                     writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1919 1079");
@@ -280,7 +283,7 @@ public class OutputModeManager {
                 }
             }
 
-            if (mDisplayInfo.socType.contains("meson8")) {
+            if (REAL_OUTPUT_SOC.contains(mDisplayInfo.socType)) {
                /* String display_value = curPosition[0] + " "+ curPosition[1] + " "
                         + 1920+ " "+ 1080+ " "
                         + curPosition[0]+ " " + curPosition[1]+ " " + 18+ " " + 18;
@@ -384,9 +387,9 @@ public class OutputModeManager {
 
         String[] supportList = null;
         String value = readSupportList(HDMI_SUPPORT_LIST);
-        if (value.indexOf("480") >= 0 || value.indexOf("576") >= 0
-            || value.indexOf("720") >= 0 || value.indexOf("1080") >= 0
-            || value.indexOf("2160") >= 0 || value.indexOf("smpte") >= 0) {
+        if (value.indexOf(HDMI_480) >= 0 || value.indexOf(HDMI_576) >= 0
+            || value.indexOf(HDMI_720) >= 0 || value.indexOf(HDMI_1080) >= 0
+            || value.indexOf(HDMI_4K2K) >= 0 || value.indexOf(HDMI_SMPTE) >= 0) {
             supportList = (value.substring(0, value.length()-1)).split(",");
         }
 
@@ -410,9 +413,9 @@ public class OutputModeManager {
         String value = readSupportList(HDMI_SUPPORT_LIST);
         String[] supportList = null;
 
-        if (value.indexOf("480") >= 0 || value.indexOf("576") >= 0
-            || value.indexOf("720") >= 0 || value.indexOf("1080") >= 0
-            || value.indexOf("2160") >= 0 || value.indexOf("smpte") >= 0) {
+        if (value.indexOf(HDMI_480) >= 0 || value.indexOf(HDMI_576) >= 0
+            || value.indexOf(HDMI_720) >= 0 || value.indexOf(HDMI_1080) >= 0
+            || value.indexOf(HDMI_4K2K) >= 0 || value.indexOf(HDMI_SMPTE) >= 0) {
             supportList = (value.substring(0, value.length()-1)).split(",");
         }
 
@@ -452,17 +455,6 @@ public class OutputModeManager {
         return value;
     }
 
-    private String getDisplayAxisByMode(String mode){
-        if (mode.indexOf("1080") >= 0)
-            return DISPLAY_AXIS_1080;
-        else if (mode.indexOf("720") >= 0)
-            return DISPLAY_AXIS_720;
-        else if (mode.indexOf("576") >= 0)
-            return DISPLAY_AXIS_576;
-        else
-            return DISPLAY_AXIS_480;
-    }
-
     public void initOutputMode(){
         if (isHDMIPlugged()) {
             setHdmiPlugged();
@@ -478,7 +470,7 @@ public class OutputModeManager {
     public void setHdmiUnPlugged(){
         Log.d(TAG, "setHdmiUnPlugged");
 
-        if (mDisplayInfo.socType.contains("meson8")) {
+        if (REAL_OUTPUT_SOC.contains(mDisplayInfo.socType)) {
             if (getPropertyBoolean(PROP_HDMI_ONLY, true)) {
                 String cvbsmode = getBootenv(ENV_CVBS_MODE, "576cvbs");
                 setOutputMode(cvbsmode);
@@ -505,11 +497,11 @@ public class OutputModeManager {
         boolean isAutoMode = isBestOutputmode() || readSupportList(HDMI_SUPPORT_LIST).contains("null edid");
 
         Log.d(TAG, "setHdmiPlugged auto mode: " + isAutoMode);
-        if (mDisplayInfo.socType.contains("meson8")) {
+        if (REAL_OUTPUT_SOC.contains(mDisplayInfo.socType)) {
             if (getPropertyBoolean(PROP_HDMI_ONLY, true)) {
                 writeSysfs(HDMI_VDAC_PLUGGED, "vdac");
                 if (isAutoMode) {
-                    setOutputMode(filterResolution(getBestMatchResolution()));
+                    setOutputMode(getBestMatchResolution());
                 } else {
                     String mode = getSupportedResolution();
                     setOutputMode(mode);
@@ -521,9 +513,9 @@ public class OutputModeManager {
                 writeSysfs(HDMI_VDAC_PLUGGED, "vdac");
                 if (isAutoMode) {
                     if (isFreeScaleClosed()) {
-                        setOutputWithoutFreeScaleLocked(filterResolution(getBestMatchResolution()));
+                        setOutputWithoutFreeScaleLocked(getBestMatchResolution());
                     } else {
-                        setOutputMode(filterResolution(getBestMatchResolution()));
+                        setOutputMode(getBestMatchResolution());
                     }
 
                 } else {
@@ -552,42 +544,6 @@ public class OutputModeManager {
 
     public boolean isBestOutputmode() {
         return Boolean.parseBoolean(mSystenControl.getBootenv(ENV_IS_BEST_MODE, "true"));
-    }
-
-    public String filterResolution(String resolution) {
-        if (resolution.contains("480i")) {
-            resolution = "480i60hz";
-        } else if (resolution.contains("480cvbs")) {
-            resolution = "480cvbs";
-        } else if (resolution.contains("480p")) {
-            resolution = "480p60hz";
-        } else if (resolution.contains("576i")) {
-            resolution = "576i50hz";
-        } else if (resolution.contains("576cvbs")) {
-            resolution = "576cvbs";
-        } else if (resolution.contains("576p")) {
-            resolution = "576p50hz";
-        } else if (resolution.contains("720p")) {
-            if (resolution.contains(FREQ_SETTING)) {
-                resolution = "720p" + FREQ_SETTING;
-            } else {
-                resolution ="720p" + FREQ_DEFAULT;
-            }
-        } else if (resolution.contains("1080i")) {
-            if (resolution.contains(FREQ_SETTING)) {
-                resolution = "1080i" + FREQ_SETTING;
-            } else {
-                resolution = "1080i" + FREQ_DEFAULT;
-            }
-        } else if (resolution.contains("1080p")) {
-            if (resolution.contains(FREQ_SETTING)) {
-                resolution = "1080p" + FREQ_SETTING;
-            } else {
-                resolution = "1080p" + FREQ_DEFAULT;
-            }
-        }
-
-        return resolution;
     }
 
     public boolean isHDMIPlugged() {

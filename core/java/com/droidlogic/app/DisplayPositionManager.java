@@ -123,27 +123,25 @@ public class DisplayPositionManager {
         mSystenControl.writeSysFs(CPU0_SCALING_MIN_FREQ, minFreqString);
     }
     private void initStep(String mode) {
-        if (mode.contains("480")) {
+        if (mode.contains(OutputModeManager.HDMI_480)) {
             mMaxRight = 719;
             mMaxBottom = 479;
-        }else if (mode.contains("576")) {
+        }else if (mode.contains(OutputModeManager.HDMI_576)) {
             mMaxRight = 719;
             mMaxBottom = 575;
-        }else if (mode.contains("720")) {
+        }else if (mode.contains(OutputModeManager.HDMI_720)) {
             mMaxRight = 1279;
             mMaxBottom = 719;
-        }else if (mode.contains("1080")) {
+        }else if (mode.contains(OutputModeManager.HDMI_1080)) {
             mMaxRight = 1919;
             mMaxBottom = 1079;
-        }else if (mode.contains("4k")) {
-            if (mode.contains("4k2ksmpte")) {
-                mMaxRight = 4095;
-                mMaxBottom = 2159;
-            }else {
-                mMaxRight = 3839;
-                mMaxBottom = 2159;
-            }
-        }else {
+        }else if (mode.contains(OutputModeManager.HDMI_4K2K)) {
+            mMaxRight = 3839;
+            mMaxBottom = 2159;
+        } else if (mode.contains(OutputModeManager.HDMI_SMPTE)) {
+            mMaxRight = 4095;
+            mMaxBottom = 2159;
+        } else {
             mMaxRight = 1919;
             mMaxBottom = 1079;
         }
