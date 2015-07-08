@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.provider.Settings;
 import android.util.Log;
 
+import com.droidlogic.app.PlayBackManager;
 import com.droidlogic.app.UsbCameraManager;
 
 public class BootComplete extends BroadcastReceiver {
@@ -34,6 +35,9 @@ public class BootComplete extends BroadcastReceiver {
 
             //use to check whether disable camera or not
             new UsbCameraManager(context).bootReady();
+
+            new PlayBackManager(context).initHdmiSelfadaption();
+
             cecLanguageCheck(context);
         }
     }
