@@ -121,6 +121,13 @@ public class UsbCameraManager {
         ComponentName name = new ComponentName(pkg, klass);
         PackageManager pm = mContext.getPackageManager();
 
+        try {
+            pm.getActivityInfo(name, 0);
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.w(TAG, "Unable disable component: " + name, e);
+            return;
+        }
+
         // We need the DONT_KILL_APP flag, otherwise we will be killed
         // immediately because we are in the same app.
         pm.setComponentEnabledSetting(name,
@@ -131,6 +138,13 @@ public class UsbCameraManager {
     private void enableComponent(String pkg, String klass) {
         ComponentName name = new ComponentName(pkg, klass);
         PackageManager pm = mContext.getPackageManager();
+
+        try {
+            pm.getActivityInfo(name, 0);
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.w(TAG, "Unable disable component: " + name, e);
+            return;
+        }
 
         pm.setComponentEnabledSetting(name,
             PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
