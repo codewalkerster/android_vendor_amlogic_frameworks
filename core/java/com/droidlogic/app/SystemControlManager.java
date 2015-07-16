@@ -32,12 +32,13 @@ public class SystemControlManager {
     private static final int GET_DISPLAY_INFO       = IBinder.FIRST_CALL_TRANSACTION + 10;
     private static final int LOOP_MOUNT_UNMOUNT     = IBinder.FIRST_CALL_TRANSACTION + 11;
 
-    private static final int OSD_MOUSE_MODE         = IBinder.FIRST_CALL_TRANSACTION + 12;
-    private static final int OSD_MOUSE_PARA         = IBinder.FIRST_CALL_TRANSACTION + 13;
-    private static final int SET_POSITION           = IBinder.FIRST_CALL_TRANSACTION + 14;
-    private static final int GET_POSITION           = IBinder.FIRST_CALL_TRANSACTION + 15;
+    private static final int MBOX_OUTPUT_MODE       = IBinder.FIRST_CALL_TRANSACTION + 12;
+    private static final int OSD_MOUSE_MODE         = IBinder.FIRST_CALL_TRANSACTION + 13;
+    private static final int OSD_MOUSE_PARA         = IBinder.FIRST_CALL_TRANSACTION + 14;
+    private static final int SET_POSITION           = IBinder.FIRST_CALL_TRANSACTION + 15;
+    private static final int GET_POSITION           = IBinder.FIRST_CALL_TRANSACTION + 16;
 
-    private static final int REINIT                 = IBinder.FIRST_CALL_TRANSACTION + 16;
+    private static final int REINIT                 = IBinder.FIRST_CALL_TRANSACTION + 17;
 
     private Context mContext;
     private IBinder mIBinder = null;
@@ -305,6 +306,22 @@ public class SystemControlManager {
             }
         } catch (RemoteException ex) {
             Log.e(TAG, "loop mount unmount:" + ex);
+        }
+    }
+
+    public void setMboxOutputMode(String mode) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode);
+                mIBinder.transact(MBOX_OUTPUT_MODE, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set mbox output mode:" + ex);
         }
     }
 

@@ -43,12 +43,7 @@ public class OutputModeManager {
     public static final String AUIDO_DSP_AC3_DRC            = "/sys/class/audiodsp/ac3_drc_control";
     public static final String AUIDO_DSP_DTS_DEC            = "/sys/class/audiodsp/dts_dec_control";
 
-    public static final String SYS_PPSCALER                 = "/sys/class/ppmgr/ppscaler";
-    public static final String SYS_PPSCALER_RECT            = "/sys/class/ppmgr/ppscaler_rect";
-
     public static final String HDMI_STATE                   = "/sys/class/amhdmitx/amhdmitx0/hpd_state";
-    public static final String HDMI_VDAC_PLUGGED            = "/sys/class/aml_mod/mod_off";
-    public static final String HDMI_VDAC_UNPLUGGED          = "/sys/class/aml_mod/mod_on";
     public static final String HDMI_SUPPORT_LIST            = "/sys/class/amhdmitx/amhdmitx0/disp_cap";
 
     public static final String DISPLAY_MODE                 = "/sys/class/display/mode";
@@ -56,7 +51,6 @@ public class OutputModeManager {
 
     public static final String VIDEO_AXIS                   = "/sys/class/video/axis";
 
-    public static final String FB0_FREE_SCALE_UPDATE        = "/sys/class/graphics/fb0/update_freescale";
     public static final String FB0_FREE_SCALE_AXIS          = "/sys/class/graphics/fb0/free_scale_axis";
     public static final String FB0_FREE_SCALE_MODE          = "/sys/class/graphics/fb0/freescale_mode";
     public static final String FB0_FREE_SCALE               = "/sys/class/graphics/fb0/free_scale";
@@ -153,7 +147,7 @@ public class OutputModeManager {
     public void setOutputModeNowLocked(final String newMode){
         synchronized (mLock) {
             String oldMode = currentOutputmode;
-
+            currentOutputmode = newMode;
 
             if (oldMode == null || oldMode.length() < 4) {
                 Log.e(TAG, "get display mode error, oldMode:" + oldMode + " set to default " + DEFAULT_OUTPUT_MODE);
@@ -169,49 +163,9 @@ public class OutputModeManager {
                 return ;
             }
 
-            shadowScreen(oldMode);
-
-            if (newMode.contains("cvbs")) {
-                 openVdac(newMode);
-            } else {
-                 closeVdac(newMode);
-            }
-
-            writeSysfs(DISPLAY_MODE, newMode);
-            currentOutputmode = newMode;
-
-            int[] curPosition = getPosition(newMode);
-            int[] oldPosition = getPosition(oldMode);
-
-            String winAxis = curPosition[0] + " " + curPosition[1] + " " +
-                (curPosition[0] + curPosition[2] - 1) + " " + (curPosition[1] + curPosition[3] - 1);
-
-            if (REAL_OUTPUT_SOC.contains(mDisplayInfo.socType)) {
-                writeSysfs(FB0_FREE_SCALE_MODE,"1");
-
-                if (mDisplayInfo.defaultUI.contains(UI_720P)) {
-                    writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1279 719");
-                } else if (mDisplayInfo.defaultUI.contains(UI_2160P)) {
-                    writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 3839 2159");
-                } else {
-                    writeSysfs(FB0_FREE_SCALE_AXIS,"0 0 1919 1079");
-                }
-
-                writeSysfs(FB0_WINDOW_AXIS,winAxis);
-                writeSysfs(VIDEO_AXIS,winAxis);
-                writeSysfs(FB0_FREE_SCALE,"0x10001");
-            } else {
-                String value = curPosition[0] + " " + curPosition[1]
-                    + " " + (curPosition[2] + curPosition[0])
-                    + " " + (curPosition[3] + curPosition[1]) + " " + 0;
-                setM6FreeScaleAxis(newMode);
-                writeSysfs(SYS_PPSCALER_RECT, value);
-                writeSysfs(FB0_FREE_SCALE_UPDATE, "1");
-            }
-
-            setBootenv(ENV_OUTPUT_MODE, newMode);
-            saveNewMode2Prop(newMode);
-            setOsdMouse(newMode);
+            shadowScreen();
+            mSystenControl.setMboxOutputMode(newMode);
+            saveNewModeProp(newMode);
 
             Intent intent = new Intent(ACTION_HDMI_MODE_CHANGED);
             //intent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT);
@@ -230,129 +184,13 @@ public class OutputModeManager {
         mSystenControl.setOsdMousePara(x, y, w, h);
     }
 
-    public void setOutputWithoutFreeScaleLocked(String newMode){
-        int[] curPosition = { 0, 0, 0, 0 };
-        int[] oldPosition = { 0, 0, 0, 0 };
-        int axis[] = {0, 0, 0, 0};
-
-        String oldMode = currentOutputmode;
-        if (DEBUG)
-            Log.d(TAG, "setOutputWithoutFreeScale change mode from " +
-                oldMode + " -> " + newMode + " WithoutFreeScale");
-
-        if (newMode.equals(oldMode)) {
-            if (DEBUG)
-                Log.d(TAG, "The same mode as current , do nothing !");
-            return;
-        }
-
-        synchronized (mLock) {
-            if (newMode.contains("cvbs")) {
-                 openVdac(newMode);
-            } else {
-                 closeVdac(newMode);
-            }
-            shadowScreen(oldMode);
-            writeSysfs(SYS_PPSCALER, "0");
-            writeSysfs(FB0_FREE_SCALE, "0");
-            writeSysfs(FB1_FREE_SCALE, "0");
-            writeSysfs(DISPLAY_MODE, newMode);
-            currentOutputmode = newMode;
-            setBootenv(ENV_OUTPUT_MODE, newMode);
-            saveNewMode2Prop(newMode);
-
-            Intent intent = new Intent(ACTION_HDMI_MODE_CHANGED);
-            //intent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT);
-            intent.putExtra(EXTRA_HDMI_MODE, newMode);
-            mContext.sendStickyBroadcast(intent);
-
-            curPosition = getPosition(newMode);
-            oldPosition = getPosition(oldMode);
-            String axisStr = readSysfs(VIDEO_AXIS);
-            String[] axisArray = axisStr.split(" ");
-
-            for (int i=0; i<axisArray.length; i++) {
-                if (i == axis.length) {
-                    break;
-                }
-                try {
-                    axis[i] = Integer.parseInt(axisArray[i]);
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-
-            if (REAL_OUTPUT_SOC.contains(mDisplayInfo.socType)) {
-               /* String display_value = curPosition[0] + " "+ curPosition[1] + " "
-                        + 1920+ " "+ 1080+ " "
-                        + curPosition[0]+ " " + curPosition[1]+ " " + 18+ " " + 18;
-                writeSysfs(DISPLAY_AXIS, display_value);
-                if (DEBUG)
-                    Log.d("OutputSettings", "outputmode change:curPosition[2]:"+curPosition[2]+" curPosition[3]:"+curPosition[3]+"\n");*/
-            } else {
-                int oldX = oldPosition[0];
-                int oldY = oldPosition[1];
-                int oldWidth = oldPosition[2];
-                int oldHeight = oldPosition[3];
-                int curX = curPosition[0];
-                int curY = curPosition[1];
-                int curWidth = curPosition[2];
-                int curHeight = curPosition[3];
-                int temp1 = curX;
-                int temp2 = curY;
-                int temp3 = curWidth;
-                int temp4 = curHeight;
-
-                if (DEBUG) {
-                    Log.d(TAG, "setOutputWithoutFreeScale, old is: "
-                        + oldX + " " + oldY + " " + oldWidth + " " + oldHeight);
-                    Log.d(TAG, "setOutputWithoutFreeScale, new is: "
-                        + curX + " " + curY + " " + curWidth + " " + curHeight);
-                    Log.d(TAG, "setOutputWithoutFreeScale, axis is: "
-                        + axis[0] + " " + axis[1] + " " + axis[2] + " " + axis[3]);
-                }
-
-                if (!((axis[0] == 0) && (axis[1] == 0) && (axis[2] == -1) && (axis[3] == -1))
-                        && !((axis[0] == 0) && (axis[1] == 0) && (axis[2] == 0) && (axis[3] == 0))) {
-                    temp1 = (axis[0] - oldX) * curWidth / oldWidth + curX;
-                    temp2 = (axis[1] - oldY) * curHeight / oldHeight + curY;
-                    temp3 = (axis[2] - axis[0] + 1) * curWidth / oldWidth;
-                    temp4 = (axis[3] - axis[1] + 1) * curHeight / oldHeight;
-                }
-
-                if (DEBUG)
-                    Log.d(TAG, "setOutputWithoutFreeScale, changed axis is: "
-                        + temp1 + " " + temp2 + " " + (temp3 + temp1 - 1) + " " + (temp4 + temp2 - 1));
-
-                writeSysfs(VIDEO_AXIS, temp1 + " " + temp2 + " "
-                    + (temp3 + temp1 - 1) + " " + (temp4 + temp2 - 1));
-            }
-            setOsdMouse(newMode);
-        }
-    }
-
-    private void saveNewMode2Prop(String newMode) {
+    private void saveNewModeProp(String newMode) {
+        setBootenv(ENV_OUTPUT_MODE, newMode);
         if ((newMode != null) && newMode.contains("cvbs")) {
             setBootenv(ENV_CVBS_MODE, newMode);
         }
         else {
             setBootenv(ENV_HDMI_MODE, newMode);
-        }
-    }
-
-    private void closeVdac(String outputmode) {
-       if (getPropertyBoolean(PROP_HDMI_ONLY, false)) {
-           if (!outputmode.contains("cvbs")) {
-               writeSysfs(HDMI_VDAC_PLUGGED,"vdac");
-           }
-       }
-    }
-    private void openVdac(String outputmode) {
-        if (getPropertyBoolean(PROP_HDMI_ONLY, false)) {
-            if (outputmode.contains("cvbs")) {
-                writeSysfs(HDMI_VDAC_UNPLUGGED,"vdac");
-            }
         }
     }
 
@@ -366,11 +204,6 @@ public class OutputModeManager {
 
     public void savePosition(int left, int top, int width, int height) {
         mSystenControl.setPosition(left, top, width, height);
-    }
-
-    private void setM6FreeScaleAxis(String mode) {
-        writeSysfs(FB0_FREE_SCALE_AXIS, "0 0 1279 719");
-        writeSysfs(FB0_FREE_SCALE, "1");
     }
 
     public String getHdmiSupportList() {
@@ -474,21 +307,6 @@ public class OutputModeManager {
             if (getPropertyBoolean(PROP_HDMI_ONLY, true)) {
                 String cvbsmode = getBootenv(ENV_CVBS_MODE, "576cvbs");
                 setOutputMode(cvbsmode);
-                synchronized (mLock) {
-                    writeSysfs(HDMI_VDAC_UNPLUGGED, "vdac");//open vdac
-                }
-            }
-        } else {
-            if (getPropertyBoolean(PROP_HDMI_ONLY, true)) {
-                String cvbsmode = getBootenv(ENV_CVBS_MODE, "576cvbs");
-                if (isFreeScaleClosed()) {
-                    setOutputWithoutFreeScaleLocked(cvbsmode);
-                } else {
-                    setOutputMode(cvbsmode);
-                }
-                synchronized (mLock) {
-                    writeSysfs(HDMI_VDAC_UNPLUGGED, "vdac");//open vdac
-                }
             }
         }
     }
@@ -499,7 +317,6 @@ public class OutputModeManager {
         Log.d(TAG, "setHdmiPlugged auto mode: " + isAutoMode);
         if (REAL_OUTPUT_SOC.contains(mDisplayInfo.socType)) {
             if (getPropertyBoolean(PROP_HDMI_ONLY, true)) {
-                writeSysfs(HDMI_VDAC_PLUGGED, "vdac");
                 if (isAutoMode) {
                     setOutputMode(getBestMatchResolution());
                 } else {
@@ -508,37 +325,6 @@ public class OutputModeManager {
                 }
             }
             switchHdmiPassthough();
-        } else {
-            if (getPropertyBoolean(PROP_HDMI_ONLY, true)) {
-                writeSysfs(HDMI_VDAC_PLUGGED, "vdac");
-                if (isAutoMode) {
-                    if (isFreeScaleClosed()) {
-                        setOutputWithoutFreeScaleLocked(getBestMatchResolution());
-                    } else {
-                        setOutputMode(getBestMatchResolution());
-                    }
-
-                } else {
-                    String mode = getSupportedResolution();
-                    if (isFreeScaleClosed())
-                        setOutputWithoutFreeScaleLocked(mode);
-                    else
-                        setOutputMode(mode);
-                }
-                switchHdmiPassthough();
-                writeSysfs(FB0_BLANK, "0");
-            }
-        }
-    }
-
-    public boolean isFreeScaleClosed() {
-        String freeScaleStatus = readSysfs(FB0_FREE_SCALE);
-        if (freeScaleStatus.contains("0x0")) {
-            Log.d(TAG, "freescale is closed");
-            return true;
-        } else {
-            Log.d(TAG, "freescale is open");
-            return false;
         }
     }
 
@@ -558,7 +344,7 @@ public class OutputModeManager {
         return ifModeSetting;
     }
 
-    private void shadowScreen(final String mode) {
+    private void shadowScreen() {
         writeSysfs(FB0_BLANK, "1");
         Thread task = new Thread(new Runnable() {
             @Override

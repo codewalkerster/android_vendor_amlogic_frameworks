@@ -109,6 +109,8 @@ DisplayMode::DisplayMode(const char *path)
     mFb1Height(-1),
     mFb1FbBits(-1),
     mFb1TripleEnable(true),
+    mDisplayWidth(FULL_WIDTH_1080),
+    mDisplayHeight(FULL_HEIGHT_1080),
     mLogLevel(LOG_LEVEL_DEFAULT) {
 
     if (NULL == path) {
@@ -307,9 +309,6 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
         getCurrentHdmiData(data);
     }
 
-    int source_output_width = 1920;
-    int source_output_height = 1080;
-
     char current_mode[MAX_STR_LEN] = {0};
     char outputmode[MAX_STR_LEN] = {0};
 
@@ -344,32 +343,48 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     }
 
     SYS_LOGI("init mbox display hpdstate:%s, old outputmode:%s, new outputmode:%s\n",
-        hpdstate,
-        current_mode,
-        outputmode);
+            hpdstate,
+            current_mode,
+            outputmode);
     if (strlen(outputmode) == 0)
         strcpy(outputmode, mDefaultUI);
 
     if (!strncmp(mDefaultUI, "720", 3)) {
-        source_output_width = 1280;
-        source_output_height = 720;
-        pSysWrite->setProperty(PROP_LCD_DENSITY, "160");
+        mDisplayWidth= FULL_WIDTH_720;
+        mDisplayHeight = FULL_HEIGHT_720;
+        pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_720P);
+        pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
+        pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "720");
     } else if (!strncmp(mDefaultUI, "1080", 4)) {
-        source_output_width = 1920;
-        source_output_height = 1080;
-        pSysWrite->setProperty(PROP_LCD_DENSITY, "240");
+        mDisplayWidth = FULL_WIDTH_1080;
+        mDisplayHeight = FULL_HEIGHT_1080;
+        pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+        pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
+        pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
     } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
-        source_output_width = 3840;
-        source_output_height = 2160;
-        pSysWrite->setProperty(PROP_LCD_DENSITY, "480");
+        mDisplayWidth = FULL_WIDTH_4K2K;
+        mDisplayHeight = FULL_HEIGHT_4K2K;
+        pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_2160P);
+        pSysWrite->setProperty(PROP_WINDOW_WIDTH, "3840");
+        pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "2160");
     }
 
+    setMboxOutputMode(outputmode);
+
+    free(data);
+    data = NULL;
+}
+
+void DisplayMode::setMboxOutputMode(const char* outputmode){
     char value[MAX_STR_LEN] = {0};
     int outputx = 0;
     int outputy = 0;
     int outputwidth = 0;
     int outputheight = 0;
     int position[4] = { 0, 0, 0, 0 };
+
+    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
+    usleep(30000);
 
     getPosition(outputmode, position);
     outputx = position[0];
@@ -378,7 +393,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     outputheight = position[3];
 
     if ((!strcmp(outputmode, MODE_480I) || !strcmp(outputmode, MODE_576I)) &&
-        (pSysWrite->getPropertyBoolean(PROP_HAS_CVBS_MODE, false))) {
+            (pSysWrite->getPropertyBoolean(PROP_HAS_CVBS_MODE, false))) {
         const char *mode = "";
         if (!strcmp(outputmode, MODE_480I)) {
             mode = MODE_480CVBS;
@@ -402,11 +417,11 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
 
     char axis[MAX_STR_LEN] = {0};
     sprintf(axis, "%d %d %d %d",
-        0, 0, source_output_width - 1, source_output_height - 1);
+            0, 0, mDisplayWidth - 1, mDisplayHeight- 1);
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_AXIS, axis);
 
     sprintf(axis, "%d %d %d %d",
-        outputx, outputy, outputx + outputwidth - 1, outputy + outputheight -1);
+            outputx, outputy, outputx + outputwidth - 1, outputy + outputheight -1);
     pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, axis);
     pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
 
@@ -432,8 +447,9 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     //init osd mouse
     setOsdMouse(outputmode);
 
-    free(data);
-    data = NULL;
+    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
+    usleep(30000);
+    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "0");
 }
 
 //get the best hdmi mode by edid

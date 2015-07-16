@@ -54,11 +54,14 @@
 
 #define DISPLAY_HPD_STATE               "/sys/class/amhdmitx/amhdmitx0/hpd_state"
 #define DISPLAY_HDMI_EDID               "/sys/class/amhdmitx/amhdmitx0/disp_cap"
+#define DISPLAY_HDMI_AVMUTE             "/sys/devices/virtual/amhdmitx/amhdmitx0/avmute"
 
 #define AUDIO_DSP_DIGITAL_RAW           "/sys/class/audiodsp/digital_raw"
 
 #define PROP_HDMIONLY                   "ro.platform.hdmionly"
 #define PROP_LCD_DENSITY                "ro.sf.lcd_density"
+#define PROP_WINDOW_WIDTH               "const.window.w"
+#define PROP_WINDOW_HEIGHT              "const.window.h"
 #define PROP_HAS_CVBS_MODE              "ro.platform.has.cvbsmode"
 #define PROP_BEST_OUTPUT_MODE           "ro.platform.best_outputmode"
 
@@ -128,6 +131,10 @@
 #define FULL_WIDTH_4K2KSMPTE            4096
 #define FULL_HEIGHT_4K2KSMPTE           2160
 
+#define DESITY_720P                      "160"
+#define DESITY_1080P                     "240"
+#define DESITY_2160P                     "480"
+
 enum {
     DISPLAY_TYPE_NONE                   = 0,
     DISPLAY_TYPE_TABLET                 = 1,
@@ -184,7 +191,7 @@ public:
 
     void setLogLevel(int level);
     int dump(char *result);
-
+    void setMboxOutputMode(const char* outputmode);
     void setOsdMouse(const char* curMode);
     void setOsdMouse(int x, int y, int w, int h);
     void setPosition(int left, int top, int width, int height);
@@ -221,6 +228,9 @@ private:
     int mFb1Height;
     int mFb1FbBits;
     bool mFb1TripleEnable;//Triple Buffer enable or not
+
+    int mDisplayWidth;
+    int mDisplayHeight;
 
     char mSocType[MAX_STR_LEN];
     char mDefaultUI[MAX_STR_LEN];//this used for mbox

@@ -63,6 +63,7 @@ public:
 
     virtual void loopMountUnmount(int &isMount, String16& path);
 
+    virtual void setMboxOutputMode(const String16& mode);
     virtual void setOsdMouseMode(const String16& mode);
     virtual void setOsdMousePara(int x, int y, int w, int h);
     virtual void setPosition(int left, int top, int width, int height);

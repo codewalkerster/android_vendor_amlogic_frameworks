@@ -190,14 +190,8 @@ public class DisplayPositionManager {
         right = Math.min(right,mMaxRight);
         bottom = Math.min(bottom,mMaxBottom);
 
-        if (mDisplayInfo.socType.contains("meson8")) {
-            writeFile(OutputModeManager.FB0_WINDOW_AXIS, left+" "+top+" "+right+" "+bottom);
-            //writeFile(free_scale,"0x10001");
-        } else {
-            str = left + " " + top + " " + right + " " + bottom + " " + mode;
-            writeFile(OutputModeManager.SYS_PPSCALER_RECT, str);
-            writeFile(OutputModeManager.FB0_FREE_SCALE_UPDATE, "1");
-        }
+        writeFile(OutputModeManager.FB0_WINDOW_AXIS, left + " " + top + " " + right + " " + bottom);
+
         mOutputModeManager.savePosition(left, top, width, height);
         mOutputModeManager.setOsdMouse(left, top, width, height);
     }

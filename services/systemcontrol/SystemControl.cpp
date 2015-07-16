@@ -181,6 +181,14 @@ void SystemControl::loopMountUnmount(int &isMount, String16& path) {
     }
 }
 
+void SystemControl::setMboxOutputMode(const String16& mode) {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("set output mode :%s", String8(mode).string());
+    }
+
+    pDisplayMode->setMboxOutputMode(String8(mode).string());
+}
+
 void SystemControl::setOsdMouseMode(const String16& mode) {
     if (mLogLevel > LOG_LEVEL_1) {
         ALOGI("set osd mouse mode :%s", String8(mode).string());

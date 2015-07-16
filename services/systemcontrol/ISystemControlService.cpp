@@ -253,6 +253,19 @@ public:
         }
     }
 
+    virtual void setMboxOutputMode(const String16& mode)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeString16(mode);
+        ALOGV("set mbox output mode:%s\n", String8(mode).string());
+
+        if (remote()->transact(MBOX_OUTPUT_MODE, data, &reply) != NO_ERROR) {
+            ALOGE("set mbox output mode could not contact remote\n");
+            return;
+        }
+    }
+
     virtual void setOsdMouseMode(const String16& mode)
     {
         Parcel data, reply;
@@ -443,6 +456,12 @@ status_t BnISystemControlService::onTransact(
             int isMount = data.readInt32();
             String16 path = data.readString16();
             loopMountUnmount(isMount, path);
+            return NO_ERROR;
+        }
+        case MBOX_OUTPUT_MODE: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            setMboxOutputMode(mode);
             return NO_ERROR;
         }
         case OSD_MOUSE_MODE: {
