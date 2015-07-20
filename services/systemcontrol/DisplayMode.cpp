@@ -383,8 +383,10 @@ void DisplayMode::setMboxOutputMode(const char* outputmode){
     int outputheight = 0;
     int position[4] = { 0, 0, 0, 0 };
 
-    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
-    usleep(30000);
+    if (!initDisplay) {
+        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
+        usleep(30000);
+    }
 
     getPosition(outputmode, position);
     outputx = position[0];
@@ -417,7 +419,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode){
 
     char axis[MAX_STR_LEN] = {0};
     sprintf(axis, "%d %d %d %d",
-            0, 0, mDisplayWidth - 1, mDisplayHeight- 1);
+            0, 0, mDisplayWidth - 1, mDisplayHeight - 1);
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_AXIS, axis);
 
     sprintf(axis, "%d %d %d %d",
@@ -447,9 +449,11 @@ void DisplayMode::setMboxOutputMode(const char* outputmode){
     //init osd mouse
     setOsdMouse(outputmode);
 
-    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
-    usleep(30000);
-    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "0");
+    if (!initDisplay) {
+        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
+        usleep(30000);
+        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "0");
+    }
 }
 
 //get the best hdmi mode by edid
