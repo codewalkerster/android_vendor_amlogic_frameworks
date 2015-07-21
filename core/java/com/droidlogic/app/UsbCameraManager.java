@@ -122,17 +122,14 @@ public class UsbCameraManager {
         PackageManager pm = mContext.getPackageManager();
 
         try {
-            pm.getActivityInfo(name, 0);
-        } catch (PackageManager.NameNotFoundException e) {
+            // We need the DONT_KILL_APP flag, otherwise we will be killed
+            // immediately because we are in the same app.
+            pm.setComponentEnabledSetting(name,
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                PackageManager.DONT_KILL_APP);
+        } catch (Exception e) {
             Log.w(TAG, "Unable disable component: " + name, e);
-            return;
         }
-
-        // We need the DONT_KILL_APP flag, otherwise we will be killed
-        // immediately because we are in the same app.
-        pm.setComponentEnabledSetting(name,
-            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-            PackageManager.DONT_KILL_APP);
     }
 
     private void enableComponent(String pkg, String klass) {
@@ -140,15 +137,12 @@ public class UsbCameraManager {
         PackageManager pm = mContext.getPackageManager();
 
         try {
-            pm.getActivityInfo(name, 0);
-        } catch (PackageManager.NameNotFoundException e) {
-            Log.w(TAG, "Unable disable component: " + name, e);
-            return;
+            pm.setComponentEnabledSetting(name,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP);
+        } catch (Exception e) {
+            Log.w(TAG, "Unable enable component: " + name, e);
         }
-
-        pm.setComponentEnabledSetting(name,
-            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-            PackageManager.DONT_KILL_APP);
     }
 
     public boolean isUsbCamera(UsbDevice device) {
