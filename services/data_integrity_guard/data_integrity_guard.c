@@ -18,6 +18,8 @@
 #include <cutils/partition_utils.h>
 #include <cutils/properties.h>
 #include <cutils/android_reboot.h>
+#include <selinux/selinux.h>
+#include <selinux/label.h>
 #include "log.h"
 #include "md5.h"
 
@@ -50,6 +52,7 @@
 static int g_bootCompleted = 0;
 static int g_supportSysBak = 0;
 static int g_data_ro_count_max = 0;
+static struct selabel_handle *sehandle;
 
 int is_file_exist(const char* path) {
     return ( access( path, F_OK ) == 0 );
@@ -211,8 +214,9 @@ void handleCacheRo() {
 
     if ( umount(target) == 0 ) {
         int result = -1;
+
         ERROR("dig make_ext4fs cache_dev:%s,target:%s ", cache_dev, target);
-        result = make_ext4fs(cache_dev, 0, target, NULL);
+        result = make_ext4fs(cache_dev, 0, target, sehandle);
         if (result != 0) {
             ERROR("handleCacheRo, format cache make_extf4fs err[%s]\n", strerror(errno) );
         }
@@ -438,6 +442,16 @@ int main()
     //klog_init();
 
     ERROR("data_integrity_guard main!\n");
+
+    struct selinux_opt seopts[] = {
+       { SELABEL_OPT_PATH, "/file_contexts" }
+    };
+
+    sehandle = selabel_open(SELABEL_CTX_FILE, seopts, 1);
+
+    if (!sehandle) {
+        ERROR("No file_contexts\n");
+    }
 
     g_supportSysBak = is_support_system_bak();
     g_data_ro_count_max = get_data_ro_count_max();
