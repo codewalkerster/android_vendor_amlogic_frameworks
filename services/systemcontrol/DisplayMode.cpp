@@ -451,8 +451,6 @@ void DisplayMode::setMboxOutputMode(const char* outputmode){
 
     if (!initDisplay) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
-        usleep(30000);
-        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "0");
     }
 }
 
