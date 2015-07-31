@@ -197,6 +197,7 @@ public:
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
     static void* startHdmiPlugDetectLoop(void *data);
+    static void* tmpDisableOsd(void *data);
 
 private:
 
@@ -212,6 +213,7 @@ private:
     bool isBestOutputmode();
     void getCurrentHdmiData(mbox_data_t* data);
     void startHdmiPlugDetectThread();
+    void startDisableOsdThread();
     void setTVDisplay();
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
 

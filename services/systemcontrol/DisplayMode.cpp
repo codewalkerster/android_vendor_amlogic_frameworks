@@ -369,6 +369,11 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
         pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "2160");
     }
 
+    //when change mode, it need time to set osd register,
+    //so we disable osd1 second to avoid screen flicker
+    if (strcmp(current_mode, outputmode)) {
+        startDisableOsdThread();
+    }
     setMboxOutputMode(outputmode);
 
     free(data);
@@ -507,8 +512,9 @@ void DisplayMode::filterHdmiMode(char* mode, mbox_data_t* data) {
     char* tmp;
     int len;
 
-    len = strlen(data->edid);
-    tmp = data->edid;
+    strcpy(edid, data->edid);
+    len = strlen(edid);
+    tmp = edid;
 
     int i = 0;
     do {
@@ -525,9 +531,10 @@ void DisplayMode::filterHdmiMode(char* mode, mbox_data_t* data) {
 
         tmp = pos + 1;
         i++;
-    } while (tmp <= data->edid + len -1);
+    } while (tmp <= edid + len -1);
 
-    strcpy(mode, arrayMode[i-1]);
+    //old mode is not support in this TV, so switch to best mode.
+    getBestHdmiMode(mode, data);
 }
 
 void DisplayMode::getHdmiMode(char* mode, mbox_data_t* data) {
@@ -611,6 +618,25 @@ void* DisplayMode::startHdmiPlugDetectLoop(void* data){
 bool DisplayMode::isBestOutputmode() {
     char isBestMode[MAX_STR_LEN] = {0};
     return !getBootEnv(UBOOTENV_ISBESTMODE, isBestMode) || strcmp(isBestMode, "true") == 0;
+}
+
+void DisplayMode::startDisableOsdThread() {
+    pthread_t id;
+    int ret;
+    ret = pthread_create(&id, NULL, tmpDisableOsd, this);
+    if (ret != 0) {
+        SYS_LOGI("Create DisableOsdThread error!\n");
+    }
+}
+
+void* DisplayMode::tmpDisableOsd(void* data){
+    DisplayMode *pThiz = (DisplayMode*)data;
+
+    pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
+    usleep(1000000);
+    pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
+
+    return NULL;
 }
 
 void DisplayMode::setTVDisplay() {
