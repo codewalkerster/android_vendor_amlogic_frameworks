@@ -15,6 +15,7 @@ public class HdmiCecManager {
 
     public static final String CEC_DEVICE_FILE = "/sys/devices/virtual/switch/lang_config/state";
     public static final String CEC_SYS = "/sys/class/amhdmitx/amhdmitx0/cec_config";
+    public static final String CEC_SUPPORT = "/sys/class/amhdmitx/amhdmitx0/tv_support_cec";
     public static final String CEC_PROP = "ubootenv.var.cecconfig";
     public static final String CEC_TAG = "cec0x";
     public static final String CEC_0   = "cec0x0";
@@ -52,6 +53,13 @@ public class HdmiCecManager {
             Log.d(TAG, "set cec fun = " + fun);
             mSystemControlManager.writeSysFs(CEC_SYS, fun);
         }
+    }
+
+    public boolean remoteSupportCec() {
+        if ((new File(CEC_SUPPORT).exists())) {
+            return !mSystemControlManager.readSysFs(CEC_SUPPORT).equals("0");
+        }
+        return true;
     }
 
     public int[] getBinaryArray(String binaryString) {
