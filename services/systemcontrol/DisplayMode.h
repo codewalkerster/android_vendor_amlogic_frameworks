@@ -64,6 +64,10 @@
 #define PROP_WINDOW_HEIGHT              "const.window.h"
 #define PROP_HAS_CVBS_MODE              "ro.platform.has.cvbsmode"
 #define PROP_BEST_OUTPUT_MODE           "ro.platform.best_outputmode"
+#define PROP_BOOTANIM                   "init.svc.bootanim"
+#define PROP_FS_MODE                    "const.filesystem.mode"
+#define PROP_BOOTANIM_DELAY             "const.bootanim.delay"
+
 
 #define ENV_480I_X                      "ubootenv.var.480i_x"
 #define ENV_480I_Y                      "ubootenv.var.480i_y"
@@ -197,6 +201,7 @@ public:
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
     static void* startHdmiPlugDetectLoop(void *data);
+    static void* bootanimDetect(void *data);
     static void* tmpDisableOsd(void *data);
 
 private:
@@ -213,6 +218,7 @@ private:
     bool isBestOutputmode();
     void getCurrentHdmiData(mbox_data_t* data);
     void startHdmiPlugDetectThread();
+    void startBootanimDetectThread();
     void startDisableOsdThread();
     void setTVDisplay();
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);

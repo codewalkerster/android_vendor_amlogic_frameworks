@@ -369,10 +369,18 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
         pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "2160");
     }
 
-    //when change mode, it need time to set osd register,
-    //so we disable osd1 second to avoid screen flicker
+
     if (strcmp(current_mode, outputmode)) {
-        startDisableOsdThread();
+        if (initDisplay) {
+            //when change mode, need close uboot logo to avoid logo scaling wrong
+            pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
+            pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
+            pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
+        }else {
+            //when change mode, it need time to set osd register,
+            //so we disable osd 1 second to avoid screen flicker
+            startDisableOsdThread();
+        }
     }
     setMboxOutputMode(outputmode);
 
@@ -415,13 +423,6 @@ void DisplayMode::setMboxOutputMode(const char* outputmode){
     else
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
 
-
-    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_MODE, "1");
-    if (initDisplay) {
-        pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE_MODE, "1");
-        pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
-    }
-
     char axis[MAX_STR_LEN] = {0};
     sprintf(axis, "%d %d %d %d",
             0, 0, mDisplayWidth - 1, mDisplayHeight - 1);
@@ -432,10 +433,13 @@ void DisplayMode::setMboxOutputMode(const char* outputmode){
     pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, axis);
     pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
 
-    pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
-    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-    if (initDisplay)
-        pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
+    if (!initDisplay) {
+        pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
+        pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+        setOsdMouse(outputmode);
+    } else {
+        startBootanimDetectThread();
+    }
 
     //audio
     getBootEnv(UBOOTENV_DIGITAUDIO, value);
@@ -450,9 +454,6 @@ void DisplayMode::setMboxOutputMode(const char* outputmode){
         strcpy(audiovalue, "0");
     }
     pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, audiovalue);
-
-    //init osd mouse
-    setOsdMouse(outputmode);
 
     if (!initDisplay) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
@@ -611,6 +612,50 @@ void* DisplayMode::startHdmiPlugDetectLoop(void* data){
         }
         usleep(2000000);
     }
+
+    return NULL;
+}
+
+void DisplayMode::startBootanimDetectThread() {
+    pthread_t id;
+    int ret;
+    ret = pthread_create(&id, NULL, bootanimDetect, this);
+    if (ret != 0) {
+        SYS_LOGI("Create BootanimDetect error!\n");
+    }
+}
+
+//if detected bootanim is running, then close uboot logo
+void* DisplayMode::bootanimDetect(void* data){
+    DisplayMode *pThiz = (DisplayMode*)data;
+    char state_bootanim[MAX_STR_LEN] = {0};
+    char fs_mode[MAX_STR_LEN] = {0};
+    char outputmode[MAX_STR_LEN] = {0};
+
+    pThiz->pSysWrite->getPropertyString(PROP_FS_MODE, "android", fs_mode);
+    pThiz->pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, outputmode);
+
+    //some boot videos maybe need 2~3s to start playing, so if the bootamin prop
+    //don't run after about 4s,  exit the dead loop.
+    int timeout = 40;
+    while (strcmp(fs_mode, "recovery") && strcmp(state_bootanim, "running") && timeout > 0) {
+        pThiz->pSysWrite->getPropertyString(PROP_BOOTANIM, "sleep", state_bootanim);
+        usleep(100000);
+        timeout--;
+    }
+
+    if (strcmp(fs_mode, "recovery")) {
+        char delay[MAX_STR_LEN] = {0};
+        pThiz->pSysWrite->getPropertyString(PROP_BOOTANIM_DELAY, "100", delay);
+        usleep(atoi(delay) * 1000);
+    }
+
+    pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
+    pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
+    pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
+    pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+    pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
+    pThiz->setOsdMouse(outputmode);
 
     return NULL;
 }

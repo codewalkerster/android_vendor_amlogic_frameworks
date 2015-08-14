@@ -33,9 +33,12 @@ int main(int argc, char** argv)
         path = argv[1];
     }
 
+    SysWrite *pSysWrite = new SysWrite();
+
     bootenv_init();
 
     DisplayMode displayMode(path);
+    pSysWrite->setProperty(PROP_FS_MODE, "recovery");
     displayMode.init();
 
     //don't end this progress, wait for hdmi plug detect thread.
