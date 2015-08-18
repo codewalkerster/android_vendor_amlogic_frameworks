@@ -192,7 +192,11 @@ public class UsbCameraManager {
             int loopCount = 0;
             while ( !end ) {
                 try {
-                    Thread.sleep(500);//first delay 500ms, in order to wait kernel set up video device path
+                    if (mIsAttach) {
+                        Thread.sleep(500);//first delay 500ms, in order to wait kernel set up video device path
+                    } else {
+                        Thread.sleep(50);
+                    }
                 }
                 catch (InterruptedException e){
                     Thread.currentThread().interrupt();
