@@ -75,7 +75,7 @@ int main(int argc, char** argv)
 	ALOGI("getProperty ro.ui.cursor: %s\n", String8(value).string());
 
 	String16 test("test");
-	sysWrite->getPropertyString(String16("ro.ui.cursor"), test, value);
+	sysWrite->getPropertyString(String16("ro.ui.cursor"), value, test);
 	ALOGI("getPropertyString ro.ui.cursor: %s\n", String8(value).string());
 
 	int32_t int_value = sysWrite->getPropertyInt(String16("ro.usbstorage.maxfreq"), 1212);

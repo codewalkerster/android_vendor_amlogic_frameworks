@@ -48,7 +48,7 @@ bool SysWrite::getProperty(const char *key, char *value){
     return true;
 }
 
-bool SysWrite::getPropertyString(const char *key, const char *def, char *value){
+bool SysWrite::getPropertyString(const char *key, char *value,  const char *def){
     property_get(key, value, def);
     return true;
 }

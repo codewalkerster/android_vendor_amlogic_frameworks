@@ -92,9 +92,9 @@ bool SystemControl::getProperty(const String16& key, String16& value) {
     return ret;
 }
 
-bool SystemControl::getPropertyString(const String16& key, String16& def, String16& value) {
+bool SystemControl::getPropertyString(const String16& key, String16& value, String16& def) {
     char buf[PROPERTY_VALUE_MAX] = {0};
-    bool ret = pSysWrite->getPropertyString(String8(key).string(), String8(def).string(), (char *)buf);
+    bool ret = pSysWrite->getPropertyString(String8(key).string(), (char *)buf, String8(def).string());
     value.setTo(String16(buf));
     return ret;
 }
