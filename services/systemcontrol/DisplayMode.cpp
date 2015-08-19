@@ -501,7 +501,7 @@ void DisplayMode::getBestHdmiMode(char* mode, mbox_data_t* data) {
     }
 
     if (strlen(mode) == 0) {
-        pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, DEFAULT_OUTPUT_MODE, mode);
+        pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, mode, DEFAULT_OUTPUT_MODE);
     }
 }
 
@@ -540,7 +540,7 @@ void DisplayMode::filterHdmiMode(char* mode, mbox_data_t* data) {
 
 void DisplayMode::getHdmiMode(char* mode, mbox_data_t* data) {
     if (strstr(data->edid, "null") != NULL) {
-        pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, DEFAULT_OUTPUT_MODE, mode);
+        pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, mode, DEFAULT_OUTPUT_MODE);
         return;
     }
 
@@ -632,21 +632,21 @@ void* DisplayMode::bootanimDetect(void* data){
     char fs_mode[MAX_STR_LEN] = {0};
     char outputmode[MAX_STR_LEN] = {0};
 
-    pThiz->pSysWrite->getPropertyString(PROP_FS_MODE, "android", fs_mode);
+    pThiz->pSysWrite->getPropertyString(PROP_FS_MODE, fs_mode, "android");
     pThiz->pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, outputmode);
 
     //some boot videos maybe need 2~3s to start playing, so if the bootamin prop
     //don't run after about 4s,  exit the dead loop.
     int timeout = 40;
     while (strcmp(fs_mode, "recovery") && strcmp(state_bootanim, "running") && timeout > 0) {
-        pThiz->pSysWrite->getPropertyString(PROP_BOOTANIM, "sleep", state_bootanim);
+        pThiz->pSysWrite->getPropertyString(PROP_BOOTANIM, state_bootanim, "sleep");
         usleep(100000);
         timeout--;
     }
 
     if (strcmp(fs_mode, "recovery")) {
         char delay[MAX_STR_LEN] = {0};
-        pThiz->pSysWrite->getPropertyString(PROP_BOOTANIM_DELAY, "100", delay);
+        pThiz->pSysWrite->getPropertyString(PROP_BOOTANIM_DELAY, delay, "100");
         usleep(atoi(delay) * 1000);
     }
 

@@ -29,7 +29,7 @@ public:
     ~SysWrite();
 
     bool getProperty(const char *key, char *value);
-    bool getPropertyString(const char *key, const char *def, char *value);
+    bool getPropertyString(const char *key, char *value, const char *def);
     int32_t getPropertyInt(const char *key, int32_t def);
     int64_t getPropertyLong(const char *key, int64_t def);
 

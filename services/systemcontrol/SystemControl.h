@@ -44,7 +44,7 @@ public:
     virtual ~SystemControl();
 
     virtual bool getProperty(const String16& key, String16& value);
-    virtual bool getPropertyString(const String16& key, String16& def, String16& value);
+    virtual bool getPropertyString(const String16& key, String16& value, String16& def);
     virtual int32_t getPropertyInt(const String16& key, int32_t def);
     virtual int64_t getPropertyLong(const String16& key, int64_t def);
 

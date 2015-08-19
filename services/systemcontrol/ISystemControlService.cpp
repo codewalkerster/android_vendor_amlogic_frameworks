@@ -59,7 +59,7 @@ public:
         return true;
     }
 
-    virtual bool getPropertyString(const String16& key, String16& def, String16& value)
+    virtual bool getPropertyString(const String16& key, String16& value, String16& def)
     {
         Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
@@ -361,7 +361,7 @@ status_t BnISystemControlService::onTransact(
             String16 key = data.readString16();
             String16 def = data.readString16();
             String16 value;
-            bool result = getPropertyString(key, def, value);
+            bool result = getPropertyString(key, value, def);
             reply->writeInt32(result);
             reply->writeString16(value);
             return NO_ERROR;
