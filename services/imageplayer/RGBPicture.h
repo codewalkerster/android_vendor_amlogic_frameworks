@@ -5,7 +5,7 @@
  *  - The information contained herein is the confidential property
  *  of Amlogic.  The use, copying, transfer or disclosure of such information
  *  is prohibited except by express written agreement with Amlogic Inc.
- *  @author   tellen
+ *  @author   Tellen Yu
  *  @version  1.0
  *  @date     2014/04/26
  *  @par function description:

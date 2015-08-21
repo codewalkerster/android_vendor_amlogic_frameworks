@@ -5,7 +5,7 @@
  *  - The information contained herein is the confidential property
  *  of Amlogic.  The use, copying, transfer or disclosure of such information
  *  is prohibited except by express written agreement with Amlogic Inc.
- *  @author   tellen
+ *  @author   Tellen Yu
  *  @version  1.0
  *  @date     2015/06/08
  *  @par function description:
@@ -401,9 +401,9 @@ static void TIFFErrorHandler(const char* module, const char *fmt, va_list ap) {
 }
 
 /*---------------------------------------------------------------
-* FUNCTION NAME: tiffDercoder
+* FUNCTION NAME: tiffDecodeBound
 * DESCRIPTION:
-*               decorder tif or tiff format file to bitmap
+*               decoder tif or tiff format file and get width & height
 * ARGUMENTS:
 *               char *filePath:file path
 *               SkBitmap *pBitmap:decorder result data
@@ -412,7 +412,41 @@ static void TIFFErrorHandler(const char* module, const char *fmt, va_list ap) {
 * Note:
 *
 *---------------------------------------------------------------*/
-int TIFF2RGBA::tiffDercoder(const char *filePath, SkBitmap *pBitmap) {
+int TIFF2RGBA::tiffDecodeBound(const char *filePath, int *width, int *height) {
+    TIFF *in = NULL;
+
+    if (NULL == filePath) {
+        ALOGE("tiff decode bound, filePath is NULL");
+        return -1;
+    }
+
+    TIFFSetErrorHandler(TIFFErrorHandler);
+    in = TIFFOpen(filePath, "r");
+    if (NULL == in) {
+        ALOGE("tiff decode bound, open file:%s error", filePath);
+        return -1;
+    }
+
+    TIFFGetField(in, TIFFTAG_IMAGEWIDTH, &width);
+    TIFFGetField(in, TIFFTAG_IMAGELENGTH, &height);
+
+    TIFFClose(in);
+    return 0;
+}
+
+/*---------------------------------------------------------------
+* FUNCTION NAME: tiffDecoder
+* DESCRIPTION:
+*               decoder tif or tiff format file to bitmap
+* ARGUMENTS:
+*               char *filePath:file path
+*               SkBitmap *pBitmap:decorder result data
+* Return:
+*               -1:fail 0:success
+* Note:
+*
+*---------------------------------------------------------------*/
+int TIFF2RGBA::tiffDecoder(const char *filePath, SkBitmap *pBitmap) {
     TIFF *in = NULL;
     uint32* raster = NULL;  /* retrieve RGBA image */
     uint32 width, height;   /* image width & height */
@@ -420,7 +454,7 @@ int TIFF2RGBA::tiffDercoder(const char *filePath, SkBitmap *pBitmap) {
     size_t pixel_count;
 
     if ((NULL == filePath) || (NULL == pBitmap)) {
-        ALOGE("tiff decorder, filePath or pBitmap is NULL");
+        ALOGE("tiff decoder, filePath or pBitmap is NULL");
         ret = -1;
         goto exit;
     }
@@ -428,7 +462,7 @@ int TIFF2RGBA::tiffDercoder(const char *filePath, SkBitmap *pBitmap) {
     TIFFSetErrorHandler(TIFFErrorHandler);
     in = TIFFOpen(filePath, "r");
     if (NULL == in) {
-        ALOGE("tiff decorder, open file:%s error", filePath);
+        ALOGE("tiff decoder, open file:%s error", filePath);
         ret = -1;
         goto exit;
     }

@@ -1,3 +1,18 @@
+/** @file ImagePlayerService.cpp
+ *  @par Copyright:
+ *  - Copyright 2011 Amlogic Inc as unpublished work
+ *  All Rights Reserved
+ *  - The information contained herein is the confidential property
+ *  of Amlogic.  The use, copying, transfer or disclosure of such information
+ *  is prohibited except by express written agreement with Amlogic Inc.
+ *  @author   Tellen Yu
+ *  @version  2.0
+ *  @date     2015/06/18
+ *  @par function description:
+ *  - 1 show picture in video layer
+ *  @warning This class may explode in your face.
+ *  @note If you inherit anything from this class, you're doomed.
+ */
 
 //#define LOG_NDEBUG 0
 #define LOG_TAG "ImagePlayerService"
@@ -56,7 +71,7 @@
 #define PICDEC_SYSFS                "/dev/picdec"
 #define PICDEC_IOC_MAGIC            'P'
 #define PICDEC_IOC_FRAME_RENDER     _IOW(PICDEC_IOC_MAGIC, 0x00, unsigned int)
-#define PICDEC_IOC_FRAME_POST       _IOW(PICDEC_IOC_MAGIC,0X01,unsigned int)
+#define PICDEC_IOC_FRAME_POST       _IOW(PICDEC_IOC_MAGIC, 0x01, unsigned int)
 
 #define VIDEO_LAYER_FORMAT_RGB      0
 #define VIDEO_LAYER_FORMAT_RGBA     1
@@ -270,6 +285,26 @@ static bool isTiffByExtenName(const char *url) {
 
     if ((strcasecmp(ptr, "tif") == 0)
         || (strncasecmp(ptr, "tiff", 4) == 0)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static bool isMovieByExtenName(const char *url) {
+    if (!url)
+        return false;
+
+    char *ptr = NULL;
+    ptr = strrchr(url, '.');
+    if (ptr == NULL) {
+        ALOGE("isMovieByExtenName ptr is NULL!!!");
+        return false;
+    }
+    ptr = ptr + 1;
+
+    if ((strcasecmp(ptr, "gif") == 0)
+        || (strncasecmp(ptr, "gif?", 4) == 0)) {
         return true;
     } else {
         return false;
@@ -531,6 +566,19 @@ static void chmodSysfs(const char *sysfs, int mode) {
     }
 }
 
+static int setSysfs(const char *path, const char *val) {
+    int bytes;
+    int fd = open(path, O_CREAT | O_RDWR | O_TRUNC, 0644);
+    if (fd >= 0) {
+        bytes = write(fd, val, strlen(val));
+        ALOGI("set sysfs %s = %s\n", path, val);
+        close(fd);
+        return 0;
+    } else {
+    }
+    return -1;
+}
+
 }  // anonymous namespace
 
 namespace android {
@@ -551,6 +599,9 @@ ImagePlayerService::ImagePlayerService()
     : mWidth(0), mHeight(0), mBitmap(NULL), mBufBitmap(NULL),
     mSampleSize(1), mFileDescription(-1),
     surfaceWidth(SURFACE_4K_WIDTH), surfaceHeight(SURFACE_4K_HEIGHT),
+    mScalingDirect(SCALE_NORMAL), mScalingStep(1.0f), mScalingBitmap(NULL),
+    mRotateBitmap(NULL), mMovieImage(false), mMovieTime(0),
+    mMovieDegree(0), mMovieScale(1.0f), mMovieThread(NULL),
     mParameter(NULL), mDisplayFd(-1), mHttpService(NULL) {
 }
 
@@ -566,6 +617,15 @@ void ImagePlayerService::initVideoAxis() {
     else {
         ALOGE("Couldn't get connection to system control\n");
     }
+
+    /*
+    int ret = setSysfs("/sys/class/vfm/map", "rm default");
+    if (ret == -1) {
+        ALOGW("enable osd video rm default failed");
+        ret = setSysfs("/sys/class/vfm/map", "rm default");
+    }
+    ret = setSysfs("/sys/class/vfm/map", "add default decoder ppmgr deinterlace amvideo");
+    */
 }
 
 int ImagePlayerService::init() {
@@ -578,11 +638,12 @@ int ImagePlayerService::init() {
     mParameter->cropWidth = SURFACE_4K_WIDTH;
     mParameter->cropHeight = SURFACE_4K_HEIGHT;
 
-    initVideoAxis();
-
     if (mDisplayFd >= 0) {
         close(mDisplayFd);
     }
+
+    //if video exit with some exception, need restore video attribute
+    initVideoAxis();
 
     mDisplayFd = open(PICDEC_SYSFS, O_RDWR);
     if (mDisplayFd < 0) {
@@ -606,6 +667,8 @@ int ImagePlayerService::init() {
 
     free(bitmap_addr);
 #endif
+
+    mMovieThread = new MovieThread(this);
 
     ALOGI("init success display fd:%d", mDisplayFd);
 
@@ -713,10 +776,21 @@ int ImagePlayerService::setRotate(float degrees, int autoCrop) {
     bool isAutoCrop = autoCrop != 0;
     ALOGD("setRotate degrees:%f, isAutoCrop:%d", degrees, isAutoCrop);
 
+    //ratate always use the origin bitmap
+    //reset rotate and scale, because rotate is the always first state
+    resetRotateScale();
+
+    if (mMovieImage) {
+        //reset scale
+        mMovieScale = 1.0f;
+        mMovieDegree = degrees;
+        return RET_OK;
+    }
+
     SkBitmap *dstBitmap = NULL;
     dstBitmap = rotate(mBitmap, degrees);
     if (dstBitmap != NULL) {
-        if(isAutoCrop){
+        if (isAutoCrop) {
             SkBitmap *fillBitmap = fillSurface(dstBitmap);
             if (fillBitmap != NULL) {
                 delete dstBitmap;
@@ -725,12 +799,20 @@ int ImagePlayerService::setRotate(float degrees, int autoCrop) {
         }
 
         ALOGD("After rotate, Width: %d, Height: %d", dstBitmap->width(), dstBitmap->height());
+        if ((dstBitmap->width() > surfaceWidth) || (dstBitmap->height() > surfaceHeight)) {
+            SkBitmap *dstCrop = cropAndFillBitmap(dstBitmap, surfaceWidth, surfaceHeight);
+            if (NULL != dstCrop) {
+                delete dstBitmap;
+                dstBitmap = dstCrop;
+            }
+        }
+        mRotateBitmap = dstBitmap;
         renderAndShow(dstBitmap);
-        delete dstBitmap;
-    } else {
-        return RET_ERR_DECORDER;
+        //delete dstBitmap;
+        return RET_OK;
     }
-    return RET_OK;
+
+    return RET_ERR_DECORDER;
 }
 
 int ImagePlayerService::setScale(float sx, float sy, int autoCrop) {
@@ -739,22 +821,101 @@ int ImagePlayerService::setScale(float sx, float sy, int autoCrop) {
     bool isAutoCrop = autoCrop != 0;
     ALOGD("setScale sx:%f, sy:%f, isAutoCrop:%d", sx, sy, isAutoCrop);
 
-    SkBitmap *dstBitmap = NULL;
-    dstBitmap = scale(mBitmap, sx, sy);
-    if (dstBitmap != NULL) {
-        if(isAutoCrop){
-            SkBitmap *fillBitmap = fillSurface(dstBitmap);
-            if (fillBitmap != NULL) {
-                delete dstBitmap;
-                dstBitmap = fillBitmap;
+    if ((sx > 16.0f) || (sy > 16.0f)) {
+        ALOGE("setScale max x scale up or y scale up is 16");
+        return RET_ERR_INVALID_OPERATION;
+    }
+
+    if (mMovieImage) {
+        mMovieScale *= sx;
+        return RET_OK;
+    }
+
+    if (sx != sy) {
+        ALOGW("scale x and y not the same");
+
+        SkBitmap *dstBitmap = NULL;
+        dstBitmap = scale(mBitmap, sx, sy);
+        if (dstBitmap != NULL) {
+            if (isAutoCrop) {
+                SkBitmap *fillBitmap = fillSurface(dstBitmap);
+                if (fillBitmap != NULL) {
+                    delete dstBitmap;
+                    dstBitmap = fillBitmap;
+                }
             }
+
+            ALOGD("After scale, Width: %d, Height: %d", dstBitmap->width(), dstBitmap->height());
+            renderAndShow(dstBitmap);
+            delete dstBitmap;
+        } else {
+            return RET_ERR_DECORDER;
+        }
+    }
+    else {
+        ALOGD("setScale, current direction:%d [0:normal, 1:up, 2:down], current step: %f",
+            mScalingDirect, mScalingStep);
+
+        float realScale = 1.0f;
+        if (SCALE_NORMAL == mScalingDirect) {
+            if (mScalingBitmap != NULL)
+                delete mScalingBitmap;
+            mScalingBitmap = scaleAndCrop((mRotateBitmap != NULL)?mRotateBitmap:mBitmap, sx, sy);
+            realScale = mScalingStep*sx;
+            if (realScale > mScalingStep)
+                mScalingDirect = SCALE_UP;
+            else if (realScale < mScalingStep)
+                mScalingDirect = SCALE_DOWN;
+        }
+        else if (SCALE_UP == mScalingDirect) {
+            realScale = mScalingStep*sx;
+            if (realScale > mScalingStep) {
+                //still scale up, can use the scaling bitmap
+                SkBitmap *retBitmap = scaleAndCrop(mScalingBitmap, sx, sy);
+                if (retBitmap != NULL) {
+                    if (mScalingBitmap != NULL)
+                        delete mScalingBitmap;
+                    mScalingBitmap = retBitmap;
+                }
+            }
+            else if (realScale < mScalingStep) {
+                //now is scale down, can not use the scaling bitmap, must use the origin bitmap to scale
+                if (mScalingBitmap != NULL)
+                    delete mScalingBitmap;
+                mScalingBitmap = scaleStep((mRotateBitmap != NULL)?mRotateBitmap:mBitmap, realScale, realScale);
+            }
+
+            if (realScale < 1.0f)
+                mScalingDirect = SCALE_DOWN;
+            else if (realScale == 1.0f)
+                mScalingDirect = SCALE_NORMAL;
+        }
+        else if (SCALE_DOWN == mScalingDirect) {
+            realScale = mScalingStep*sx;
+            if (realScale > mScalingStep) {
+                //now is scale up, can not use the scaling bitmap, must use the origin bitmap to scale
+                if (mScalingBitmap != NULL)
+                    delete mScalingBitmap;
+                mScalingBitmap = scaleStep((mRotateBitmap != NULL)?mRotateBitmap:mBitmap, realScale, realScale);
+            }
+            else if (realScale < mScalingStep) {
+                //still scale down, can use the scaling bitmap
+                SkBitmap *retBitmap = scaleAndCrop(mScalingBitmap, sx, sy);
+                if (retBitmap != NULL) {
+                    if (mScalingBitmap != NULL)
+                        delete mScalingBitmap;
+                    mScalingBitmap = retBitmap;
+                }
+            }
+
+            if (realScale > 1.0f)
+                mScalingDirect = SCALE_UP;
+            else if (realScale == 1.0f)
+                mScalingDirect = SCALE_NORMAL;
         }
 
-        ALOGD("After scale, Width: %d, Height: %d", dstBitmap->width(), dstBitmap->height());
-        renderAndShow(dstBitmap);
-        delete dstBitmap;
-    } else {
-        return RET_ERR_DECORDER;
+        mScalingStep = realScale;
+        renderAndShow(mScalingBitmap);
     }
     return RET_OK;
 }
@@ -764,6 +925,21 @@ int ImagePlayerService::setRotateScale(float degrees, float sx, float sy, int au
 
     bool isAutoCrop = autoCrop != 0;
     ALOGD("setRotateScale degrees:%f, sx:%f, sy:%f, isAutoCrop:%d", degrees, sx, sy, isAutoCrop);
+
+    if ((sx > 16.0f) || (sy > 16.0f)) {
+        ALOGE("setRotateScale max x scale up or y scale up is 16");
+        return RET_ERR_INVALID_OPERATION;
+    }
+
+    //ratate and scale, always use the origin bitmap
+    //reset rotate and scale, because rotate is the always first state
+    resetRotateScale();
+
+    if (mMovieImage) {
+        mMovieDegree = degrees;
+        mMovieScale = sx;
+        return RET_OK;
+    }
 
     SkBitmap *dstBitmap = NULL;
     dstBitmap = rotateAndScale(mBitmap, degrees, sx, sy);
@@ -777,8 +953,39 @@ int ImagePlayerService::setRotateScale(float degrees, float sx, float sy, int au
         }
 
         ALOGD("After rotate and scale, Width: %d, Height: %d", dstBitmap->width(), dstBitmap->height());
+
+        //save the origin rotate bitmap
+        SkBitmap *rotBitmap = rotate(mBitmap, degrees);
+        if ((rotBitmap->width() > surfaceWidth) || (rotBitmap->height() > surfaceHeight)) {
+            SkBitmap *dstCrop = cropAndFillBitmap(rotBitmap, surfaceWidth, surfaceHeight);
+            if (NULL != dstCrop) {
+                delete rotBitmap;
+                rotBitmap = dstCrop;
+            }
+        }
+        if (mRotateBitmap != NULL)
+            delete mRotateBitmap;
+        mRotateBitmap = rotBitmap;
+
+        if ((dstBitmap->width() > surfaceWidth) || (dstBitmap->height() > surfaceHeight)) {
+            SkBitmap *dstCrop = cropAndFillBitmap(dstBitmap, surfaceWidth, surfaceHeight);
+            if (NULL != dstCrop) {
+                delete dstBitmap;
+                dstBitmap = dstCrop;
+            }
+        }
+        if (mScalingBitmap != NULL)
+            delete mScalingBitmap;
+        mScalingBitmap = dstBitmap;
+
+        float realScale = mScalingStep*sx;
+        if (realScale > mScalingStep)
+            mScalingDirect = SCALE_UP;
+        else if (realScale < mScalingStep)
+            mScalingDirect = SCALE_DOWN;
+
+        mScalingStep = realScale;
         renderAndShow(dstBitmap);
-        delete dstBitmap;
         return RET_OK;
     }
     return RET_ERR_DECORDER;
@@ -851,6 +1058,16 @@ int ImagePlayerService::release() {
         mDisplayFd = -1;
     }
 
+    if (mMovieThread->isRunning())
+        mMovieThread->requestExitAndWait();
+    mMovieThread.clear();
+
+    if (NULL != mSkMovie) {
+        delete mSkMovie;
+        mSkMovie = NULL;
+    }
+
+    resetRotateScale();
     return RET_OK;
 }
 
@@ -871,6 +1088,15 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
 #endif
 
     if (codec) {
+    #ifdef AM_LOLLIPOP
+        ret = codec->buildTileIndex(bufferedStream, &imageW, &imageH);
+    #else
+        ret = codec->buildTileIndex(stream, &imageW, &imageH);
+    #endif
+        if (!ret) {
+            ALOGE("buildTileIndex failed to decode using %s decoder", codec->getFormatName());
+        }
+
         //in order to free the pointer
         //SkAutoTDelete<SkImageDecoder> add(codec);
         format = codec->getFormat();
@@ -923,12 +1149,9 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
                     SkBitmap::kARGB_8888_Config,
                     SkImageDecoder::kDecodePixels_Mode);
             if (!ret) {
-                ALOGW("decode fail result:%d, try to decodeRegion", ret);
-
-                if (!codec->buildTileIndex(stream, &imageW, &imageH)) {
-                    ALOGE("Image failed to decode using %s decoder", codec->getFormatName());
-                }
-                ret = codec->decodeRegion(&decodingBitmap, SkIRect::MakeWH(imageW, imageH), SkBitmap::kARGB_8888_Config);
+                ALOGW("decode fail result:%d, try to decodeSubset", ret);
+                //ALOGI("buildTileIndex w:%d, h:%d", imageW, imageH);
+                ret = codec->decodeSubset(&decodingBitmap, SkIRect::MakeWH(imageW, imageH), SkBitmap::kARGB_8888_Config);
                 ALOGI("decodeRegion result:%d w:%d, h:%d", ret, decodingBitmap.width(), decodingBitmap.height());
             }
             if ((int)decodingBitmap.getSize() < 4*decodingBitmap.width()* decodingBitmap.height()) {
@@ -987,6 +1210,33 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
     return bitmap;
 }
 
+SkBitmap* ImagePlayerService::decodeTiff(const char *filePath) {
+    int width = 0;
+    int height = 0;
+
+    TIFF2RGBA::tiffDecodeBound(filePath, &width, &height);
+    if ((width > MAX_PIC_SIZE) || (height > MAX_PIC_SIZE)) {
+        ALOGE("decode tiff size is too large, we only support w < %d and h < %d, now image size w:%d, h:%d",
+            MAX_PIC_SIZE, MAX_PIC_SIZE, width, height);
+    }
+    else {
+        SkBitmap *bitmap = new SkBitmap();
+        int ret = TIFF2RGBA::tiffDecoder(filePath, bitmap);
+        ALOGI("decode tiff result:%d, width:%d, height:%d", ret, bitmap->width(), bitmap->height());
+
+        mWidth = bitmap->width();
+        mHeight = bitmap->height();
+        if ((bitmap->width() > 0) && (bitmap->height() > 0)) {
+            return bitmap;
+        }
+        else {
+            delete bitmap;
+        }
+    }
+
+    return NULL;
+}
+
 SkBitmap* ImagePlayerService::scale(SkBitmap *srcBitmap, float sx, float sy) {
     if (srcBitmap == NULL)
         return NULL;
@@ -1015,9 +1265,13 @@ SkBitmap* ImagePlayerService::scale(SkBitmap *srcBitmap, float sx, float sy) {
 
     canvas = new SkCanvas(*devBitmap);
 
-    matrix->postScale(sx, sy, 0, 0);
+    matrix->postScale(sx, sy);
 
-    canvas->drawBitmapMatrix(*srcBitmap, *matrix, NULL);
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setDither(true);
+    //paint.setFilterBitmap(true);
+    canvas->drawBitmapMatrix(*srcBitmap, *matrix, &paint);
 
     delete canvas;
     delete matrix;
@@ -1055,7 +1309,10 @@ SkBitmap* ImagePlayerService::rotate(SkBitmap *srcBitmap, float degrees) {
     matrix->postRotate(degrees, sourceWidth / 2, sourceHeight / 2);
     matrix->postTranslate((dstWidth - sourceWidth) / 2, (dstHeight - sourceHeight) / 2);
 
-    canvas->drawBitmapMatrix(*srcBitmap, *matrix, NULL);
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setDither(true);
+    canvas->drawBitmapMatrix(*srcBitmap, *matrix, &paint);
 
     delete canvas;
     delete matrix;
@@ -1098,9 +1355,12 @@ SkBitmap* ImagePlayerService::rotateAndScale(SkBitmap *srcBitmap, float degrees,
 
     matrix->postRotate(degrees, sourceWidth / 2, sourceHeight / 2);
     matrix->postTranslate((dstWidthAfterRotate - sourceWidth) / 2, (dstHeightAfterRotate - sourceHeight) / 2);
-    matrix->postScale(sx, sy, 0, 0);
+    matrix->postScale(sx, sy);
 
-    canvas->drawBitmapMatrix(*srcBitmap, *matrix, NULL);
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setDither(true);
+    canvas->drawBitmapMatrix(*srcBitmap, *matrix, &paint);
 
     delete canvas;
     delete matrix;
@@ -1117,6 +1377,12 @@ int ImagePlayerService::prepare() {
     if ((mFileDescription < 0) && (0 == strlen(mImageUrl))) {
         ALOGE("prepare decode image fd error");
         return RET_ERR_BAD_VALUE;
+    }
+
+    if (mWidth > MAX_PIC_SIZE || mHeight > MAX_PIC_SIZE) {
+        ALOGE("prepare image size is too large, we only support w < %d and h < %d, now image size w:%d, h:%d",
+            MAX_PIC_SIZE, MAX_PIC_SIZE, mWidth, mHeight);
+        return RET_ERR_NO_MEMORY;
     }
 
     SkStream *stream;
@@ -1141,28 +1407,17 @@ int ImagePlayerService::prepare() {
         mBitmap = NULL;
     }
 
-#if 0
-    //for test open file permission
-    int fileFd = open(mImageUrl, O_RDONLY);
-    if(fileFd < 0){
-        ALOGE("prepare: open (%s) failure error: '%s' (%d)", mImageUrl, strerror(errno), errno);
-        return BAD_VALUE;
+    mMovieImage = false;
+    if (isMovieByExtenName(mImageUrl)) {
+        ALOGI("it's a movie image, show it with thread");
+
+        mMovieImage = true;
+        MovieInit(mImageUrl);
+        delete stream;
+        return RET_OK;
     }
-#endif
-
-    if (isTiffByExtenName(mImageUrl)) {
-        SkBitmap *bitmap = new SkBitmap();
-        int ret = TIFF2RGBA::tiffDercoder(mImageUrl, bitmap);
-        ALOGI("tiff decorder result:%d, width:%d, height:%d", ret, bitmap->width(), bitmap->height());
-
-        mWidth = bitmap->width();
-        mHeight = bitmap->height();
-        if ((bitmap->width() > 0) && (bitmap->height() > 0)) {
-            mBitmap = bitmap;
-        }
-        else {
-            delete bitmap;
-        }
+    else if (isTiffByExtenName(mImageUrl)) {
+        mBitmap = decodeTiff(mImageUrl);
     }
     else {
         mBitmap = decode(stream, NULL);
@@ -1215,6 +1470,7 @@ int ImagePlayerService::prepare() {
         mBitmap = dstBitmap;
     }
 
+    resetRotateScale();
     render(VIDEO_LAYER_FORMAT_RGBA, mBitmap);
     ALOGI("prepare render is OK");
     return RET_OK;
@@ -1241,21 +1497,20 @@ int ImagePlayerService::prepareBuf(const char *uri) {
         mBufBitmap = NULL;
     }
 
-    if (isTiffByExtenName(uri)) {
-        SkBitmap *bitmap = new SkBitmap();
-        int ret = TIFF2RGBA::tiffDercoder(uri, bitmap);
-        ALOGI("tiff decorder result:%d, width:%d, height:%d", ret, bitmap->width(), bitmap->height());
+    mMovieImage = false;
+    if (isMovieByExtenName(uri)) {
+        ALOGI("it's a movie image, show it with thread");
 
-        mWidth = bitmap->width();
-        mHeight = bitmap->height();
-        if ((bitmap->width() > 0) && (bitmap->height() > 0)) {
-            mBufBitmap = bitmap;
-        }
-        else {
-            delete bitmap;
-        }
+        mMovieImage = true;
+        MovieInit(path);
+        delete stream;
+        return RET_OK;
+    }
+    else if (isTiffByExtenName(uri)) {
+        mBufBitmap = decodeTiff(path);
     }
     else {
+        bool canDecode = true;
         SkBitmap *bitmap = NULL;
         if (!isSupportFromat(uri, &bitmap)) {
             ALOGE("prepare buffer codec can not support it");
@@ -1264,10 +1519,17 @@ int ImagePlayerService::prepareBuf(const char *uri) {
         }
 
         if (bitmap != NULL) {
+            if ((bitmap->width() > MAX_PIC_SIZE) || (bitmap->height() > MAX_PIC_SIZE)) {
+                canDecode = false;//too large, can not decode because no enough memory
+                ALOGE("prepare buffer image size is too large, we only support w < %d and h < %d, now image size w:%d, h:%d",
+                    MAX_PIC_SIZE, MAX_PIC_SIZE, bitmap->width(), bitmap->height());
+            }
             delete bitmap;
             bitmap = NULL;
         }
-        mBufBitmap = decode(stream, NULL);
+
+        if (canDecode)
+            mBufBitmap = decode(stream, NULL);
     }
     delete stream;
 
@@ -1303,8 +1565,19 @@ int ImagePlayerService::showBuf() {
         return RET_ERR_BAD_VALUE;
     }
 
-    ALOGE("show buffer, buffer bitmap config:%d, show bitmap config:%d, kARGB_8888_Config:%d",
-        mBufBitmap->getConfig(), mBitmap->getConfig(), SkBitmap::kARGB_8888_Config);
+    ALOGI("show buffer, buffer bitmap config:%d, kARGB_8888_Config:%d",
+        mBufBitmap->getConfig(), SkBitmap::kARGB_8888_Config);
+
+    if (mMovieImage)
+        return MovieThreadStart();
+
+    MovieThreadStop();
+
+    if (NULL != mBitmap)
+        delete mBitmap;
+    else
+        ALOGW("mBitmap is NULL, need first new a object");
+    mBitmap = new SkBitmap();
 
     //copy bitmap data to showing bitmap
     bool ret = false;
@@ -1318,10 +1591,14 @@ int ImagePlayerService::showBuf() {
         ALOGE("show buffer, copy buffer to show bitmap error");
         return RET_ERR_BAD_VALUE;
     }
+    resetRotateScale();
 
     render(VIDEO_LAYER_FORMAT_RGBA, mBufBitmap);
-    show();
+    post();
 
+    //delete buffer bitmap to save memory
+    delete mBufBitmap;
+    mBufBitmap = NULL;
     return RET_OK;
 }
 
@@ -1338,7 +1615,7 @@ int ImagePlayerService::render(int format, SkBitmap *bitmap){
         return RET_ERR_BAD_VALUE;
     }
 
-    ALOGI("render format:%d [0:RGB 1:RGBA 2:ARGB], bitmap w:%d, h;%d", format, bitmap->width(), bitmap->height());
+    ALOGI("render format:%d [0:RGB 1:RGBA 2:ARGB], bitmap w:%d, h:%d", format, bitmap->width(), bitmap->height());
     switch (format) {
         case VIDEO_LAYER_FORMAT_RGB:{
             char* bitmapAddr = NULL;
@@ -1387,22 +1664,129 @@ int ImagePlayerService::render(int format, SkBitmap *bitmap){
 }
 
 //post to display device
-int ImagePlayerService::show() {
+int ImagePlayerService::post() {
     if (mDisplayFd < 0) {
-        ALOGE("show, but displayFd has not ready");
+        ALOGE("post, but displayFd has not ready");
         return RET_ERR_BAD_VALUE;
     }
 
-    ALOGI("show picture display fd:%d", mDisplayFd);
+    ALOGI("post picture to display fd:%d", mDisplayFd);
     ioctl(mDisplayFd, PICDEC_IOC_FRAME_POST, NULL);
     return RET_OK;
+}
+
+//post to display device
+int ImagePlayerService::show() {
+    Mutex::Autolock autoLock(mLock);
+
+    ALOGI("show, is movie image:%d", mMovieImage);
+    if (mMovieImage)
+        return MovieThreadStart();
+
+    MovieThreadStop();
+
+    return post();
 }
 
 //internal use
 bool ImagePlayerService::renderAndShow(SkBitmap *bitmap){
     render(VIDEO_LAYER_FORMAT_RGBA, bitmap);
-    show();
+    post();
     return true;
+}
+
+void ImagePlayerService::resetRotateScale() {
+    mScalingDirect = SCALE_NORMAL;
+    mScalingStep = 1.0f;
+
+    if (NULL != mScalingBitmap) {
+        delete mScalingBitmap;
+        mScalingBitmap = NULL;
+    }
+
+    if (NULL != mRotateBitmap) {
+        delete mRotateBitmap;
+        mRotateBitmap = NULL;
+    }
+}
+
+SkBitmap* ImagePlayerService::scaleStep(SkBitmap *srcBitmap, float sx, float sy) {
+    int STEP_EXP_4      = 4;
+    int STEP_EXP_3      = 3;
+    int STEP_EXP_2      = 2;
+    float SETP_LENGTH   = 2.0f;
+
+    int stepCount = 0;
+    SkBitmap *scalingBitmap = NULL;
+
+    if (srcBitmap == NULL)
+        return NULL;
+
+    if ((sx > 16.0f) || (sy > 16.0f)) {
+        ALOGE("scaleStep max x scale up or y scale up is 16");
+        return NULL;
+    }
+
+    ALOGD("scaleStep, bitmap Width: %d, Height: %d, sx:%f, sy:%f",
+        srcBitmap->width(), srcBitmap->height(), sx, sy);
+    if ((sx == 16.0f) || (sy == 16.0f)) {
+        stepCount = STEP_EXP_4;
+    }
+    else if ((sx == 8.0f) || (sy == 8.0f)) {
+        stepCount = STEP_EXP_3;
+    }
+    else if ((sx == 4.0f) || (sy == 4.0f)) {
+        stepCount = STEP_EXP_2;
+    }
+    else if ((sx == 2.0f) || (sy == 2.0f)) {
+        scalingBitmap = scaleAndCrop(srcBitmap, sx, sy);
+    }
+    else if ((sx < 1.0f) || (sy < 1.0f)) {
+        scalingBitmap = scaleAndCrop(srcBitmap, sx, sy);
+    }
+    else {
+        ALOGW("scaleStep, scale directly, but maybe have not enough memory!!");
+        scalingBitmap = scaleAndCrop(srcBitmap, sx, sy);
+    }
+
+    if (stepCount > 0) {
+        int step = 1;
+        float scalex = SETP_LENGTH;
+        float scaley = SETP_LENGTH;
+        SkBitmap *retBitmap = scaleAndCrop(srcBitmap, scalex, scaley);
+        while (true) {
+            scalingBitmap = retBitmap;
+            retBitmap = scaleAndCrop(scalingBitmap, scalex, scaley);
+            delete scalingBitmap;
+
+            step++;
+            if (step >= stepCount) {
+                scalingBitmap = retBitmap;
+                break;
+            }
+        }
+    }
+
+    return scalingBitmap;
+}
+
+SkBitmap* ImagePlayerService::scaleAndCrop(SkBitmap *srcBitmap, float sx, float sy) {
+    if (srcBitmap == NULL)
+        return NULL;
+
+    SkBitmap *retBitmap = scale(srcBitmap, sx, sy);
+
+    ALOGD("scaleAndCrop, after scale, Width: %d, Height: %d, surface w:%d, h:%d",
+        retBitmap->width(), retBitmap->height(), surfaceWidth, surfaceHeight);
+    if ((retBitmap->width() > surfaceWidth) || (retBitmap->height() > surfaceHeight)) {
+        SkBitmap *dstCrop = cropAndFillBitmap(retBitmap, surfaceWidth, surfaceHeight);
+        if (NULL != dstCrop) {
+            delete retBitmap;
+            retBitmap = dstCrop;
+        }
+    }
+
+    return retBitmap;
 }
 
 SkBitmap* ImagePlayerService::fillSurface(SkBitmap *bitmap){
@@ -1473,7 +1857,7 @@ bool ImagePlayerService::showBitmapRect(SkBitmap *bitmap, int cropX, int cropY, 
     if(NULL != bitmapAddr)
         free(bitmapAddr);
 
-    show();
+    post();
     return true;
 }
 
@@ -1561,6 +1945,151 @@ int ImagePlayerService::convertIndex8toYUYV(void *dst, const SkBitmap *src) {
     return RET_OK;
 }
 
+bool ImagePlayerService::MovieInit(const char path[]) {
+    //stop it firstly
+    MovieThreadStop();
+
+    mMovieDegree = 0;
+    mMovieScale = 1.0f;
+
+    if (NULL != mSkMovie)
+        delete mSkMovie;
+
+    mMovieTime = 0;
+    mSkMovie = SkMovie::DecodeFile(path);
+    if (mSkMovie) {
+        int duration = mSkMovie->duration();
+        ALOGI("MovieInit duration:%d, w:%d, h:%d", duration, mSkMovie->width(), mSkMovie->height());
+        return true;
+    }
+    else {
+        ALOGE("MovieInit decodeFile '%s' (%d)", strerror(errno), errno);
+    }
+
+    return false;
+}
+
+bool ImagePlayerService::MovieShow() {
+    int sysTime = (int)nanoseconds_to_milliseconds(systemTime(SYSTEM_TIME_MONOTONIC));
+    if (0 == mMovieTime)
+        mMovieTime = sysTime;
+
+    if (mSkMovie) {
+        if (mSkMovie->duration()) {
+            mSkMovie->setTime((sysTime-mMovieTime) % mSkMovie->duration());
+        } else {
+            mSkMovie->setTime(0);
+        }
+
+        SkBitmap *scaleBitmap = NULL;
+        SkBitmap *rotateBitmap = NULL;
+        SkBitmap bitmap;//= mSkMovie->bitmap();
+
+    #ifdef AM_LOLLIPOP
+        mSkMovie->bitmap().copyTo(&bitmap, kN32_SkColorType);
+    #else
+        mSkMovie->bitmap().copyTo(&bitmap, SkBitmap::kARGB_8888_Config);
+    #endif
+        if ((bitmap.width() > surfaceWidth) || (bitmap.height() > surfaceHeight)) {
+            ALOGW("MovieShow, origin width:%d or height:%d > surface w:%d or h:%d",
+                    bitmap.width(), bitmap.height(), surfaceWidth, surfaceHeight);
+
+            SkBitmap *dstCrop = fillSurface(&bitmap);
+            if (NULL != dstCrop) {
+            #ifdef AM_LOLLIPOP
+                dstCrop->copyTo(&bitmap, kN32_SkColorType);
+            #else
+                dstCrop->copyTo(&bitmap, SkBitmap::kARGB_8888_Config);
+            #endif
+                delete dstCrop;
+            }
+        }
+
+        if (1.0f != mMovieScale) {
+            int scaledW = bitmap.width()*mMovieScale;
+            int scaledH = bitmap.height()*mMovieScale;
+            if ((scaledW > surfaceWidth) || (scaledH > surfaceHeight)) {
+                ALOGW("MovieShow, scaled width:%d or height:%d > surface w:%d or h:%d scale delta:%f",
+                    scaledW, scaledH, surfaceWidth, surfaceHeight, mMovieScale);
+
+                scaleBitmap = scaleStep(&bitmap, mMovieScale, mMovieScale);
+            }
+            else {
+                scaleBitmap = scale(&bitmap, mMovieScale, mMovieScale);
+            }
+        }
+
+        if (0 != mMovieDegree) {
+            if (NULL != scaleBitmap) {
+                rotateBitmap = rotate(scaleBitmap, mMovieDegree);
+                delete scaleBitmap;
+                scaleBitmap = NULL;
+            }
+            else
+                rotateBitmap = rotate(&bitmap, mMovieDegree);
+        }
+
+        if (NULL != rotateBitmap) {
+            MovieRenderPost(rotateBitmap);
+            delete rotateBitmap;
+        }
+        else if (NULL != scaleBitmap) {
+            MovieRenderPost(scaleBitmap);
+            delete scaleBitmap;
+        }
+        else {
+            MovieRenderPost(&bitmap);
+        }
+        return true;
+    }
+
+    return false;
+}
+
+void ImagePlayerService::MovieRenderPost(SkBitmap *bitmap) {
+    //don't use renderAndShow, too many logs
+    //renderAndShow(bitmap);
+    FrameInfo_t info;
+    if (mDisplayFd < 0) {
+        ALOGE("MovieShow, but displayFd can not ready");
+        return;
+    }
+    //render to buffer
+    bitmap->lockPixels();
+    info.pBuff = (char*)bitmap->getPixels();
+    info.format = VIDEO_LAYER_FORMAT_RGBA;
+    info.frame_width = bitmap->width();
+    info.frame_height = bitmap->height();
+
+    ioctl(mDisplayFd, PICDEC_IOC_FRAME_RENDER, &info);
+    bitmap->unlockPixels();
+    //post to screen
+    ioctl(mDisplayFd, PICDEC_IOC_FRAME_POST, NULL);
+}
+
+int ImagePlayerService::MovieThreadStart() {
+    ALOGI("start movie image thread is running:%d", mMovieThread->isRunning());
+
+    status_t result = mMovieThread->run("MovieThread", PRIORITY_URGENT_DISPLAY);
+    if (result) {
+        ALOGE("Could not start MovieThread due to error %d.", result);
+        return RET_ERR_DECORDER;
+    }
+    return RET_OK;
+}
+
+int ImagePlayerService::MovieThreadStop() {
+    if (mMovieThread->isRunning()) {
+        ALOGI("MovieThread is running, need stop it firstly");
+        status_t result = mMovieThread->requestExitAndWait();
+        if (result) {
+            ALOGE("Could not stop MovieThread due to error %d.", result);
+            return RET_ERR_DECORDER;
+        }
+    }
+    return RET_OK;
+}
+
 status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
     const size_t SIZE = 256;
     char buffer[SIZE];
@@ -1575,7 +2104,7 @@ status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
         Mutex::Autolock lock(mLock);
 
         result.appendFormat("ImagePlayerService: mDisplayFd:%d, mFileDescription:%d\n", mDisplayFd, mFileDescription);
-        result.appendFormat("ImagePlayerService: mImageUrl:%s, mWidth:%d, mHeight:%d\n",
+        result.appendFormat("ImagePlayerService: mImageUrl:%s, mBitmap mWidth:%d, mHeight:%d\n",
                 mImageUrl, mWidth, mHeight);
         result.appendFormat("ImagePlayerService: mSampleSize:%d, surfaceWidth:%d, surfaceHeight:%d\n",
                 mSampleSize, surfaceWidth, surfaceHeight);
@@ -1592,13 +2121,13 @@ status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
 
                 if (NULL != mBitmap) {
                     if ((int)mBitmap->getSize() < 4*mBitmap->width()*mBitmap->height()) {
-                        result.appendFormat("ImagePlayerService: [error]save RGBA data to file:%s, bitmap size:%d, request size:%d\n",
+                        result.appendFormat("ImagePlayerService: [error]save origin bitmap RGBA data to file:%s, mBitmap size:%d, request size:%d\n",
                             path.string(), (int)mBitmap->getSize(), 4*mBitmap->width()*mBitmap->height());
                     }
                     else {
                         RGBA2bmp((char *)mBitmap->getPixels(),
                             mBitmap->width(), mBitmap->height(), (char *)path.string());
-                        result.appendFormat("ImagePlayerService: save RGBA data to file:%s\n", path.string());
+                        result.appendFormat("ImagePlayerService: save origin bitmap RGBA data to file:%s\n", path.string());
                     }
                 }
 
@@ -1607,13 +2136,68 @@ status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
                     strcat(bufPath, path.string());
                     strcat(bufPath, "_buf.bmp");
                     if ((int)mBufBitmap->getSize() < 4*mBufBitmap->width()*mBufBitmap->height()) {
-                        result.appendFormat("ImagePlayerService: [error]save RGBA data to file:%s, mBufBitmap size:%d, request size:%d\n",
+                        result.appendFormat("ImagePlayerService: [error]save bitmap buffer RGBA data to file:%s, mBufBitmap size:%d, request size:%d\n",
                             bufPath, (int)mBufBitmap->getSize(), 4*mBufBitmap->width()*mBufBitmap->height());
                     }
                     else {
                         RGBA2bmp((char *)mBufBitmap->getPixels(),
                             mBufBitmap->width(), mBufBitmap->height(), bufPath);
-                        result.appendFormat("ImagePlayerService: save RGBA data to file:%s\n", bufPath);
+                        result.appendFormat("ImagePlayerService: save bitmap buffer RGBA data to file:%s\n", bufPath);
+                    }
+                }
+
+                if (NULL != mRotateBitmap) {
+                    char bufPath[256] = {0};
+                    strcat(bufPath, path.string());
+                    strcat(bufPath, "_rotate.bmp");
+                    if ((int)mRotateBitmap->getSize() < 4*mRotateBitmap->width()*mRotateBitmap->height()) {
+                        result.appendFormat("ImagePlayerService: [error]save rotate RGBA data to file:%s, mRotateBitmap size:%d, request size:%d\n",
+                            bufPath, (int)mRotateBitmap->getSize(), 4*mRotateBitmap->width()*mRotateBitmap->height());
+                    }
+                    else {
+                        RGBA2bmp((char *)mRotateBitmap->getPixels(),
+                            mRotateBitmap->width(), mRotateBitmap->height(), bufPath);
+                        result.appendFormat("ImagePlayerService: save rotate RGBA data to file:%s\n", bufPath);
+                    }
+                }
+
+                if (NULL != mScalingBitmap) {
+                    char bufPath[256] = {0};
+                    strcat(bufPath, path.string());
+                    strcat(bufPath, "_scale.bmp");
+                    if ((int)mScalingBitmap->getSize() < 4*mScalingBitmap->width()*mScalingBitmap->height()) {
+                        result.appendFormat("ImagePlayerService: [error]save scale RGBA data to file:%s, mScalingBitmap size:%d, request size:%d\n",
+                            bufPath, (int)mScalingBitmap->getSize(), 4*mScalingBitmap->width()*mScalingBitmap->height());
+                    }
+                    else {
+                        RGBA2bmp((char *)mScalingBitmap->getPixels(),
+                            mScalingBitmap->width(), mScalingBitmap->height(), bufPath);
+                        result.appendFormat("ImagePlayerService: save scale RGBA data to file:%s\n", bufPath);
+                    }
+                }
+
+                if (NULL != mSkMovie) {
+                    char bufPath[256] = {0};
+                    strcat(bufPath, path.string());
+                    strcat(bufPath, "_movie.png");
+
+                    SkBitmap copy;
+                    //mSkMovie->setTime(0);
+                    int sysTime = (int)nanoseconds_to_milliseconds(systemTime(SYSTEM_TIME_MONOTONIC));
+                    mSkMovie->setTime(sysTime % mSkMovie->duration());
+
+                #ifdef AM_LOLLIPOP
+                    mSkMovie->bitmap().copyTo(&copy, kN32_SkColorType);
+                #else
+                    mSkMovie->bitmap().copyTo(&copy, SkBitmap::kARGB_8888_Config);
+                #endif
+                    if (!SkImageEncoder::EncodeFile(bufPath, copy,
+                            SkImageEncoder::kPNG_Type, SkImageEncoder::kDefaultQuality)) {
+                        result.appendFormat("ImagePlayerService: [error]encode to png file:%s\n", bufPath);
+                    }
+                    else {
+                        result.appendFormat("ImagePlayerService: encode to png file:%s, w:%d, h:%d\n",
+                            bufPath, copy.width(), copy.height());
                     }
                 }
             }
@@ -1623,4 +2207,67 @@ status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
     return NO_ERROR;
 }
 
+// --- MovieThread ---
+MovieThread::MovieThread(const sp<ImagePlayerService>& player)
+    : Thread(/*canCallJava*/ false), mPlayer(player) {
+    ALOGI("MovieThread construtor");
+}
+
+MovieThread::~MovieThread() {
+    ALOGI("~MovieThread");
+}
+
+// Good place to do one-time initializations
+status_t MovieThread::readyToRun() {
+    return NO_ERROR;
+}
+
+/*
+    1) loop: if returns true, it will be called again if requestExit() wasn't called.
+    2) once: if returns false, the thread will exit.
+*/
+bool MovieThread::threadLoop() {
+    usleep(500*1000);//delay 500ms
+    return mPlayer->MovieShow();
+}
+
+#if 0
+MovieImageHandler::MovieImageHandler(const sp<ImagePlayerService>& player)
+    : mPlayer(player) {
+}
+
+MovieImageHandler::~MovieImageHandler() {
+}
+
+void MovieImageHandler::init(const char path[]) {
+    sp<AMessage> msg = new AMessage(kWhatInit, id());
+    msg->setString("imagePath", path);
+    msg->post();
+}
+
+void MovieImageHandler::show() {
+    sp<AMessage> msg = new AMessage(kWhatShow, id());
+    msg->post();
+}
+
+void MovieImageHandler::onMessageReceived(const sp<AMessage> &msg) {
+    switch (msg->what()) {
+        case kWhatInit:
+            AString path;
+            if (msg->findString("imagePath", &path)) {
+                mPlayer->MovieInit(path.c_str());
+            }
+            break;
+
+        case kWhatShow:
+            break;
+
+        case kWhatStop:
+            break;
+
+        default:
+            TRESPASS();
+    }
+}
+#endif
 }

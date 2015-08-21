@@ -5,7 +5,7 @@
  *  - The information contained herein is the confidential property
  *  of Amlogic.  The use, copying, transfer or disclosure of such information
  *  is prohibited except by express written agreement with Amlogic Inc.
- *  @author   tellen
+ *  @author   Tellen Yu
  *  @version  1.0
  *  @date     2014/04/26
  *  @par function description:
@@ -379,10 +379,10 @@ int RGBA8888_to_RGB888(const char* src, char* dst, size_t pixel) {
     //RGBA -> BGR
     for (i = 0; i < (int)pixel; i++) {
         for (j = 0; j < 3; j++) {
-            //dst[3*i+j] = src[4*i+j];
-            //dst[3*i+j] = (((src[4*i+j]*src[4*i+3])>>8)&0xff);
-            //dst[3*i+j] = (((src[4*i+ 2 - j]*src[4*i+3])>>8)&0xff);
             dst[3*i+j] = src[4*i + 2 - j];
+
+            //ARGB -> BGR
+            //dst[3*i+j] = src[4*i + 3 - j];
         }
     }
 
@@ -464,7 +464,7 @@ int RGBA2bmp(char *buf, int width, int height, char* filePath) {
 
     fwrite(p_bmp_data, bmp_file_header.bf_size, 1, fp);
     fclose(fp);
-    ALOGI("RGBA2bmp, [error]save file success, file len = %d\n", (int)bmp_file_header.bf_size);
+    ALOGI("RGBA2bmp, save file success, file len = %d\n", (int)bmp_file_header.bf_size);
 
 _ERR:
     if ( NULL != rgb_matrix )

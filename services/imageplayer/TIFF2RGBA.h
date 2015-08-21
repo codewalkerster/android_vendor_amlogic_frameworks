@@ -5,7 +5,7 @@
  *  - The information contained herein is the confidential property
  *  of Amlogic.  The use, copying, transfer or disclosure of such information
  *  is prohibited except by express written agreement with Amlogic Inc.
- *  @author   tellen
+ *  @author   Tellen Yu
  *  @version  1.0
  *  @date     2015/06/08
  *  @par function description:
@@ -26,7 +26,8 @@ class TIFF2RGBA {
     TIFF2RGBA();
     ~TIFF2RGBA();
 
-    static int tiffDercoder(const char *filePath, SkBitmap *pBitmap);
+    static int tiffDecodeBound(const char *filePath, int *width, int *height);
+    static int tiffDecoder(const char *filePath, SkBitmap *pBitmap);
 
 };
 
