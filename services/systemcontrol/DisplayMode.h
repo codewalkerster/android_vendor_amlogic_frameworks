@@ -67,6 +67,7 @@
 #define PROP_BOOTANIM                   "init.svc.bootanim"
 #define PROP_FS_MODE                    "const.filesystem.mode"
 #define PROP_BOOTANIM_DELAY             "const.bootanim.delay"
+#define PROP_BOOTVIDEO_SERVICE          "service.bootvideo"
 
 
 #define ENV_480I_X                      "ubootenv.var.480i_x"

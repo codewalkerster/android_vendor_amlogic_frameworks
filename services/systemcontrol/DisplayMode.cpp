@@ -631,6 +631,7 @@ void* DisplayMode::bootanimDetect(void* data){
     char state_bootanim[MAX_STR_LEN] = {0};
     char fs_mode[MAX_STR_LEN] = {0};
     char outputmode[MAX_STR_LEN] = {0};
+    char bootvideo[MAX_STR_LEN] = {0};
 
     pThiz->pSysWrite->getPropertyString(PROP_FS_MODE, fs_mode, "android");
     pThiz->pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, outputmode);
@@ -654,7 +655,11 @@ void* DisplayMode::bootanimDetect(void* data){
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-    pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
+
+    pThiz->pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
+    if (strcmp(bootvideo,"1"))
+        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
+
     pThiz->setOsdMouse(outputmode);
 
     return NULL;
