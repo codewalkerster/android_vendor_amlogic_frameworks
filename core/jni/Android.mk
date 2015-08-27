@@ -97,3 +97,35 @@ LOCAL_C_INCLUDES += \
     $(JNI_H_INCLUDE)
 
 include $(BUILD_SHARED_LIBRARY)
+
+########### build libgifdecode_jni
+include $(CLEAR_VARS)
+
+LOCAL_SRC_FILES := \
+	droid_logic_GIFDecode.cpp
+
+LOCAL_C_INCLUDES := $(JNI_H_INCLUDE)
+
+LOCAL_MODULE    := libgifdecode_jni
+
+LOCAL_SHARED_LIBRARIES := \
+    liblog \
+    libcutils \
+    libutils \
+    libskia \
+    libnativehelper \
+    libandroid_runtime
+
+LOCAL_C_INCLUDES += \
+  external/giflib \
+  external/skia/include/core \
+  external/skia/include/effects \
+  external/skia/include/images \
+  external/skia/src/ports \
+  external/skia/include/utils \
+  frameworks/base/core/jni/android/graphics
+
+LOCAL_STATIC_LIBRARIES := \
+  libgif
+
+include $(BUILD_SHARED_LIBRARY)
