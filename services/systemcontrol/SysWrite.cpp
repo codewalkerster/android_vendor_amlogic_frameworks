@@ -21,10 +21,12 @@
 
 #define LOG_TAG "SystemControl"
 //#define LOG_NDEBUG 0
-
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <cutils/properties.h>
 #include <stdint.h>
 #include <sys/types.h>
