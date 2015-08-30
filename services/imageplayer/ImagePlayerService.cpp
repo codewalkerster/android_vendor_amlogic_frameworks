@@ -70,7 +70,7 @@
 
 #define PICDEC_SYSFS                "/dev/picdec"
 #define PICDEC_IOC_MAGIC            'P'
-#define PICDEC_IOC_FRAME_RENDER     _IOW(PICDEC_IOC_MAGIC, 0x00, unsigned int)
+#define PICDEC_IOC_FRAME_RENDER     _IOW(PICDEC_IOC_MAGIC, 0x00, FrameInfo_t)
 #define PICDEC_IOC_FRAME_POST       _IOW(PICDEC_IOC_MAGIC, 0x01, unsigned int)
 
 #define VIDEO_LAYER_FORMAT_RGB      0
