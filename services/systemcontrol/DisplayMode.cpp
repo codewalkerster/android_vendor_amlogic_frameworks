@@ -28,76 +28,202 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <unistd.h>
+#include <poll.h>
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <linux/netlink.h>
+
 #include <cutils/properties.h>
 #include "ubootenv.h"
 #include "DisplayMode.h"
 #include "SysTokenizer.h"
 
-#define MODE_480I                   "480i60hz"
-#define MODE_480P                   "480p60hz"
-#define MODE_480CVBS                "480cvbs"
-#define MODE_576I                   "576i50hz"
-#define MODE_576P                   "576p50hz"
-#define MODE_576CVBS                "576cvbs"
-#define MODE_720P50HZ               "720p50hz"
-#define MODE_720P                   "720p60hz"
-#define MODE_1080P24HZ              "1080p24hz"
-#define MODE_1080I50HZ              "1080i50hz"
-#define MODE_1080P50HZ              "1080p50hz"
-#define MODE_1080I                  "1080i60hz"
-#define MODE_1080P                  "1080p60hz"
-#define MODE_4K2K24HZ               "2160p24hz"
-#define MODE_4K2K25HZ               "2160p25hz"
-#define MODE_4K2K30HZ               "2160p30hz"
-#define MODE_4K2K50HZ               "2160p50hz"
-#define MODE_4K2K50HZ420            "2160p50hz420"
-#define MODE_4K2K60HZ               "2160p60hz"
-#define MODE_4K2K60HZ420            "2160p60hz420"
-#define MODE_4K2KSMPTE              "smpte24hz"
-
-
-#define UBOOTENV_DIGITAUDIO         "ubootenv.var.digitaudiooutput"
-#define UBOOTENV_HDMIMODE           "ubootenv.var.hdmimode"
-#define UBOOTENV_CVBSMODE           "ubootenv.var.cvbsmode"
-#define UBOOTENV_OUTPUTMODE         "ubootenv.var.outputmode"
-#define UBOOTENV_ISBESTMODE         "ubootenv.var.is.bestmode"
-
+static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
+    MODE_480I,
+    MODE_480P,
+    MODE_480CVBS,
+    MODE_576I,
+    MODE_576P,
+    MODE_576CVBS,
+    MODE_720P,
+    MODE_720P50HZ,
+    MODE_1080P24HZ,
+    MODE_1080I50HZ,
+    MODE_1080P50HZ,
+    MODE_1080I,
+    MODE_1080P,
+    MODE_4K2K24HZ,
+    MODE_4K2K25HZ,
+    MODE_4K2K30HZ,
+    MODE_4K2K50HZ,
+    MODE_4K2K50HZ420,
+    MODE_4K2K60HZ,
+    MODE_4K2K60HZ420,
+    MODE_4K2KSMPTE
+};
 
 static void copy_if_gt0(uint32_t *src, uint32_t *dst, unsigned cnt)
 {
-	do {
-		if ((int32_t) *src > 0)
-			*dst = *src;
-		src++;
-		dst++;
-	} while (--cnt);
+    do {
+        if ((int32_t) *src > 0)
+            *dst = *src;
+        src++;
+        dst++;
+    } while (--cnt);
 }
 
 static void copy_changed_values(
-		struct fb_var_screeninfo *base,
-		struct fb_var_screeninfo *set)
+            struct fb_var_screeninfo *base,
+            struct fb_var_screeninfo *set)
 {
-	//if ((int32_t) set->xres > 0) base->xres = set->xres;
-	//if ((int32_t) set->yres > 0) base->yres = set->yres;
-	//if ((int32_t) set->xres_virtual > 0)   base->xres_virtual = set->xres_virtual;
-	//if ((int32_t) set->yres_virtual > 0)   base->yres_virtual = set->yres_virtual;
-	copy_if_gt0(&set->xres, &base->xres, 4);
+    //if ((int32_t) set->xres > 0) base->xres = set->xres;
+    //if ((int32_t) set->yres > 0) base->yres = set->yres;
+    //if ((int32_t) set->xres_virtual > 0)   base->xres_virtual = set->xres_virtual;
+    //if ((int32_t) set->yres_virtual > 0)   base->yres_virtual = set->yres_virtual;
+    copy_if_gt0(&set->xres, &base->xres, 4);
 
-	if ((int32_t) set->bits_per_pixel > 0) base->bits_per_pixel = set->bits_per_pixel;
-	//copy_if_gt0(&set->bits_per_pixel, &base->bits_per_pixel, 1);
+    if ((int32_t) set->bits_per_pixel > 0) base->bits_per_pixel = set->bits_per_pixel;
+    //copy_if_gt0(&set->bits_per_pixel, &base->bits_per_pixel, 1);
 
-	//if ((int32_t) set->pixclock > 0)       base->pixclock = set->pixclock;
-	//if ((int32_t) set->left_margin > 0)    base->left_margin = set->left_margin;
-	//if ((int32_t) set->right_margin > 0)   base->right_margin = set->right_margin;
-	//if ((int32_t) set->upper_margin > 0)   base->upper_margin = set->upper_margin;
-	//if ((int32_t) set->lower_margin > 0)   base->lower_margin = set->lower_margin;
-	//if ((int32_t) set->hsync_len > 0) base->hsync_len = set->hsync_len;
-	//if ((int32_t) set->vsync_len > 0) base->vsync_len = set->vsync_len;
-	//if ((int32_t) set->sync > 0)  base->sync = set->sync;
-	//if ((int32_t) set->vmode > 0) base->vmode = set->vmode;
-	copy_if_gt0(&set->pixclock, &base->pixclock, 9);
+    //if ((int32_t) set->pixclock > 0)       base->pixclock = set->pixclock;
+    //if ((int32_t) set->left_margin > 0)    base->left_margin = set->left_margin;
+    //if ((int32_t) set->right_margin > 0)   base->right_margin = set->right_margin;
+    //if ((int32_t) set->upper_margin > 0)   base->upper_margin = set->upper_margin;
+    //if ((int32_t) set->lower_margin > 0)   base->lower_margin = set->lower_margin;
+    //if ((int32_t) set->hsync_len > 0) base->hsync_len = set->hsync_len;
+    //if ((int32_t) set->vsync_len > 0) base->vsync_len = set->vsync_len;
+    //if ((int32_t) set->sync > 0)  base->sync = set->sync;
+    //if ((int32_t) set->vmode > 0) base->vmode = set->vmode;
+    copy_if_gt0(&set->pixclock, &base->pixclock, 9);
+}
+
+static int uevent_init()
+{
+    struct sockaddr_nl addr;
+    int sz = 64*1024;
+    int s;
+
+    memset(&addr, 0, sizeof(addr));
+    addr.nl_family = AF_NETLINK;
+    addr.nl_pid = getpid();
+    addr.nl_groups = 0xffffffff;
+
+    s = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_KOBJECT_UEVENT);
+    if (s < 0)
+        return 0;
+
+    setsockopt(s, SOL_SOCKET, SO_RCVBUFFORCE, &sz, sizeof(sz));
+
+    if (bind(s, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+        close(s);
+        return 0;
+    }
+
+    return s;
+}
+
+static int uevent_next_event(int fd, char* buffer, int buffer_length)
+{
+    while (1) {
+        struct pollfd fds;
+        int nr;
+
+        fds.fd = fd;
+        fds.events = POLLIN;
+        fds.revents = 0;
+        nr = poll(&fds, 1, -1);
+
+        if (nr > 0 && (fds.revents & POLLIN)) {
+            int count = recv(fd, buffer, buffer_length, 0);
+            if (count > 0) {
+                return count;
+            }
+        }
+    }
+
+    // won't get here
+    return 0;
+}
+
+static bool isMatch(const char* buffer, size_t length, char* switch_state, char* switch_name) {
+    bool matched = false;
+    // Consider all zero-delimited fields of the buffer.
+    const char* field = buffer;
+    const char* end = buffer + length + 1;
+    do {
+        if (strstr(field, HDMI_UEVENT)) {
+            SYS_LOGI("Matched uevent message with pattern: %s", HDMI_UEVENT);
+            matched = true;
+        }
+        //SWITCH_STATE=1, SWITCH_NAME=hdmi
+        else if (strstr(field, "SWITCH_STATE=")) {
+            strcpy(switch_state, field + strlen("SWITCH_STATE="));
+        }
+        else if (strstr(field, "SWITCH_NAME=")) {
+            strcpy(switch_name, field + strlen("SWITCH_NAME="));
+        }
+        field += strlen(field) + 1;
+    } while (field != end);
+
+    return matched;
+}
+
+// all the hdmi plug checking complete in this loop
+static void* HdmiPlugDetectThread(void* data) {
+    DisplayMode *pThiz = (DisplayMode*)data;
+
+    char status[PROPERTY_VALUE_MAX] = {0};
+#if 0
+    char oldHpdstate[MAX_STR_LEN] = {0};
+    char currentHpdstate[MAX_STR_LEN] = {0};
+
+    pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, oldHpdstate);
+    while (1) {
+        if (property_get("instaboot.status", status, "completed") &&
+           !strcmp("booting", status)){
+            usleep(2000000);
+            continue;
+        }
+
+        pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, currentHpdstate);
+        if (strcmp(oldHpdstate, currentHpdstate)) {
+            SYS_LOGI("HdmiPlugDetectLoop: detected HDMI plug: change state from %s to %s\n", oldHpdstate, currentHpdstate);
+
+            pThiz->setMboxDisplay(currentHpdstate, false);
+            strcpy(oldHpdstate, currentHpdstate);
+        }
+        usleep(2000000);
+    }
+#endif
+
+    //use uevent instead of usleep, because it's has some delay
+    char buffer[1024] = {0};
+    char switch_name[128] = {0};
+    char switch_state[128] = {0};
+    int fd = uevent_init();
+    while (fd >= 0) {
+        if (property_get("instaboot.status", status, "completed") &&
+           !strcmp("booting", status)){
+            usleep(2000000);
+            continue;
+        }
+
+        int length = uevent_next_event(fd, buffer, sizeof(buffer) - 1);
+        if (length <= 0)
+            continue;
+
+        buffer[length] = '\0';
+        //SYS_LOGI("Received uevent message: %s", buffer);
+
+        if (isMatch(buffer, length, switch_state, switch_name)) {
+            SYS_LOGI("HDMI switch_state: %s switch_name: %s\n", switch_state, switch_name);
+            pThiz->setMboxDisplay(switch_state, false);
+        }
+    }
+
+    return NULL;
 }
 
 DisplayMode::DisplayMode(const char *path)
@@ -124,10 +250,10 @@ DisplayMode::DisplayMode(const char *path)
     SYS_LOGI("display mode config path: %s", pConfigPath);
 
     pSysWrite = new SysWrite();
-    initDisplay = true;
 }
 
 DisplayMode::~DisplayMode() {
+    delete pSysWrite;
 }
 
 void DisplayMode::init() {
@@ -139,13 +265,17 @@ void DisplayMode::init() {
         setTabletDisplay();
     }
     else if (DISPLAY_TYPE_MBOX == mDisplayType) {
-        setMboxDisplay(NULL);
-        startHdmiPlugDetectThread();
+        setMboxDisplay(NULL, true);
+
+        pthread_t id;
+        int ret = pthread_create(&id, NULL, HdmiPlugDetectThread, this);
+        if (ret != 0) {
+            SYS_LOGE("Create HdmiPlugDetectThread error!\n");
+        }
     }
     else if (DISPLAY_TYPE_TV == mDisplayType) {
         setTVDisplay();
     }
-    initDisplay = false;
 }
 
 void DisplayMode:: getDisplayInfo(int &type, char* socType, char* defaultUI) {
@@ -294,36 +424,20 @@ void DisplayMode::setTabletDisplay() {
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
 }
 
-void DisplayMode::setMboxDisplay(char* hpdstate) {
-    mbox_data_t* data = (mbox_data_t *)malloc(sizeof(mbox_data_t));
-    if (data == NULL) {
-        SYS_LOGE(" malloc memory for mboxdata failed");
-        return;
-    }
-    memset(data, 0, sizeof(mbox_data_t));
+void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
+    hdmi_data_t data;
+    char outputmode[MODE_LEN] = {0};
 
-    if (hpdstate == NULL) {
-        getCurrentHdmiData(data);
-        hpdstate = data->hpd_state;
-    } else {
-        strcpy(data->hpd_state, hpdstate);
-        getCurrentHdmiData(data);
-    }
-
-    char current_mode[MAX_STR_LEN] = {0};
-    char outputmode[MAX_STR_LEN] = {0};
-
-    strcpy(current_mode, data->current_mode);
-
+    initHdmiData(&data, hpdstate);
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
-        if (!strcmp(hpdstate, "1")){
-            if ((!strcmp(current_mode, MODE_480CVBS) || !strcmp(current_mode, MODE_576CVBS))
-                    && initDisplay) {
+        if (!strcmp(data.hpd_state, "1")) {
+            if ((!strcmp(data.current_mode, MODE_480CVBS) || !strcmp(data.current_mode, MODE_576CVBS))
+                    && initState) {
                 pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
                 pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
             }
 
-            getHdmiMode(outputmode, data);
+            getHdmiOutputMode(outputmode, &data);
             setBootEnv(UBOOTENV_HDMIMODE, outputmode);
         }
         else {
@@ -337,15 +451,15 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     }
 
     //if the tv don't support current outputmode,then switch to best outputmode
-    if (strcmp(hpdstate, "1")) {
+    if (strcmp(data.hpd_state, "1")) {
         if (strcmp(outputmode, MODE_480CVBS) && strcmp(outputmode, MODE_576CVBS)) {
             strcpy(outputmode, MODE_576CVBS);
         }
     }
 
     SYS_LOGI("init mbox display hpdstate:%s, old outputmode:%s, new outputmode:%s\n",
-            hpdstate,
-            current_mode,
+            data.hpd_state,
+            data.current_mode,
             outputmode);
     if (strlen(outputmode) == 0)
         strcpy(outputmode, mDefaultUI);
@@ -370,26 +484,26 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
         pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "2160");
     }
 
-
-    if (strcmp(current_mode, outputmode)) {
-        if (initDisplay) {
+    if (strcmp(data.current_mode, outputmode)) {
+        if (initState) {
             //when change mode, need close uboot logo to avoid logo scaling wrong
             pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
             pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
             pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
-        }else {
+        } else {
             //when change mode, it need time to set osd register,
             //so we disable osd 1 second to avoid screen flicker
             startDisableOsdThread();
         }
     }
-    setMboxOutputMode(outputmode);
-
-    free(data);
-    data = NULL;
+    setMboxOutputMode(outputmode, initState);
 }
 
 void DisplayMode::setMboxOutputMode(const char* outputmode){
+    setMboxOutputMode(outputmode, false);
+}
+
+void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
     char value[MAX_STR_LEN] = {0};
     int outputx = 0;
     int outputy = 0;
@@ -397,7 +511,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode){
     int outputheight = 0;
     int position[4] = { 0, 0, 0, 0 };
 
-    if (!initDisplay) {
+    if (!initState) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
         usleep(30000);
     }
@@ -434,7 +548,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode){
     pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, axis);
     pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
 
-    if (!initDisplay) {
+    if (!initState) {
         pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
         pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
         setOsdMouse(outputmode);
@@ -456,18 +570,36 @@ void DisplayMode::setMboxOutputMode(const char* outputmode){
     }
     pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, audiovalue);
 
-    if (!initDisplay) {
+    if (!initState) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
     }
 }
 
 //get the best hdmi mode by edid
-void DisplayMode::getBestHdmiMode(char* mode, mbox_data_t* data) {
+void DisplayMode::getBestHdmiMode(char* mode, hdmi_data_t* data) {
+    char* pos = strchr(data->edid, '*');
+    if (pos != NULL) {
+        char* findReturn = pos;
+        while (*findReturn != 0x0a && findReturn >= data->edid) {
+            findReturn--;
+        }
+        //*pos = 0;
+        //strcpy(mode, findReturn + 1);
+
+        findReturn = findReturn + 1;
+        strncpy(mode, findReturn, pos - findReturn);
+        SYS_LOGI("set HDMI to best edid mode: %s\n", mode);
+    }
+
+    if (strlen(mode) == 0) {
+        pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, mode, DEFAULT_OUTPUT_MODE);
+    }
+
+  /*
     char* arrayMode[MAX_STR_LEN] = {0};
     char* tmp;
-    int len;
 
-  /*  len = strlen(data->edid);
+    int len = strlen(data->edid);
     tmp = data->edid;
     int i = 0;
 
@@ -490,56 +622,28 @@ void DisplayMode::getBestHdmiMode(char* mode, mbox_data_t* data) {
             break;
         }
     }*/
-    char* pos = strchr(data->edid, '*');
-    if (pos != NULL) {
-        char* findReturn = pos;
-        while (*findReturn != 0x0a && findReturn >= data->edid) {
-            findReturn--;
-        }
-        *pos = 0;
-        strcpy(mode, findReturn + 1);
-        SYS_LOGI(" set HDMI to best edid mode: %s\n", mode);
-    }
-
-    if (strlen(mode) == 0) {
-        pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, mode, DEFAULT_OUTPUT_MODE);
-    }
 }
 
 //check if the edid support current hdmi mode
-void DisplayMode::filterHdmiMode(char* mode, mbox_data_t* data) {
-    char currentHdmiMode[MAX_STR_LEN] = {0};
-    char edid[MAX_STR_LEN] = {0};
-    char* arrayMode[MAX_STR_LEN] = {0};
-    char* tmp;
-    int len;
-
-    strcpy(edid, data->edid);
-    len = strlen(edid);
-    tmp = edid;
-
-    int i = 0;
-    do {
-        if (strlen(tmp) == 0)
+void DisplayMode::filterHdmiMode(char* mode, hdmi_data_t* data) {
+    char *pCmp = data->edid;
+    while ((pCmp - data->edid) < (int)strlen(data->edid)) {
+        char *pos = strchr(pCmp, 0x0a);
+        if (NULL == pos)
             break;
-        char* pos = strchr(tmp, 0x0a);
-        *pos = 0;
 
-        arrayMode[i] = tmp;
-        if (!strncmp(arrayMode[i], data->ubootenv_hdmimode, strlen(data->ubootenv_hdmimode))) {
+        if (!strncmp(pCmp, data->ubootenv_hdmimode, pos - pCmp)) {
             strcpy(mode, data->ubootenv_hdmimode);
             return;
         }
-
-        tmp = pos + 1;
-        i++;
-    } while (tmp <= edid + len -1);
+        pCmp = pos + 1;
+    }
 
     //old mode is not support in this TV, so switch to best mode.
     getBestHdmiMode(mode, data);
 }
 
-void DisplayMode::getHdmiMode(char* mode, mbox_data_t* data) {
+void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
     if (strstr(data->edid, "null") != NULL) {
         pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, mode, DEFAULT_OUTPUT_MODE);
         return;
@@ -555,22 +659,24 @@ void DisplayMode::getHdmiMode(char* mode, mbox_data_t* data) {
     SYS_LOGI("set HDMI mode to %s\n", mode);
 }
 
-void DisplayMode::getCurrentHdmiData(mbox_data_t* data){;
-    if (strlen(data->hpd_state) == 0) {
+void DisplayMode::initHdmiData(hdmi_data_t* data, char* hpdstate){
+    if (hpdstate == NULL) {
         pSysWrite->readSysfs(DISPLAY_HPD_STATE, data->hpd_state);
+    } else {
+        strcpy(data->hpd_state, hpdstate);
     }
 
     if (!strcmp(data->hpd_state, "1")) {
-        pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, data->edid);
-
         int count = 0;
-        while (strlen(data->edid) == 0) {
+        while (true) {
+            pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, data->edid);
+            if (strlen(data->edid) > 0)
+                break;
+
             if (count >= 5) {
                 strcpy(data->edid, "null edid");
                 break;
             }
-
-            pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, data->edid);
             count++;
             usleep(500000);
         }
@@ -579,57 +685,18 @@ void DisplayMode::getCurrentHdmiData(mbox_data_t* data){;
     getBootEnv(UBOOTENV_HDMIMODE, data->ubootenv_hdmimode);
 }
 
-void DisplayMode::startHdmiPlugDetectThread() {
-    pthread_t id;
-    int ret;
-    ret = pthread_create(&id, NULL, startHdmiPlugDetectLoop, this);
-    if (ret != 0) {
-        SYS_LOGI("Create HdmiPlugDetectThread error!\n");
-    }
-}
-
-// all the hdmi plug checking complete in this loop
-void* DisplayMode::startHdmiPlugDetectLoop(void* data){
-    DisplayMode *pThiz = (DisplayMode*)data;
-
-    char oldHpdstate[MAX_STR_LEN] = {0};
-    char currentHpdstate[MAX_STR_LEN] = {0};
-    char status[PROPERTY_VALUE_MAX]={0};
-
-    pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, oldHpdstate);
-    while (1) {
-        if (property_get("instaboot.status", status, "completed") &&
-           !strcmp("booting", status)){
-            usleep(2000000);
-            continue;
-        }
-
-        pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, currentHpdstate);
-        if (strcmp(oldHpdstate, currentHpdstate)) {
-            SYS_LOGI("HdmiPlugDetectLoop: detected HDMI plug: change state from %s to %s\n", oldHpdstate, currentHpdstate);
-
-            pThiz->setMboxDisplay(currentHpdstate);
-            strcpy(oldHpdstate, currentHpdstate);
-        }
-        usleep(2000000);
-    }
-
-    return NULL;
-}
-
 void DisplayMode::startBootanimDetectThread() {
     pthread_t id;
-    int ret;
-    ret = pthread_create(&id, NULL, bootanimDetect, this);
+    int ret = pthread_create(&id, NULL, bootanimDetect, this);
     if (ret != 0) {
-        SYS_LOGI("Create BootanimDetect error!\n");
+        SYS_LOGE("Create BootanimDetect error!\n");
     }
 }
 
 //if detected bootanim is running, then close uboot logo
-void* DisplayMode::bootanimDetect(void* data){
+void* DisplayMode::bootanimDetect(void* data) {
     DisplayMode *pThiz = (DisplayMode*)data;
-    char state_bootanim[MAX_STR_LEN] = {0};
+    char state_bootanim[MAX_STR_LEN] = {"sleep"};
     char fs_mode[MAX_STR_LEN] = {0};
     char outputmode[MAX_STR_LEN] = {0};
     char bootvideo[MAX_STR_LEN] = {0};
@@ -637,19 +704,19 @@ void* DisplayMode::bootanimDetect(void* data){
     pThiz->pSysWrite->getPropertyString(PROP_FS_MODE, fs_mode, "android");
     pThiz->pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, outputmode);
 
-    //some boot videos maybe need 2~3s to start playing, so if the bootamin prop
-    //don't run after about 4s,  exit the dead loop.
-    int timeout = 40;
-    while (strcmp(fs_mode, "recovery") && strcmp(state_bootanim, "running") && timeout > 0) {
-        pThiz->pSysWrite->getPropertyString(PROP_BOOTANIM, state_bootanim, "sleep");
-        usleep(100000);
-        timeout--;
-    }
-
+    //not in the recovery mode
     if (strcmp(fs_mode, "recovery")) {
-        char delay[MAX_STR_LEN] = {0};
-        pThiz->pSysWrite->getPropertyString(PROP_BOOTANIM_DELAY, delay, "100");
-        usleep(atoi(delay) * 1000);
+        //some boot videos maybe need 2~3s to start playing, so if the bootamin property
+        //don't run after about 4s, exit the loop.
+        int timeout = 40;
+        while (strcmp(state_bootanim, "running") && timeout > 0) {
+            pThiz->pSysWrite->getPropertyString(PROP_BOOTANIM, state_bootanim, "sleep");
+            usleep(100000);
+            timeout--;
+        }
+
+        int delayMs = pThiz->pSysWrite->getPropertyInt(PROP_BOOTANIM_DELAY, 100);
+        usleep(delayMs * 1000);
     }
 
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
@@ -658,7 +725,7 @@ void* DisplayMode::bootanimDetect(void* data){
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
 
     pThiz->pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
-    if (strcmp(bootvideo,"1"))
+    if (strcmp(bootvideo, "1"))
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
 
     pThiz->setOsdMouse(outputmode);
@@ -673,10 +740,9 @@ bool DisplayMode::isBestOutputmode() {
 
 void DisplayMode::startDisableOsdThread() {
     pthread_t id;
-    int ret;
-    ret = pthread_create(&id, NULL, tmpDisableOsd, this);
+    int ret = pthread_create(&id, NULL, tmpDisableOsd, this);
     if (ret != 0) {
-        SYS_LOGI("Create DisableOsdThread error!\n");
+        SYS_LOGE("Create DisableOsdThread error!\n");
     }
 }
 
@@ -698,36 +764,12 @@ void DisplayMode::setFbParameter(const char* fbdev, struct fb_var_screeninfo var
     struct fb_var_screeninfo var_old;
 
     int fh = open(fbdev, O_RDONLY);
-	ioctl(fh, FBIOGET_VSCREENINFO, &var_old);
+    ioctl(fh, FBIOGET_VSCREENINFO, &var_old);
 
     copy_changed_values(&var_old, &var_set);
-	ioctl(fh, FBIOPUT_VSCREENINFO, &var_old);
+    ioctl(fh, FBIOPUT_VSCREENINFO, &var_old);
     close(fh);
 }
-
-static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
-    MODE_480I,
-    MODE_480P,
-    MODE_480CVBS,
-    MODE_576I,
-    MODE_576P,
-    MODE_576CVBS,
-    MODE_720P,
-    MODE_720P50HZ,
-    MODE_1080P24HZ,
-    MODE_1080I50HZ,
-    MODE_1080P50HZ,
-    MODE_1080I,
-    MODE_1080P,
-    MODE_4K2K24HZ,
-    MODE_4K2K25HZ,
-    MODE_4K2K30HZ,
-    MODE_4K2K50HZ,
-    MODE_4K2K50HZ420,
-    MODE_4K2K60HZ,
-    MODE_4K2K60HZ420,
-    MODE_4K2KSMPTE
-};
 
 int DisplayMode::getBootenvInt(const char* key, int defaultVal) {
     int value = defaultVal;
@@ -777,16 +819,10 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
 }
 
 void DisplayMode::getPosition(const char* curMode, int *position) {
-    int index = DISPLAY_MODE_1080P;
-    for (int i = 0; i < DISPLAY_MODE_TOTAL; i++) {
-        if (!strcmp(curMode, DISPLAY_MODE_LIST[i])) {
-             index = i;
-             break;
-        }
-    }
-
+    int index = modeToIndex(curMode);
     switch (index) {
         case DISPLAY_MODE_480I:
+        case DISPLAY_MODE_480CVBS: // 480cvbs
             position[0] = getBootenvInt(ENV_480I_X, 0);
             position[1] = getBootenvInt(ENV_480I_Y, 0);
             position[2] = getBootenvInt(ENV_480I_W, FULL_WIDTH_480);
@@ -799,6 +835,7 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
             position[3] = getBootenvInt(ENV_480P_H, FULL_HEIGHT_480);
             break;
         case DISPLAY_MODE_576I: // 576i
+        case DISPLAY_MODE_576CVBS: // 576cvbs
             position[0] = getBootenvInt(ENV_576I_X, 0);
             position[1] = getBootenvInt(ENV_576I_Y, 0);
             position[2] = getBootenvInt(ENV_576I_W, FULL_WIDTH_576);
@@ -817,7 +854,6 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
             position[2] = getBootenvInt(ENV_720P_W, FULL_WIDTH_720);
             position[3] = getBootenvInt(ENV_720P_H, FULL_HEIGHT_720);
             break;
-
         case DISPLAY_MODE_1080I: // 1080i
         case DISPLAY_MODE_1080I50HZ: // 1080i50hz
             position[0] = getBootenvInt(ENV_1080I_X, 0);
@@ -825,7 +861,6 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
             position[2] = getBootenvInt(ENV_1080I_W, FULL_WIDTH_1080);
             position[3] = getBootenvInt(ENV_1080I_H, FULL_HEIGHT_1080);
             break;
-
         case DISPLAY_MODE_1080P: // 1080p
         case DISPLAY_MODE_1080P50HZ: // 1080p50hz
         case DISPLAY_MODE_1080P24HZ://1080p24hz
@@ -833,18 +868,6 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
             position[1] = getBootenvInt(ENV_1080P_Y, 0);
             position[2] = getBootenvInt(ENV_1080P_W, FULL_WIDTH_1080);
             position[3] = getBootenvInt(ENV_1080P_H, FULL_HEIGHT_1080);
-            break;
-        case DISPLAY_MODE_480CVBS: // 480cvbs
-            position[0] = getBootenvInt(ENV_480I_X, 0);
-            position[1] = getBootenvInt(ENV_480I_Y, 0);
-            position[2] = getBootenvInt(ENV_480I_W, FULL_WIDTH_480);
-            position[3] = getBootenvInt(ENV_480I_H, FULL_HEIGHT_480);
-            break;
-        case DISPLAY_MODE_576CVBS: // 576cvbs
-            position[0] = getBootenvInt(ENV_576I_X, 0);
-            position[1] = getBootenvInt(ENV_576I_Y, 0);
-            position[2] = getBootenvInt(ENV_576I_W, FULL_WIDTH_576);
-            position[3] = getBootenvInt(ENV_576I_H, FULL_HEIGHT_576);
             break;
         case DISPLAY_MODE_4K2K24HZ: // 4k2k24hz
             position[0] = getBootenvInt(ENV_4K2K24HZ_X, 0);
@@ -903,14 +926,9 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
     sprintf(w, "%d", width);
     sprintf(h, "%d", height);
 
-    char cur_mode[MAX_STR_LEN] = {0};
-    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, cur_mode);
-    int index = DISPLAY_MODE_720P;
-    for (int i = 0; i < DISPLAY_MODE_TOTAL; i++) {
-        if (!strcmp(cur_mode, DISPLAY_MODE_LIST[i]))
-            index = i;
-    }
-
+    char curMode[MAX_STR_LEN] = {0};
+    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curMode);
+    int index = modeToIndex(curMode);
     switch (index) {
         case DISPLAY_MODE_480I: // 480i
         case DISPLAY_MODE_480CVBS: //480cvbs
@@ -1005,6 +1023,19 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
         sprintf(axis, "%d %d %d %d", left, top, left + width - 1, top + height - 1);
         pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, axis);
     }
+}
+
+int DisplayMode::modeToIndex(const char *mode) {
+    int index = DISPLAY_MODE_1080P;
+    for (int i = 0; i < DISPLAY_MODE_TOTAL; i++) {
+        if (!strcmp(mode, DISPLAY_MODE_LIST[i])) {
+            index = i;
+            break;
+        }
+    }
+
+    //SYS_LOGI("modeToIndex mode:%s index:%d", mode, index);
+    return index;
 }
 
 int DisplayMode::dump(char *result) {

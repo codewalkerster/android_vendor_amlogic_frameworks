@@ -30,6 +30,10 @@
 #define DEVICE_STR_MBOX                 "MBOX"
 #define DEVICE_STR_TV                   "TV"
 
+#define DESITY_720P                     "160"
+#define DESITY_1080P                    "240"
+#define DESITY_2160P                    "480"
+
 #define DEFAULT_OUTPUT_MODE             "1080p60hz"
 #define DISPLAY_CFG_FILE                "/system/etc/mesondisplay.cfg"
 #define DISPLAY_FB0                     "/dev/graphics/fb0"
@@ -57,6 +61,8 @@
 #define DISPLAY_HDMI_AVMUTE             "/sys/devices/virtual/amhdmitx/amhdmitx0/avmute"
 
 #define AUDIO_DSP_DIGITAL_RAW           "/sys/class/audiodsp/digital_raw"
+
+#define HDMI_UEVENT                     "DEVPATH=/devices/virtual/switch/hdmi"
 
 #define PROP_HDMIONLY                   "ro.platform.hdmionly"
 #define PROP_LCD_DENSITY                "ro.sf.lcd_density"
@@ -123,6 +129,12 @@
 #define ENV_4K2KSMPTE_W                 "ubootenv.var.4k2ksmpte_w"
 #define ENV_4K2KSMPTE_H                 "ubootenv.var.4k2ksmpte_h"
 
+#define UBOOTENV_DIGITAUDIO             "ubootenv.var.digitaudiooutput"
+#define UBOOTENV_HDMIMODE               "ubootenv.var.hdmimode"
+#define UBOOTENV_CVBSMODE               "ubootenv.var.cvbsmode"
+#define UBOOTENV_OUTPUTMODE             "ubootenv.var.outputmode"
+#define UBOOTENV_ISBESTMODE             "ubootenv.var.is.bestmode"
+
 #define FULL_WIDTH_480                  720
 #define FULL_HEIGHT_480                 480
 #define FULL_WIDTH_576                  720
@@ -136,16 +148,34 @@
 #define FULL_WIDTH_4K2KSMPTE            4096
 #define FULL_HEIGHT_4K2KSMPTE           2160
 
-#define DESITY_720P                      "160"
-#define DESITY_1080P                     "240"
-#define DESITY_2160P                     "480"
-
 enum {
     DISPLAY_TYPE_NONE                   = 0,
     DISPLAY_TYPE_TABLET                 = 1,
     DISPLAY_TYPE_MBOX                   = 2,
     DISPLAY_TYPE_TV                     = 3
 };
+
+#define MODE_480I                       "480i60hz"
+#define MODE_480P                       "480p60hz"
+#define MODE_480CVBS                    "480cvbs"
+#define MODE_576I                       "576i50hz"
+#define MODE_576P                       "576p50hz"
+#define MODE_576CVBS                    "576cvbs"
+#define MODE_720P50HZ                   "720p50hz"
+#define MODE_720P                       "720p60hz"
+#define MODE_1080P24HZ                  "1080p24hz"
+#define MODE_1080I50HZ                  "1080i50hz"
+#define MODE_1080P50HZ                  "1080p50hz"
+#define MODE_1080I                      "1080i60hz"
+#define MODE_1080P                      "1080p60hz"
+#define MODE_4K2K24HZ                   "2160p24hz"
+#define MODE_4K2K25HZ                   "2160p25hz"
+#define MODE_4K2K30HZ                   "2160p30hz"
+#define MODE_4K2K50HZ                   "2160p50hz"
+#define MODE_4K2K50HZ420                "2160p50hz420"
+#define MODE_4K2K60HZ                   "2160p60hz"
+#define MODE_4K2K60HZ420                "2160p60hz420"
+#define MODE_4K2KSMPTE                  "smpte24hz"
 
 enum {
     DISPLAY_MODE_480I                   = 0,
@@ -172,13 +202,12 @@ enum {
     DISPLAY_MODE_TOTAL                  = 21
 };
 
-
-typedef struct mbox_data {
+typedef struct hdmi_data {
     char edid[MAX_STR_LEN];
-    char hpd_state[MAX_STR_LEN];
-    char current_mode[MAX_STR_LEN];
-    char ubootenv_hdmimode[MAX_STR_LEN];
-}mbox_data_t;
+    char hpd_state[10];//"0" or "1", hdmi pluged or not
+    char current_mode[MODE_LEN];
+    char ubootenv_hdmimode[MODE_LEN];
+}hdmi_data_t;
 
 // ----------------------------------------------------------------------------
 
@@ -201,10 +230,10 @@ public:
     void setOsdMouse(int x, int y, int w, int h);
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
-    static void* startHdmiPlugDetectLoop(void *data);
     static void* bootanimDetect(void *data);
     static void* tmpDisableOsd(void *data);
 
+    void setMboxDisplay(char* hpdstate, bool initState);
 private:
 
     bool getBootEnv(const char* key, char* value);
@@ -212,12 +241,13 @@ private:
 
     int parseConfigFile();
     void setTabletDisplay();
-    void setMboxDisplay(char* hpdstate);
-    void getBestHdmiMode(char * mode, mbox_data* data);
-    void filterHdmiMode(char * mode, mbox_data* data);
-    void getHdmiMode(char *mode, mbox_data* data);
+    void getBestHdmiMode(char * mode, hdmi_data_t* data);
+    void filterHdmiMode(char * mode, hdmi_data_t* data);
+    void getHdmiOutputMode(char *mode, hdmi_data_t* data);
     bool isBestOutputmode();
-    void getCurrentHdmiData(mbox_data_t* data);
+    void initHdmiData(hdmi_data_t* data, char* hpdstate);
+    void setMboxOutputMode(const char* outputmode, bool initState);
+    int modeToIndex(const char *mode);
     void startHdmiPlugDetectThread();
     void startBootanimDetectThread();
     void startDisableOsdThread();
@@ -245,7 +275,6 @@ private:
     char mDefaultUI[MAX_STR_LEN];//this used for mbox
     int mLogLevel;
     SysWrite *pSysWrite = NULL;
-    bool initDisplay;
 };
 
 #endif // ANDROID_DISPLAY_MODE_H

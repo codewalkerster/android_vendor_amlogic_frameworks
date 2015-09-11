@@ -28,6 +28,7 @@ extern "C" {
 
 #define CC_MAX_LINE_LEN     512
 #define MAX_STR_LEN         4096
+#define MODE_LEN            64
 
 #ifdef RECOVERY_MODE
 #include <cutils/klog.h>
