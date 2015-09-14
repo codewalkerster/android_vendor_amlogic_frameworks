@@ -34,7 +34,8 @@
 #define DESITY_1080P                    "240"
 #define DESITY_2160P                    "480"
 
-#define DEFAULT_OUTPUT_MODE             "1080p60hz"
+#define DEFAULT_EDID_CRCHEAD            "checkvalue: "
+#define DEFAULT_OUTPUT_MODE             "720p60hz"
 #define DISPLAY_CFG_FILE                "/system/etc/mesondisplay.cfg"
 #define DISPLAY_FB0                     "/dev/graphics/fb0"
 #define DISPLAY_FB1                     "/dev/graphics/fb1"
@@ -59,6 +60,7 @@
 #define DISPLAY_HPD_STATE               "/sys/class/amhdmitx/amhdmitx0/hpd_state"
 #define DISPLAY_HDMI_EDID               "/sys/class/amhdmitx/amhdmitx0/disp_cap"
 #define DISPLAY_HDMI_AVMUTE             "/sys/devices/virtual/amhdmitx/amhdmitx0/avmute"
+#define DISPLAY_EDID_VALUE              "/sys/class/amhdmitx/amhdmitx0/edid"
 
 #define AUDIO_DSP_DIGITAL_RAW           "/sys/class/audiodsp/digital_raw"
 
@@ -134,6 +136,7 @@
 #define UBOOTENV_CVBSMODE               "ubootenv.var.cvbsmode"
 #define UBOOTENV_OUTPUTMODE             "ubootenv.var.outputmode"
 #define UBOOTENV_ISBESTMODE             "ubootenv.var.is.bestmode"
+#define UBOOTENV_EDIDCRCVALUE           "ubootenv.var.edid.crcvalue"
 
 #define FULL_WIDTH_480                  720
 #define FULL_HEIGHT_480                 480
@@ -244,6 +247,7 @@ private:
     void getBestHdmiMode(char * mode, hdmi_data_t* data);
     void filterHdmiMode(char * mode, hdmi_data_t* data);
     void getHdmiOutputMode(char *mode, hdmi_data_t* data);
+    bool isEdidChange();
     bool isBestOutputmode();
     void initHdmiData(hdmi_data_t* data, char* hpdstate);
     void setMboxOutputMode(const char* outputmode, bool initState);

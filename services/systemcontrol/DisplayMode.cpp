@@ -427,6 +427,7 @@ void DisplayMode::setTabletDisplay() {
 void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
     hdmi_data_t data;
     char outputmode[MODE_LEN] = {0};
+    memset(&data, 0, sizeof(hdmi_data_t));
 
     initHdmiData(&data, hpdstate);
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
@@ -653,7 +654,12 @@ void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
         if (isBestOutputmode()) {
             getBestHdmiMode(mode, data);
         } else {
-            filterHdmiMode(mode, data);
+            //filterHdmiMode(mode, data);
+            if (!isEdidChange() && strlen(data->ubootenv_hdmimode) > 0) {
+                strcpy(mode, data->ubootenv_hdmimode);
+            } else {
+                getBestHdmiMode(mode, data);
+            }
         }
     }
     SYS_LOGI("set HDMI mode to %s\n", mode);
@@ -731,6 +737,23 @@ void* DisplayMode::bootanimDetect(void* data) {
     pThiz->setOsdMouse(outputmode);
 
     return NULL;
+}
+
+//get edid crc value to check edid change
+bool DisplayMode::isEdidChange() {
+    char edid[MAX_STR_LEN] = {0};
+    char crcvalue[MAX_STR_LEN] = {0};
+    unsigned int crcheadlength = strlen(DEFAULT_EDID_CRCHEAD);
+    pSysWrite->readSysfs(DISPLAY_EDID_VALUE, edid);
+    char *p = strstr(edid, DEFAULT_EDID_CRCHEAD);
+    if (p != NULL && strlen(p) > crcheadlength) {
+        p += crcheadlength;
+        if (!getBootEnv(UBOOTENV_EDIDCRCVALUE, crcvalue) || strncmp(p, crcvalue, strlen(p))) {
+            setBootEnv(UBOOTENV_EDIDCRCVALUE, p);
+            return true;
+        }
+    }
+    return false;
 }
 
 bool DisplayMode::isBestOutputmode() {
