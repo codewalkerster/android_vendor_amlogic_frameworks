@@ -103,7 +103,7 @@ public class OutputModeManager {
     public static final String HDMI_4K2K                    = "2160p";
     public static final String HDMI_SMPTE                   = "smpte";
 
-    private String DEFAULT_OUTPUT_MODE                      = "1080p60hz";
+    private String DEFAULT_OUTPUT_MODE                      = "720p60hz";
     private static String currentOutputmode = null;
     private String mSupportModes = null;
     private boolean ifModeSetting = false;
