@@ -26,6 +26,10 @@
 #include "SysWrite.h"
 #include "common.h"
 
+#include <map>
+#include <cmath>
+#include <string>
+
 #define DEVICE_STR_MID                  "MID"
 #define DEVICE_STR_MBOX                 "MBOX"
 #define DEVICE_STR_TV                   "TV"
@@ -212,6 +216,13 @@ typedef struct hdmi_data {
     char ubootenv_hdmimode[MODE_LEN];
 }hdmi_data_t;
 
+typedef struct axis_s {
+    int x;
+    int y;
+    int w;
+    int h;
+} axis_t;
+
 // ----------------------------------------------------------------------------
 
 class DisplayMode
@@ -257,8 +268,17 @@ private:
     void startDisableOsdThread();
     void setTVDisplay();
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
+    void setVideoAxis(const char *preMode, const char *mode);
+    void calcVideoAxis(const axis_t *prePosition, const axis_t *position,
+            const axis_t *axis, axis_t *videoAxis);
+    bool axisValid(const axis_t *axis);
+    bool axisEqual(int value1, int value2);
+    bool checkAxisSame(const axis_t *axis1, const axis_t *axis2);
+    void axisStr(const axis_t *axis, char *str);
 
     int getBootenvInt(const char* key, int defaultVal);
+
+    std::map<std::string, axis_t> mVideoAxisMap;
 
     const char* pConfigPath;
     int mDisplayType;

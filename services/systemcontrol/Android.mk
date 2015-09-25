@@ -40,10 +40,12 @@ LOCAL_SHARED_LIBRARIES := \
   libcutils \
   libutils \
   liblog \
-  libbinder
+  libbinder \
+  libm
 
 LOCAL_C_INCLUDES := \
-  external/zlib
+  external/zlib \
+  external/libcxx/include
 
 LOCAL_MODULE:= systemcontrol
 
@@ -78,10 +80,12 @@ LOCAL_STATIC_LIBRARIES := \
 	libcutils \
 	liblog \
 	libz \
-	libc
+	libc \
+	libm
 
 LOCAL_C_INCLUDES := \
-    external/zlib
+    external/zlib \
+    external/libcxx/include
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 LOCAL_MODULE_PATH := $(PRODUCT_OUT)/utilities
@@ -113,10 +117,12 @@ LOCAL_STATIC_LIBRARIES := \
 	libcutils \
 	liblog \
 	libz \
-	libc
+	libc \
+	libm
 
 LOCAL_C_INCLUDES := \
-    external/zlib
+    external/zlib \
+    external/libcxx/include
 
 LOCAL_MODULE:= libsystemcontrol_static
 

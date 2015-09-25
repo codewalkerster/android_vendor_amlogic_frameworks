@@ -250,9 +250,11 @@ DisplayMode::DisplayMode(const char *path)
     SYS_LOGI("display mode config path: %s", pConfigPath);
 
     pSysWrite = new SysWrite();
+    mVideoAxisMap.clear();
 }
 
 DisplayMode::~DisplayMode() {
+    mVideoAxisMap.clear();
     delete pSysWrite;
 }
 
@@ -506,6 +508,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode){
 
 void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
     char value[MAX_STR_LEN] = {0};
+    char preMode[MODE_LEN] = {0};
     int outputx = 0;
     int outputy = 0;
     int outputwidth = 0;
@@ -516,6 +519,9 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
         usleep(30000);
     }
+
+    memset(preMode, 0, sizeof(preMode));
+    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, preMode);
 
     getPosition(outputmode, position);
     outputx = position[0];
@@ -546,8 +552,8 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
 
     sprintf(axis, "%d %d %d %d",
             outputx, outputy, outputx + outputwidth - 1, outputy + outputheight -1);
-    pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, axis);
     pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
+    setVideoAxis(preMode, outputmode);
 
     if (!initState) {
         pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
@@ -574,6 +580,134 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
     if (!initState) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
     }
+}
+
+bool DisplayMode::axisValid(const axis_t *axis) {
+    return (axis->x >= 0) && (axis->y >= 0) && (axis->w > 0) && (axis->h > 0);
+}
+
+bool DisplayMode::axisEqual(int value1, int value2) {
+    return (value2 >= (value1 - 1)) && (value2 <= (value1 + 1));
+}
+
+bool DisplayMode::checkAxisSame(const axis_t *axis1, const axis_t *axis2) {
+    if (!axisValid(axis1))
+        return false;
+
+    if (!axisValid(axis2))
+        return false;
+
+    if (!axisEqual(axis1->x, axis2->x))
+        return false;
+
+    if (!axisEqual(axis1->y, axis2->y))
+        return false;
+
+    if (!axisEqual(axis1->w, axis2->w))
+        return false;
+
+    if (!axisEqual(axis1->h, axis2->h))
+        return false;
+
+    return true;
+}
+
+void DisplayMode::calcVideoAxis(const axis_t *prePosition, const axis_t *position,
+        const axis_t *axis, axis_t *videoAxis) {
+    videoAxis->x = (int)std::round(((axis->x - prePosition->x) * position->w  * 1.0f) / prePosition->w + position->x);
+    videoAxis->y = (int)std::round(((axis->y - prePosition->y) * position->h * 1.0f) / prePosition->h + position->y);
+    videoAxis->w = (int)std::round((axis->w * position->w * 1.0f) / prePosition->w);
+    videoAxis->h = (int)std::round((axis->h * position->h * 1.0f) / prePosition->h);
+}
+
+void DisplayMode::axisStr(const axis_t *axis, char *str) {
+    sprintf(str, "x(%d) y(%d) w(%d) h(%d)", axis->x, axis->y, axis->w, axis->h);
+}
+
+void DisplayMode::setVideoAxis(const char *preMode, const char *mode) {
+    char str[MAX_STR_LEN] = {0,};
+    std::string preModeStr = preMode;
+    std::string modeStr = mode;
+    axis_t axis;
+    std::map<std::string, axis_t>::iterator it;
+    int position[4] = {0, 0, 0, 0};
+    axis_t prePositionAxis;
+    axis_t positionAxis;
+    axis_t preVideoPositionAxis;
+
+    SYS_LOGD("[%s]preMode: %s\n", __FUNCTION__, preMode);
+    SYS_LOGD("[%s]mode: %s\n", __FUNCTION__, mode);
+
+    getPosition(preMode, position);
+    prePositionAxis.x = position[0];
+    prePositionAxis.y = position[1];
+    prePositionAxis.w = position[2];
+    prePositionAxis.h = position[3];
+    memset(str, 0, sizeof(str));
+    axisStr(&prePositionAxis, str);
+    SYS_LOGD("[%s]prePositionAxis: %s\n", __FUNCTION__, str);
+
+    getPosition(mode, position);
+    positionAxis.x = position[0];
+    positionAxis.y = position[1];
+    positionAxis.w = position[2];
+    positionAxis.h = position[3];
+    memset(str, 0, sizeof(str));
+    axisStr(&positionAxis, str);
+    SYS_LOGD("[%s]positionAxis: %s\n", __FUNCTION__, str);
+
+    memset(str, 0, sizeof(str));
+    pSysWrite->readSysfs(SYSFS_VIDEO_AXIS, str);
+    sscanf(str, "%d %d %d %d", position, position + 1, position + 2, position + 3);
+    preVideoPositionAxis.x = position[0];
+    preVideoPositionAxis.y = position[1];
+    preVideoPositionAxis.w = position[2] - position[0] + 1;
+    preVideoPositionAxis.h = position[3] - position[1] + 1;
+    memset(str, 0, sizeof(str));
+    axisStr(&preVideoPositionAxis, str);
+    SYS_LOGD("[%s]preVideoPositionAxis: %s\n", __FUNCTION__, str);
+
+    if (((preVideoPositionAxis.x == 0) && (preVideoPositionAxis.y == 0)
+                && (preVideoPositionAxis.w == 0) && (preVideoPositionAxis.h == 0))
+            || ((preVideoPositionAxis.x == 0) && (preVideoPositionAxis.y == 0)
+                && (preVideoPositionAxis.w == -1) && (preVideoPositionAxis.h == -1))
+            || ((preVideoPositionAxis.x <= prePositionAxis.x) && (preVideoPositionAxis.y <= prePositionAxis.y)
+                && (preVideoPositionAxis.w >= prePositionAxis.w) && (preVideoPositionAxis.h >= prePositionAxis.h))) {
+        memset(str, 0, sizeof(str));
+        sprintf(str, "%d %d %d %d",
+                positionAxis.x, positionAxis.y, positionAxis.w + positionAxis.x - 1, positionAxis.h + positionAxis.y - 1);
+        SYS_LOGD("[%s:%d]write %s: %s\n", __FUNCTION__, __LINE__, SYSFS_VIDEO_AXIS, str);
+        pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, str);
+        return;
+    }
+
+    it = mVideoAxisMap.find(preModeStr);
+    if (it != mVideoAxisMap.end()) {
+        axis = it->second;
+        if (checkAxisSame(&axis, &preVideoPositionAxis)) {
+            mVideoAxisMap[preModeStr] = preVideoPositionAxis;
+            it = mVideoAxisMap.find(modeStr);
+            if (it == mVideoAxisMap.end()) {
+                calcVideoAxis(&prePositionAxis, &positionAxis, &preVideoPositionAxis, &axis);
+                mVideoAxisMap[modeStr] = axis;
+            } else {
+                axis = it->second;
+            }
+            memset(str, 0, sizeof(str));
+            sprintf(str, "%d %d %d %d", axis.x, axis.y, axis.w + axis.x - 1, axis.h + axis.y - 1);
+            SYS_LOGD("[%s:%d]write %s: %s\n", __FUNCTION__, __LINE__, SYSFS_VIDEO_AXIS, str);
+            pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, str);
+            return;
+        }
+    }
+    mVideoAxisMap.clear();
+    mVideoAxisMap[preModeStr] = preVideoPositionAxis;
+    calcVideoAxis(&prePositionAxis, &positionAxis, &preVideoPositionAxis, &axis);
+    mVideoAxisMap[modeStr] = axis;
+    memset(str, 0, sizeof(str));
+    sprintf(str, "%d %d %d %d", axis.x, axis.y, axis.w + axis.x - 1, axis.h + axis.y - 1);
+    SYS_LOGD("[%s:%d]write %s: %s\n", __FUNCTION__, __LINE__, SYSFS_VIDEO_AXIS, str);
+    pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, str);
 }
 
 //get the best hdmi mode by edid
