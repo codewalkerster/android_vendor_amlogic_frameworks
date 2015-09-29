@@ -15,9 +15,6 @@ public class DisplayPositionManager {
     private final static int MIN_Height = 80;
     private static int screen_rate = MAX_Height;
 
-    // sysfs path
-    private final static String CPU0_SCALING_MIN_FREQ               = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq";
-
     private String mCurrentLeftString = null;
     private String mCurrentTopString = null;
     private String mCurrentWidthString = null;
@@ -57,10 +54,6 @@ public class DisplayPositionManager {
         initStep(mCurrentMode);
         initCurrentPostion();
         screen_rate = getInitialRateValue();
-        if (!mDisplayInfo.socType.contains("meson8")) {
-            writeFile(OutputModeManager.FB0_FREE_SCALE , "1");
-        }
-        setScalingMinFreq(408000);
     }
 
     private void initCurrentPostion() {
@@ -109,19 +102,12 @@ public class DisplayPositionManager {
             return;
 
         mOutputModeManager.savePosition(mCurrentLeft, mCurrentTop, mCurrentWidth, mCurrentHeight);
-        setScalingMinFreq(96000);
     }
 
     private void writeFile(String file, String value) {
         mSystenControl.writeSysFs(file, value);
     }
 
-    private final void setScalingMinFreq(int scalingMinFreq) {
-        int minFreq = scalingMinFreq;
-        String minFreqString = Integer.toString(minFreq);
-
-        mSystenControl.writeSysFs(CPU0_SCALING_MIN_FREQ, minFreqString);
-    }
     private void initStep(String mode) {
         if (mode.contains(OutputModeManager.HDMI_480)) {
             mMaxRight = 719;
