@@ -20,7 +20,8 @@ public class EthernetWifiSwitch extends BroadcastReceiver {
             WifiManager wm = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
             ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo ethInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_ETHERNET);
-            if (ethInfo.isConnected()) {
+            NetworkInfo pppoeInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_PPPOE);
+            if (pppoeInfo.getState() == NetworkInfo.State.CONNECTED || ethInfo.getState() == NetworkInfo.State.CONNECTED) {
                 int wifiState = wm.getWifiState();
                 if ((wifiState == WifiManager.WIFI_STATE_ENABLING) ||
                     (wifiState == WifiManager.WIFI_STATE_ENABLED)) {
