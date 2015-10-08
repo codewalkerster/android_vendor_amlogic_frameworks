@@ -338,6 +338,36 @@ public:
             return;
         }
     }
+
+    virtual void setNativeWindowRect(int x, int y, int w, int h)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(x);
+        data.writeInt32(y);
+        data.writeInt32(w);
+        data.writeInt32(h);
+        ALOGV("set native window rect x:%d, y:%d, w:%d, h:%d\n", x, y, w, h);
+
+        if (remote()->transact(SET_NATIVE_WIN_RECT, data, &reply) != NO_ERROR) {
+            ALOGE("set native window rect could not contact remote\n");
+            return;
+        }
+    }
+
+    virtual void setVideoPlaying(bool playing)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(playing?1:0);
+
+        ALOGV("setVideoPlaying playing:%d\n", playing?1:0);
+
+        if (remote()->transact(SET_VIDEO_PLAYING, data, &reply) != NO_ERROR) {
+            ALOGE("setVideoPlaying could not contact remote\n");
+            return;
+        }
+    }
 };
 
 IMPLEMENT_META_INTERFACE(SystemControlService, "droidlogic.ISystemControlService");
@@ -504,6 +534,22 @@ status_t BnISystemControlService::onTransact(
             reInit();
             return NO_ERROR;
         }
+        case SET_NATIVE_WIN_RECT:{
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int32_t x = data.readInt32();
+            int32_t y = data.readInt32();
+            int32_t w = data.readInt32();
+            int32_t h = data.readInt32();
+            setNativeWindowRect(x, y, w, h);
+            return NO_ERROR;
+        }
+        case SET_VIDEO_PLAYING:{
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int32_t playing = data.readInt32();
+            setVideoPlaying((1 == playing)?true:false);
+            return NO_ERROR;
+        }
+
         default: {
             return BBinder::onTransact(code, data, reply, flags);
         }

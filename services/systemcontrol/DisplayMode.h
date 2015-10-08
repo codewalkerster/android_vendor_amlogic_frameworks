@@ -62,14 +62,24 @@
 #define DISPLAY_FB0_FREESCALE_AXIS      "/sys/class/graphics/fb0/free_scale_axis"
 #define DISPLAY_FB0_WINDOW_AXIS         "/sys/class/graphics/fb0/window_axis"
 
+#define DISPLAY_HDMI_HDCP_STOP          "stop14" //stop HDCP authenticate
+#define DISPLAY_HDMI_HDCP_14            "1"
+#define DISPLAY_HDMI_HDCP_22            "2"
+#define DISPLAY_HDMI_HDCP_VER           "/sys/class/amhdmitx/amhdmitx0/hdcp_ver"//RX support HDCP version
+#define DISPLAY_HDMI_HDCP_MODE          "/sys/class/amhdmitx/amhdmitx0/hdcp_mode"//set HDCP mode
+#define DISPLAY_HDMI_HDCP_AUTH          "/sys/module/hdmitx20/parameters/hdmi_authenticated"//HDCP Authentication
+#define DISPLAY_HDMI_HDCP_CONF          "/sys/class/amhdmitx/amhdmitx0/hdcp_ctrl" //HDCP config
+#define DISPLAY_HDMI_HDCP_KEY           "/sys/class/amhdmitx/amhdmitx0/hdcp_lstore"//TX have 22 or 14 or none key
+
 #define DISPLAY_HPD_STATE               "/sys/class/amhdmitx/amhdmitx0/hpd_state"
-#define DISPLAY_HDMI_EDID               "/sys/class/amhdmitx/amhdmitx0/disp_cap"
+#define DISPLAY_HDMI_EDID               "/sys/class/amhdmitx/amhdmitx0/disp_cap"//RX support display mode
 #define DISPLAY_HDMI_AVMUTE             "/sys/devices/virtual/amhdmitx/amhdmitx0/avmute"
 #define DISPLAY_EDID_VALUE              "/sys/class/amhdmitx/amhdmitx0/edid"
 
 #define AUDIO_DSP_DIGITAL_RAW           "/sys/class/audiodsp/digital_raw"
 
 #define HDMI_UEVENT                     "DEVPATH=/devices/virtual/switch/hdmi"
+#define HDMI_POWER_UEVENT               "DEVPATH=/devices/virtual/switch/hdmi_power"
 
 #define PROP_HDMIONLY                   "ro.platform.hdmionly"
 #define PROP_LCD_DENSITY                "ro.sf.lcd_density"
@@ -249,6 +259,11 @@ public:
     static void* tmpDisableOsd(void *data);
 
     void setMboxDisplay(char* hpdstate, bool initState);
+
+    void setNativeWindowRect(int x, int y, int w, int h);
+    void setVideoPlaying(bool playing);
+
+    void hdcpSwitch();
 private:
 
     bool getBootEnv(const char* key, char* value);
@@ -279,6 +294,7 @@ private:
     void axisStr(const axis_t *axis, char *str);
 
     int getBootenvInt(const char* key, int defaultVal);
+    void hdcpAuthenticate();
 
     std::map<std::string, axis_t> mVideoAxisMap;
 
@@ -293,6 +309,11 @@ private:
     int mFb1Height;
     int mFb1FbBits;
     bool mFb1TripleEnable;//Triple Buffer enable or not
+    bool mVideoPlaying;
+    int mNativeWinX;
+    int mNativeWinY;
+    int mNativeWinW;
+    int mNativeWinH;
 
     int mDisplayWidth;
     int mDisplayHeight;

@@ -64,6 +64,48 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_4K2KSMPTE
 };
 
+/**
+ * strstr - Find the first substring in a %NUL terminated string
+ * @s1: The string to be searched
+ * @s2: The string to search for
+ */
+char *_strstr(const char *s1, const char *s2)
+{
+    size_t l1, l2;
+
+    l2 = strlen(s2);
+    if (!l2)
+        return (char *)s1;
+    l1 = strlen(s1);
+    while (l1 >= l2) {
+        l1--;
+        if (!memcmp(s1, s2, l2))
+            return (char *)s1;
+        s1++;
+    }
+    return NULL;
+}
+
+#if 0
+/* locate a substring */
+static char * _strstr(char *src, char *desStr)
+{
+    char srcChar, desChar;
+    int sublen = strlen(desStr);
+
+    desChar = *desStr++;
+    do {
+        do {
+            srcChar = *src++;
+            if ((0 == srcChar) || (strlen(src) < (unsigned int)(sublen - 1)))
+                return NULL;
+        } while (srcChar != desChar);
+    } while (strncmp(src, desStr, sublen - 1));
+
+    return --src;
+}
+#endif
+
 static void copy_if_gt0(uint32_t *src, uint32_t *dst, unsigned cnt)
 {
     do {
@@ -157,6 +199,10 @@ static bool isMatch(const char* buffer, size_t length, char* switch_state, char*
             SYS_LOGI("Matched uevent message with pattern: %s", HDMI_UEVENT);
             matched = true;
         }
+        else if (strstr(field, HDMI_POWER_UEVENT)) {
+            SYS_LOGI("Matched uevent message with pattern: %s", HDMI_POWER_UEVENT);
+            matched = true;
+        }
         //SWITCH_STATE=1, SWITCH_NAME=hdmi
         else if (strstr(field, "SWITCH_STATE=")) {
             strcpy(switch_state, field + strlen("SWITCH_STATE="));
@@ -215,11 +261,26 @@ static void* HdmiPlugDetectThread(void* data) {
             continue;
 
         buffer[length] = '\0';
-        //SYS_LOGI("Received uevent message: %s", buffer);
+
+    #if 1
+        //change@/devices/virtual/switch/hdmi ACTION=change DEVPATH=/devices/virtual/switch/hdmi
+        //SUBSYSTEM=switch SWITCH_NAME=hdmi SWITCH_STATE=0 SEQNUM=2791
+        char printBuf[1024] = {0};
+        memcpy(printBuf, buffer, length);
+        for (int i = 0; i < length; i++) {
+            if (printBuf[i] == 0x0)
+                printBuf[i] = ' ';
+        }
+        SYS_LOGI("Received uevent message: %s", printBuf);
+    #endif
 
         if (isMatch(buffer, length, switch_state, switch_name)) {
             SYS_LOGI("HDMI switch_state: %s switch_name: %s\n", switch_state, switch_name);
-            pThiz->setMboxDisplay(switch_state, false);
+            if (!strcmp(switch_name, "hdmi") ||
+                //0: hdmi suspend 1:hdmi resume
+                (!strcmp(switch_name, "hdmi_power") && !strcmp(switch_state, "1"))) {
+                pThiz->setMboxDisplay(switch_state, false);
+            }
         }
     }
 
@@ -236,6 +297,8 @@ DisplayMode::DisplayMode(const char *path)
     mFb1Height(-1),
     mFb1FbBits(-1),
     mFb1TripleEnable(true),
+    mVideoPlaying(false),
+    mNativeWinX(0), mNativeWinY(0), mNativeWinW(0), mNativeWinH(0),
     mDisplayWidth(FULL_WIDTH_1080),
     mDisplayHeight(FULL_HEIGHT_1080),
     mLogLevel(LOG_LEVEL_DEFAULT) {
@@ -469,24 +532,26 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
     if (strlen(outputmode) == 0)
         strcpy(outputmode, mDefaultUI);
 
-    if (!strncmp(mDefaultUI, "720", 3)) {
-        mDisplayWidth= FULL_WIDTH_720;
-        mDisplayHeight = FULL_HEIGHT_720;
-        pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_720P);
-        pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
-        pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "720");
-    } else if (!strncmp(mDefaultUI, "1080", 4)) {
-        mDisplayWidth = FULL_WIDTH_1080;
-        mDisplayHeight = FULL_HEIGHT_1080;
-        pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
-        pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
-        pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
-    } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
-        mDisplayWidth = FULL_WIDTH_4K2K;
-        mDisplayHeight = FULL_HEIGHT_4K2K;
-        pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_2160P);
-        pSysWrite->setProperty(PROP_WINDOW_WIDTH, "3840");
-        pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "2160");
+    if (initState) {
+        if (!strncmp(mDefaultUI, "720", 3)) {
+            mDisplayWidth= FULL_WIDTH_720;
+            mDisplayHeight = FULL_HEIGHT_720;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_720P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "720");
+        } else if (!strncmp(mDefaultUI, "1080", 4)) {
+            mDisplayWidth = FULL_WIDTH_1080;
+            mDisplayHeight = FULL_HEIGHT_1080;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
+        } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
+            mDisplayWidth = FULL_WIDTH_4K2K;
+            mDisplayHeight = FULL_HEIGHT_4K2K;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_2160P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "3840");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "2160");
+        }
     }
 
     if (strcmp(data.current_mode, outputmode)) {
@@ -500,10 +565,13 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
             //so we disable osd 1 second to avoid screen flicker
             char bootvideo[MODE_LEN] = {0};
             char state_bootanim[MODE_LEN] = {"sleep"};
+            #if 0
             pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
             pSysWrite->getPropertyString(PROP_BOOTANIM, state_bootanim, "sleep");
-            if (!(!strcmp(bootvideo, "1") && !strcmp(state_bootanim, "running")))
+            //boot video not start or not running, need close osd, then open osd
+            if (strcmp(bootvideo, "1") || strcmp(state_bootanim, "running"))
                 startDisableOsdThread();
+            #endif
         }
     }
     setMboxOutputMode(outputmode, initState);
@@ -521,10 +589,14 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
     int outputwidth = 0;
     int outputheight = 0;
     int position[4] = { 0, 0, 0, 0 };
+    bool cvbsMode = false;
+
+    //first close osd, after HDCP authenticate completely, then open osd
+    pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
 
     if (!initState) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
-        usleep(30000);
+        usleep(30000);//30ms
     }
 
     memset(preMode, 0, sizeof(preMode));
@@ -546,11 +618,16 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
             mode = MODE_576CVBS;
         }
 
+        cvbsMode = true;
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, mode);
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE2, "null");
     }
-    else
+    else {
+        if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS))
+            cvbsMode = true;
+
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
+    }
 
     char axis[MAX_STR_LEN] = {0};
     sprintf(axis, "%d %d %d %d",
@@ -561,12 +638,19 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
             outputx, outputy, outputx + outputwidth - 1, outputy + outputheight -1);
     pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
     setVideoAxis(preMode, outputmode);
+    setNativeWindowRect(mNativeWinX, mNativeWinY, mNativeWinW, mNativeWinH);
 
-    if (!initState) {
+    //only HDMI mode need HDCP authenticate
+    if (!cvbsMode) {
+        hdcpAuthenticate();
+    }
+
+    if (initState) {
+        startBootanimDetectThread();
+    } else {
+        pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
         pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
         setOsdMouse(outputmode);
-    } else {
-        startBootanimDetectThread();
     }
 
     //audio
@@ -586,6 +670,47 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
     if (!initState) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
     }
+
+    SYS_LOGI("set output mode:%s done\n", outputmode);
+}
+
+void DisplayMode::setNativeWindowRect(int x, int y, int w, int h) {
+    char currMode[MODE_LEN] = {0};
+    int currPos[4] = {0};
+
+    if (!mVideoPlaying) {
+        SYS_LOGI("video is not playing, don't need set video axis\n");
+        return;
+    }
+
+    mNativeWinX = x;
+    mNativeWinY = y;
+    mNativeWinW = w;
+    mNativeWinH = h;
+
+    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, currMode);
+    getPosition(currMode, currPos);
+
+    //need base as display width and height
+    float scaleW = currPos[2]/mDisplayWidth;
+    float scaleH = currPos[3]/mDisplayHeight;
+
+    //scale down or up the native window position
+    int outputx = currPos[0] + x*scaleW;
+    int outputy = currPos[1] + y*scaleH;
+    int outputwidth = w*scaleW;
+    int outputheight = h*scaleH;
+
+    char axis[MAX_STR_LEN] = {0};
+    sprintf(axis, "%d %d %d %d",
+            outputx, outputy, outputx + outputwidth - 1, outputy + outputheight - 1);
+    SYS_LOGD("write %s: %s\n", SYSFS_VIDEO_AXIS, axis);
+    pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, axis);
+}
+
+void DisplayMode::setVideoPlaying(bool playing) {
+    mVideoPlaying = playing;
+    SYS_LOGD("set video playing %d\n", playing?1:0);
 }
 
 bool DisplayMode::axisValid(const axis_t *axis) {
@@ -856,8 +981,12 @@ void* DisplayMode::bootanimDetect(void* data) {
         //some boot videos maybe need 2~3s to start playing, so if the bootamin property
         //don't run after about 4s, exit the loop.
         int timeout = 40;
-        while (strcmp(state_bootanim, "running") && timeout > 0) {
+        while (timeout > 0) {
             pThiz->pSysWrite->getPropertyString(PROP_BOOTANIM, state_bootanim, "sleep");
+            //boot animation is running, so is not boot video playing
+            if (!strcmp(state_bootanim, "running"))
+                break;
+
             usleep(100000);
             timeout--;
         }
@@ -866,6 +995,7 @@ void* DisplayMode::bootanimDetect(void* data) {
         usleep(delayMs * 1000);
     }
 
+    /*
     pThiz->pSysWrite->writeSysfs(DISPLAY_LOGO_INDEX, "0");
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
@@ -874,11 +1004,15 @@ void* DisplayMode::bootanimDetect(void* data) {
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
     } else {
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-    }
+    }*/
 
     pThiz->pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
-    if (strcmp(bootvideo, "1"))
+    SYS_LOGI("boot animation detect boot video:%s\n", bootvideo);
+    //not boot video used
+    if (strcmp(bootvideo, "1")) {
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
+        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+    }
 
     pThiz->setOsdMouse(outputmode);
 
@@ -1282,6 +1416,90 @@ int DisplayMode::modeToIndex(const char *mode) {
 
     //SYS_LOGI("modeToIndex mode:%s index:%d", mode, index);
     return index;
+}
+
+void DisplayMode::hdcpAuthenticate() {
+    bool useHdcp22 = false;
+    bool useHdcp14 = false;
+    char hdcpVer[MODE_LEN] = {0};
+    char hdcpKey[MODE_LEN] = {0};
+
+    //14 22 00 HDCP TX
+    pSysWrite->readSysfs(DISPLAY_HDMI_HDCP_KEY, hdcpKey);
+    SYS_LOGI("HDCP TX key:%s\n", hdcpKey);
+    if (strlen(hdcpKey) == 0)
+        return;
+
+    //14 22 00 HDCP RX
+    pSysWrite->readSysfs(DISPLAY_HDMI_HDCP_VER, hdcpVer);
+    SYS_LOGI("HDCP RX version:%s\n", hdcpVer);
+    if (strlen(hdcpVer) == 0)
+        return;
+
+#ifdef HDCP_AUTHENTICATION
+    char cap[MAX_STR_LEN] = {0};
+    pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, cap);
+    if ((_strstr(cap, (char *)"2160p") != NULL) && (_strstr(hdcpVer, (char *)"22") != NULL) &&
+        (_strstr(hdcpKey, (char *)"22") != NULL)) {
+        useHdcp22 = true;
+        pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, DISPLAY_HDMI_HDCP_22);
+
+        SYS_LOGI("HDCP 2.2, stop hdcp_tx22, init will kill hdcp_tx22\n");
+        pSysWrite->setProperty("ctl.stop", "hdcp_tx22");
+        usleep(50*1000);
+        SYS_LOGI("HDCP 2.2, start hdcp_tx22\n");
+        pSysWrite->setProperty("ctl.start", "hdcp_tx22");
+    }
+
+    if (!useHdcp22 && (_strstr(hdcpVer, (char *)"14") != NULL) &&
+        (_strstr(hdcpKey, (char *)"14") != NULL)) {
+        useHdcp14 = true;
+        SYS_LOGI("HDCP 1.4\n");
+        pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, DISPLAY_HDMI_HDCP_14);
+    }
+
+    if (!useHdcp22 && !useHdcp14) {
+        //do not support hdcp1.4 and hdcp2.2
+        SYS_LOGE("device do not support hdcp1.4 or hdcp2.2\n");
+        return;
+    }
+
+    SYS_LOGI("begin to authenticate\n");
+    int count = 0;
+    while (true) {
+        usleep(500*1000);//sleep 500ms
+
+        char auth[MODE_LEN] = {0};
+        pSysWrite->readSysfs(DISPLAY_HDMI_HDCP_AUTH, auth);
+        if (_strstr(auth, (char *)"1")) //Authenticate is OK
+            break;
+
+        count++;
+        if (count > 10) { //max 5s it will authenticate completely
+            if (useHdcp22) {
+                SYS_LOGE("HDCP22 authenticate fail, 5s timeout\n");
+
+                count = 0;
+                useHdcp22 = false;
+                useHdcp14 = true;
+                //if support hdcp22, must support hdcp14
+                pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, DISPLAY_HDMI_HDCP_14);
+                continue;
+            }
+            else if (useHdcp14) {
+                SYS_LOGE("HDCP14 authenticate fail, 5s timeout\n");
+
+                pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_CONF, DISPLAY_HDMI_HDCP_STOP);
+            }
+            break;
+        }
+    }
+    SYS_LOGI("authenticate finish\n");
+#endif
+}
+
+void DisplayMode::hdcpSwitch() {
+    SYS_LOGI("hdcpSwitch for debug hdcp authenticate\n");
 }
 
 int DisplayMode::dump(char *result) {

@@ -26,6 +26,8 @@ ifeq ($(TARGET_BOARD_PLATFORM), gxbaby)
 LOCAL_CFLAGS += -DGXBABY_ENVSIZE
 endif
 
+LOCAL_CFLAGS += -DHDCP_AUTHENTICATION
+
 LOCAL_SRC_FILES:= \
   main_systemcontrol.cpp \
   ubootenv.c \
