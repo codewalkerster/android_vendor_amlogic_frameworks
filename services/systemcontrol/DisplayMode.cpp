@@ -496,7 +496,12 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
         } else {
             //when change mode, it need time to set osd register,
             //so we disable osd 1 second to avoid screen flicker
-            startDisableOsdThread();
+            char bootvideo[MODE_LEN] = {0};
+            char state_bootanim[MODE_LEN] = {"sleep"};
+            pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
+            pSysWrite->getPropertyString(PROP_BOOTANIM, state_bootanim, "sleep");
+            if (!(!strcmp(bootvideo, "1") && !strcmp(state_bootanim, "running")))
+                startDisableOsdThread();
         }
     }
     setMboxOutputMode(outputmode, initState);
@@ -556,7 +561,6 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
     setVideoAxis(preMode, outputmode);
 
     if (!initState) {
-        pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
         pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
         setOsdMouse(outputmode);
     } else {
@@ -836,10 +840,10 @@ void DisplayMode::startBootanimDetectThread() {
 //if detected bootanim is running, then close uboot logo
 void* DisplayMode::bootanimDetect(void* data) {
     DisplayMode *pThiz = (DisplayMode*)data;
-    char state_bootanim[MAX_STR_LEN] = {"sleep"};
-    char fs_mode[MAX_STR_LEN] = {0};
-    char outputmode[MAX_STR_LEN] = {0};
-    char bootvideo[MAX_STR_LEN] = {0};
+    char state_bootanim[MODE_LEN] = {"sleep"};
+    char fs_mode[MODE_LEN] = {0};
+    char outputmode[MODE_LEN] = {0};
+    char bootvideo[MODE_LEN] = {0};
 
     pThiz->pSysWrite->getPropertyString(PROP_FS_MODE, fs_mode, "android");
     pThiz->pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, outputmode);
@@ -891,7 +895,7 @@ bool DisplayMode::isEdidChange() {
 }
 
 bool DisplayMode::isBestOutputmode() {
-    char isBestMode[MAX_STR_LEN] = {0};
+    char isBestMode[MODE_LEN] = {0};
     return !getBootEnv(UBOOTENV_ISBESTMODE, isBestMode) || strcmp(isBestMode, "true") == 0;
 }
 
@@ -957,7 +961,7 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
         displaySize = "3840 2160";
     }
 
-    char cur_mode[MAX_STR_LEN] = {0};
+    char cur_mode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, cur_mode);
     if (!strcmp(cur_mode, MODE_480I) || !strcmp(cur_mode, MODE_576I) ||
             !strcmp(cur_mode, MODE_480CVBS) || !strcmp(cur_mode, MODE_576CVBS) ||
@@ -1083,7 +1087,7 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
     sprintf(w, "%d", width);
     sprintf(h, "%d", height);
 
-    char curMode[MAX_STR_LEN] = {0};
+    char curMode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curMode);
     int index = modeToIndex(curMode);
     switch (index) {
