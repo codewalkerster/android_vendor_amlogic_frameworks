@@ -650,12 +650,13 @@ void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
         return;
     }
 
+    bool edidChange = isEdidChange();
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
         if (isBestOutputmode()) {
             getBestHdmiMode(mode, data);
         } else {
             //filterHdmiMode(mode, data);
-            if (!isEdidChange() && strlen(data->ubootenv_hdmimode) > 0) {
+            if (!edidChange && strlen(data->ubootenv_hdmimode) > 0) {
                 strcpy(mode, data->ubootenv_hdmimode);
             } else {
                 getBestHdmiMode(mode, data);
