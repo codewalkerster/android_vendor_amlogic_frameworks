@@ -105,7 +105,6 @@ public class OutputModeManager {
 
     private String DEFAULT_OUTPUT_MODE                      = "720p60hz";
     private static String currentOutputmode = null;
-    private String mSupportModes = null;
     private boolean ifModeSetting = false;
     private final Context mContext;
     final Object mLock = new Object[0];
@@ -195,7 +194,7 @@ public class OutputModeManager {
     }
 
     public String getCurrentOutputMode(){
-        return currentOutputmode;
+        return readSysfs(DISPLAY_MODE);
     }
 
     public int[] getPosition(String mode) {
@@ -266,9 +265,6 @@ public class OutputModeManager {
     }
 
     private String readSupportList(String path) {
-        if (null != mSupportModes)
-            return mSupportModes;
-
         String str = null;
         String value = "";
         try {
@@ -280,7 +276,6 @@ public class OutputModeManager {
             br.close();
 
             Log.d(TAG, "TV support list is :" + value);
-            mSupportModes = value;
         } catch (Exception e) {
             e.printStackTrace();
         }
