@@ -379,6 +379,8 @@ int DisplayMode::parseConfigFile(){
 
                     tokenizer->skipDelimiters(WHITESPACE);
                     strcpy(mSocType, tokenizer->nextToken(WHITESPACE));
+                    tokenizer->skipDelimiters(WHITESPACE);
+                    strcpy(mDefaultUI, tokenizer->nextToken(WHITESPACE));
                 }else {
                     SYS_LOGE("%s: Expected keyword, got '%s'.", tokenizer->getLocation(), token);
                     break;
@@ -918,8 +920,81 @@ void* DisplayMode::tmpDisableOsd(void* data){
     return NULL;
 }
 
-void DisplayMode::setTVDisplay() {
+void DisplayMode::setTVOutputMode(const char* outputmode) {
+    int outputx = 0;
+    int outputy = 0;
+    int outputwidth = 0;
+    int outputheight = 0;
+    int position[4] = { 0, 0, 0, 0 };
 
+    getPosition(outputmode, position);
+    outputx = position[0];
+    outputy = position[1];
+    outputwidth = position[2];
+    outputheight = position[3];
+
+    pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
+
+    char axis[MAX_STR_LEN] = {0};
+    sprintf(axis, "%d %d %d %d",
+            0, 0, mDisplayWidth - 1, mDisplayHeight - 1);
+    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_AXIS, axis);
+
+    sprintf(axis, "%d %d %d %d",
+            outputx, outputy, outputx + outputwidth - 1, outputy + outputheight -1);
+    pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
+
+    if (outputwidth == FULL_WIDTH_4K2K) {
+        pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_MODE, "2");//super scale
+        pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+        //setOsdMouse(outputmode);
+    } else {
+        pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
+    }
+
+    startBootanimDetectThread();
+}
+
+void DisplayMode::setTVDisplay() {
+    char current_mode[MODE_LEN] = {0};
+    char outputmode[MODE_LEN] = {0};
+
+    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, current_mode);
+    getBootEnv(UBOOTENV_OUTPUTMODE, outputmode);
+    SYS_LOGD("init tv display old outputmode:%s, outputmode:%s\n", current_mode, outputmode);
+
+    if (strlen(outputmode) == 0)
+        strcpy(outputmode, mDefaultUI);
+
+    if (!strncmp(mDefaultUI, "720", 3)) {
+        mDisplayWidth= FULL_WIDTH_720;
+        mDisplayHeight = FULL_HEIGHT_720;
+        pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_720P);
+        pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
+        pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "720");
+    } else if (!strncmp(mDefaultUI, "1080", 4)) {
+        mDisplayWidth = FULL_WIDTH_1080;
+        mDisplayHeight = FULL_HEIGHT_1080;
+        pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+        pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
+        pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
+    } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
+        mDisplayWidth = FULL_WIDTH_1080;
+        mDisplayHeight = FULL_HEIGHT_1080;
+        pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+        pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
+        pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
+    }
+    if (strcmp(current_mode, outputmode)) {
+        char bootvideo[MODE_LEN] = {0};
+        char state_bootanim[MODE_LEN] = {"sleep"};
+        pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
+        pSysWrite->getPropertyString(PROP_BOOTANIM, state_bootanim, "sleep");
+        if (!(!strcmp(bootvideo, "1") && !strcmp(state_bootanim, "running")))
+            startDisableOsdThread();
+    }
+
+    setTVOutputMode(outputmode);
 }
 
 void DisplayMode::setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set) {

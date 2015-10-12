@@ -262,6 +262,7 @@ private:
     bool isBestOutputmode();
     void initHdmiData(hdmi_data_t* data, char* hpdstate);
     void setMboxOutputMode(const char* outputmode, bool initState);
+    void setTVOutputMode(const char* outputmode);
     int modeToIndex(const char *mode);
     void startHdmiPlugDetectThread();
     void startBootanimDetectThread();
