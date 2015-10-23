@@ -866,6 +866,7 @@ void* DisplayMode::bootanimDetect(void* data) {
         usleep(delayMs * 1000);
     }
 
+    pThiz->pSysWrite->writeSysfs(DISPLAY_LOGO_INDEX, "0");
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");

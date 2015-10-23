@@ -49,6 +49,7 @@
 #define SYSFS_VIDEO_AXIS                "/sys/class/video/axis"
 #define DISPLAY_FB0_BLANK               "/sys/class/graphics/fb0/blank"
 #define DISPLAY_FB1_BLANK               "/sys/class/graphics/fb1/blank"
+#define DISPLAY_LOGO_INDEX              "/sys/module/fb/parameters/osd_logo_index"
 
 #define DISPLAY_FB0_FREESCALE           "/sys/class/graphics/fb0/free_scale"
 #define DISPLAY_FB1_FREESCALE           "/sys/class/graphics/fb1/free_scale"
