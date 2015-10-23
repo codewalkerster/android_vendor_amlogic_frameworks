@@ -1019,6 +1019,14 @@ void* DisplayMode::bootanimDetect(void* data) {
     return NULL;
 }
 
+#if defined(ODROIDC2)
+/*
+ * FIXME: What should we do for ODROID-C2?
+ */
+bool DisplayMode::isEdidChange() {
+	return false;
+}
+#else
 //get edid crc value to check edid change
 bool DisplayMode::isEdidChange() {
     char edid[MAX_STR_LEN] = {0};
@@ -1035,6 +1043,7 @@ bool DisplayMode::isEdidChange() {
     }
     return false;
 }
+#endif
 
 bool DisplayMode::isBestOutputmode() {
     char isBestMode[MODE_LEN] = {0};

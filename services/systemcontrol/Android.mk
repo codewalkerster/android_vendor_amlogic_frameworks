@@ -30,12 +30,20 @@ LOCAL_CFLAGS += -DHDCP_AUTHENTICATION
 
 LOCAL_SRC_FILES:= \
   main_systemcontrol.cpp \
-  ubootenv.c \
   VdcLoop.c \
   SysWrite.cpp \
   SystemControl.cpp \
   DisplayMode.cpp \
   SysTokenizer.cpp
+
+ifeq ($(TARGET_PRODUCT), odroidc2)
+LOCAL_CFLAGS += -DODROIDC2
+LOCAL_SRC_FILES+= \
+  ubootenv-odroid.c
+else
+LOCAL_SRC_FILES+= \
+  ubootenv.c
+endif
 
 LOCAL_SHARED_LIBRARIES := \
   libsystemcontrolservice \
