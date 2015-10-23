@@ -56,7 +56,8 @@ public:
         data.writeInterfaceToken(IImagePlayerService::getInterfaceDescriptor());
         data.writeInt32(httpService != NULL);
         if (httpService != NULL) {
-            data.writeStrongBinder(httpService->asBinder());
+            //data.writeStrongBinder(httpService->asBinder());
+            data.writeStrongBinder(IInterface::asBinder(httpService));
         }
         data.writeCString(srcUrl);
         remote()->transact(BnImagePlayerService::IMAGE_SET_DATA_SOURCE_URL, data, &reply);

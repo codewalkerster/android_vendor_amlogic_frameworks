@@ -10,6 +10,7 @@ LOCAL_SRC_FILES:= \
 
 LOCAL_C_INCLUDES += \
     $(JNI_H_INCLUDE) \
+    frameworks/base/libs/hwui \
     frameworks/base/services \
     frameworks/base/core/jni \
     frameworks/native/services \
@@ -123,6 +124,7 @@ LOCAL_C_INCLUDES += \
   external/skia/include/images \
   external/skia/src/ports \
   external/skia/include/utils \
+  frameworks/base/libs/hwui \
   frameworks/base/core/jni/android/graphics
 
 LOCAL_STATIC_LIBRARIES := \

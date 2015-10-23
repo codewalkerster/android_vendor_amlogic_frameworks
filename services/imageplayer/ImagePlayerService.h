@@ -31,11 +31,7 @@
 //#include <binder/MemoryDealer.h>
 #include <IImagePlayerService.h>
 
-
-#define AM_LOLLIPOP
-#define AM_KITKAT
-
-#define MAX_FILE_PATH_LEN         1024
+#define MAX_FILE_PATH_LEN           1024
 #define MAX_PIC_SIZE                8000
 
 namespace android {

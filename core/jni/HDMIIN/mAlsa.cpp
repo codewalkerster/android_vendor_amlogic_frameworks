@@ -438,7 +438,7 @@ int mAlsaInit(int tm_sleep, int init_flag, int track_rate) {
         LOGD("Recorder rate = %d.\n", record_rate);
 
         // create an AudioRecord object
-        glpRecorder = new AudioRecord();
+        //glpRecorder = new AudioRecord();
         if (glpRecorder == NULL) {
             LOGE("Error creating AudioRecord instance: new AudioRecord class failed.\n");
             return -1;

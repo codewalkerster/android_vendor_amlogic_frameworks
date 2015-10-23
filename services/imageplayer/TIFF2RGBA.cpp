@@ -504,12 +504,8 @@ int TIFF2RGBA::tiffDecoder(const char *filePath, SkBitmap *pBitmap) {
     TIFFSwabArrayOfLong(raster, width * height);
 #endif
 
-#ifdef AM_LOLLIPOP
     pBitmap->setInfo(SkImageInfo::Make(width, height,
             kN32_SkColorType, kPremul_SkAlphaType));
-#else
-    pBitmap->setConfig(SkBitmap::kARGB_8888_Config, width, height);
-#endif
     pBitmap->setPixels((void*)raster);
     TIFFClose(in);
     return ret;

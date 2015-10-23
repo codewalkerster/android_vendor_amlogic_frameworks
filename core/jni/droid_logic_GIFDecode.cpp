@@ -283,13 +283,13 @@ namespace android
             startIndex = 0;
 
             // create bitmap
-            if (!bm->allocPixels(SkImageInfo::MakeN32Premul(width, height))) {
-                return false;
-            }
+            //if (!bm->allocPixels(SkImageInfo::MakeN32Premul(width, height))) {
+             //   return false;
+            //}
             // create bitmap for backup
-            if (!fBackup.allocPixels(SkImageInfo::MakeN32Premul(width, height))) {
-                return false;
-            }
+            //if (!fBackup.allocPixels(SkImageInfo::MakeN32Premul(width, height))) {
+            //    return false;
+            //}
         } else if (startIndex > fCurrIndex) {
             // rewind to 1st frame for repeat
             startIndex = 0;
@@ -375,7 +375,7 @@ namespace android
             return;
         }
         GIFCreate(strm);
-        strm->unref();
+        //strm->unref();
     }
 
     static void nativeDestructor(JNIEnv* env, jobject clazz) {
@@ -438,10 +438,9 @@ namespace android
         fCurrIndex = frameIndex;
         SkBitmap *createdBitmap = createFrameBitmap();
         if (createdBitmap != NULL) {
-            return GraphicsJNI::createBitmap(env, createdBitmap, false, NULL);
-        } else {
-            return NULL;
+            //return GraphicsJNI::createBitmap(env, createdBitmap, false, NULL);
         }
+        return NULL;
     }
 
     static JNINativeMethod sMethods[] = {

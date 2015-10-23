@@ -25,24 +25,17 @@
 #include <string.h>
 #include <cutils/properties.h>
 #include <utils/Errors.h>
-#ifdef AM_KITKAT
 #include <SkImageDecoder.h>
 #include <SkData.h>
-#else
-#include <images/SkImageDecoder.h>
-#endif
 
 #include <SkCanvas.h>
 #include <SkColorPriv.h>
 
-#ifdef AM_LOLLIPOP
 #include "SkFrontBufferedStream.h"
 #include <media/IMediaHTTPService.h>
 #include <media/IMediaHTTPConnection.h>
 #include "media/libstagefright/include/NuCachedSource2.h"
 #include "media/libstagefright/include/HTTPBase.h"
-#include <media/stagefright/MediaHTTP.h>
-#endif
 
 #include <binder/IPCThreadState.h>
 #include <binder/IServiceManager.h>
@@ -97,11 +90,7 @@ public:
     }
 
     bool connect() {
-    #ifdef AM_LOLLIPOP
         dataSource = DataSource::CreateFromURI(httpsService, fURL);
-    #else
-        dataSource = DataSource::CreateFromURI(fURL, NULL);
-    #endif
 
         if (dataSource == NULL) {
             ALOGE("data source create from URI is NULL");
@@ -161,12 +150,10 @@ public:
         }
     }
 
-#ifdef AM_LOLLIPOP
     //if read return 0, mean the stream is end
     virtual bool isAtEnd() const {
         return false;
     }
-#endif
 
 private:
     char *fURL;
@@ -198,14 +185,10 @@ static SkColorType colorTypeForScaledOutput(SkColorType colorType) {
 static bool verifyBySkImageDecoder(SkStream *stream, SkBitmap **bitmap) {
     SkImageDecoder::Format format = SkImageDecoder::kUnknown_Format;
 
-    #ifdef AM_LOLLIPOP
-        SkAutoTUnref<SkStreamRewindable> bufferedStream(
-                SkFrontBufferedStream::Create(stream, BYTES_TO_BUFFER));
-        SkASSERT(bufferedStream.get() != NULL);
-        SkImageDecoder* codec = SkImageDecoder::Factory(bufferedStream);
-    #else
-        SkImageDecoder* codec = SkImageDecoder::Factory(stream);
-    #endif
+    SkAutoTDelete<SkStreamRewindable> bufferedStream(
+            SkFrontBufferedStream::Create(stream, BYTES_TO_BUFFER));
+    SkASSERT(bufferedStream.get() != NULL);
+    SkImageDecoder* codec = SkImageDecoder::Factory(bufferedStream);
 
     if (codec) {
         //in order to free the pointer
@@ -219,15 +202,10 @@ static bool verifyBySkImageDecoder(SkStream *stream, SkBitmap **bitmap) {
                 if (SkImageDecoder::kBMP_Format == format ||
                     SkImageDecoder::kGIF_Format == format)
                     stream->rewind();
-                #ifdef AM_LOLLIPOP
+
                 codec->decode(stream, *bitmap,
                         kN32_SkColorType,
                         SkImageDecoder::kDecodeBounds_Mode);
-                #else
-                codec->decode(stream, *bitmap,
-                        SkBitmap::kARGB_8888_Config,
-                        SkImageDecoder::kDecodeBounds_Mode);
-                #endif
             }
             delete codec;
             return true;
@@ -343,15 +321,11 @@ static bool isFdSupportedBySkImageDecoder(int fd, SkBitmap **bitmap) {
         return false;
     }
 
-#ifdef AM_KITKAT
     SkAutoTUnref<SkData> data(SkData::NewFromFD(fd));
     if (data.get() == NULL) {
         return false;
     }
     SkMemoryStream *stream = new SkMemoryStream(data);
-#else
-    SkFDStream *stream = new SkFDStream(fd, false);
-#endif
 
     bool ret = verifyBySkImageDecoder(stream, bitmap);
     delete stream;
@@ -382,15 +356,11 @@ static SkBitmap* cropBitmapRect(SkBitmap *srcBitmap, int x, int y, int width, in
     SkIRect r;
 
     r.set(x, y, x + width, y + height);
-#ifndef AM_LOLLIPOP
-    srcBitmap->setIsOpaque(true);
-#endif
+    //srcBitmap->setIsOpaque(true);
     srcBitmap->setIsVolatile(true);
 
     bool ret = srcBitmap->extractSubset(dstBitmap, r);
-#ifndef AM_LOLLIPOP
-    srcBitmap->setIsOpaque(false);
-#endif
+    //srcBitmap->setIsOpaque(false);
     srcBitmap->setIsVolatile(false);
 
     if (!ret) {
@@ -407,13 +377,11 @@ static SkBitmap* cropAndFillBitmap(SkBitmap *srcBitmap, int dstWidth, int dstHei
 
     SkBitmap *devBitmap = new SkBitmap();
     SkCanvas *canvas = NULL;
-#ifdef AM_LOLLIPOP
+
     SkColorType colorType = colorTypeForScaledOutput(srcBitmap->colorType());
     devBitmap->setInfo(SkImageInfo::Make(dstWidth, dstHeight,
             colorType, srcBitmap->alphaType()));
-#else
-    devBitmap->setConfig(SkBitmap::kARGB_8888_Config, dstWidth, dstHeight);
-#endif
+
     devBitmap->allocPixels();
     devBitmap->eraseARGB(0, 0, 0, 0);
 
@@ -427,16 +395,11 @@ static SkBitmap* cropAndFillBitmap(SkBitmap *srcBitmap, int dstWidth, int dstHei
     int dsty = (dstHeight - minHeight) / 2;
 
     SkPaint paint;
-    paint.setFilterBitmap(true);
+    //paint.setFilterBitmap(true);
     SkRect dst = SkRect::MakeXYWH(dstx, dsty, minWidth, minHeight);
 
-#ifdef AM_KITKAT
     SkRect src = SkRect::MakeXYWH(srcx, srcy, minWidth, minHeight);
     canvas->drawBitmapRectToRect(*srcBitmap, &src, dst, &paint);
-#else
-    SkIRect src = SkIRect::MakeXYWH(srcx, srcy, minWidth, minHeight);
-    canvas->drawBitmapRect(*srcBitmap, &src, dst, &paint);
-#endif
 
     delete canvas;
 
@@ -1078,21 +1041,13 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
     SkBitmap *bitmap = NULL;
     int imageW = 0, imageH = 0;
 
-#ifdef AM_LOLLIPOP
-    SkAutoTUnref<SkStreamRewindable> bufferedStream(
+    SkAutoTDelete<SkStreamRewindable> bufferedStream(
             SkFrontBufferedStream::Create(stream, BYTES_TO_BUFFER));
     SkASSERT(bufferedStream.get() != NULL);
     codec = SkImageDecoder::Factory(bufferedStream);
-#else
-    codec = SkImageDecoder::Factory(stream);
-#endif
 
     if (codec) {
-    #ifdef AM_LOLLIPOP
         ret = codec->buildTileIndex(bufferedStream, &imageW, &imageH);
-    #else
-        ret = codec->buildTileIndex(stream, &imageW, &imageH);
-    #endif
         if (!ret) {
             ALOGE("buildTileIndex failed to decode using %s decoder", codec->getFormatName());
         }
@@ -1110,7 +1065,6 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
             }
 
             SkBitmap decodingBitmap;
-    #ifdef AM_LOLLIPOP
             if (SkImageDecoder::kBMP_Format == format ||
                 SkImageDecoder::kGIF_Format == format)
                 stream->rewind();
@@ -1144,22 +1098,6 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
                     (int)decodingBitmap.getSize(), 4*decodingBitmap.width()*decodingBitmap.height());
             }
             decodingBitmap.copyTo(bitmap, kN32_SkColorType);
-    #else
-            ret = codec->decode(stream, &decodingBitmap,
-                    SkBitmap::kARGB_8888_Config,
-                    SkImageDecoder::kDecodePixels_Mode);
-            if (!ret) {
-                ALOGW("decode fail result:%d, try to decodeSubset", ret);
-                //ALOGI("buildTileIndex w:%d, h:%d", imageW, imageH);
-                ret = codec->decodeSubset(&decodingBitmap, SkIRect::MakeWH(imageW, imageH), SkBitmap::kARGB_8888_Config);
-                ALOGI("decodeRegion result:%d w:%d, h:%d", ret, decodingBitmap.width(), decodingBitmap.height());
-            }
-            if ((int)decodingBitmap.getSize() < 4*decodingBitmap.width()* decodingBitmap.height()) {
-                ALOGW("decode: bitmap size:%d, request size:%d\n",
-                    (int)decodingBitmap.getSize(), 4*decodingBitmap.width()*decodingBitmap.height());
-            }
-            decodingBitmap.copyTo(bitmap, SkBitmap::kARGB_8888_Config);
-    #endif
             if (!ret) {
                 delete bitmap;
                 bitmap = NULL;
@@ -1253,13 +1191,9 @@ SkBitmap* ImagePlayerService::scale(SkBitmap *srcBitmap, float sx, float sy) {
     SkMatrix *matrix = new SkMatrix();
     SkCanvas *canvas = NULL;
 
-#ifdef AM_LOLLIPOP
     SkColorType colorType = colorTypeForScaledOutput(srcBitmap->colorType());
     devBitmap->setInfo(SkImageInfo::Make(dstWidth, dstHeight,
             colorType, srcBitmap->alphaType()));
-#else
-    devBitmap->setConfig(SkBitmap::kARGB_8888_Config, dstWidth, dstHeight);
-#endif
 
     devBitmap->allocPixels();
 
@@ -1271,7 +1205,11 @@ SkBitmap* ImagePlayerService::scale(SkBitmap *srcBitmap, float sx, float sy) {
     paint.setAntiAlias(true);
     paint.setDither(true);
     //paint.setFilterBitmap(true);
-    canvas->drawBitmapMatrix(*srcBitmap, *matrix, &paint);
+    //canvas->drawBitmapMatrix(*srcBitmap, *matrix, &paint);
+
+    //SkAutoCanvasRestore acr(canvas, true);
+    canvas->concat(*matrix);
+    canvas->drawBitmap(*srcBitmap, 0, 0, &paint);
 
     delete canvas;
     delete matrix;
@@ -1294,13 +1232,9 @@ SkBitmap* ImagePlayerService::rotate(SkBitmap *srcBitmap, float degrees) {
     int dstWidth = sourceWidth * fabs(cos(radian)) + sourceHeight * fabs(sin(radian));
     int dstHeight = sourceHeight * fabs(cos(radian)) + sourceWidth * fabs(sin(radian));
 
-#ifdef AM_LOLLIPOP
     SkColorType colorType = colorTypeForScaledOutput(srcBitmap->colorType());
     devBitmap->setInfo(SkImageInfo::Make(dstWidth, dstHeight,
             colorType, srcBitmap->alphaType()));
-#else
-    devBitmap->setConfig(SkBitmap::kARGB_8888_Config, dstWidth, dstHeight);
-#endif
 
     devBitmap->allocPixels();
 
@@ -1312,7 +1246,11 @@ SkBitmap* ImagePlayerService::rotate(SkBitmap *srcBitmap, float degrees) {
     SkPaint paint;
     paint.setAntiAlias(true);
     paint.setDither(true);
-    canvas->drawBitmapMatrix(*srcBitmap, *matrix, &paint);
+    //canvas->drawBitmapMatrix(*srcBitmap, *matrix, &paint);
+
+    //SkAutoCanvasRestore acr(canvas, true);
+    canvas->concat(*matrix);
+    canvas->drawBitmap(*srcBitmap, 0, 0, &paint);
 
     delete canvas;
     delete matrix;
@@ -1341,13 +1279,9 @@ SkBitmap* ImagePlayerService::rotateAndScale(SkBitmap *srcBitmap, float degrees,
     SkMatrix *matrix = new SkMatrix();
     SkCanvas *canvas = NULL;
 
-#ifdef AM_LOLLIPOP
     SkColorType colorType = colorTypeForScaledOutput(srcBitmap->colorType());
     devBitmap->setInfo(SkImageInfo::Make(dstWidthAfterScale, dstHeightAfterScale,
             colorType, srcBitmap->alphaType()));
-#else
-    devBitmap->setConfig(SkBitmap::kARGB_8888_Config, dstWidthAfterScale, dstHeightAfterScale);
-#endif
 
     devBitmap->allocPixels();
 
@@ -1360,7 +1294,11 @@ SkBitmap* ImagePlayerService::rotateAndScale(SkBitmap *srcBitmap, float degrees,
     SkPaint paint;
     paint.setAntiAlias(true);
     paint.setDither(true);
-    canvas->drawBitmapMatrix(*srcBitmap, *matrix, &paint);
+    //canvas->drawBitmapMatrix(*srcBitmap, *matrix, &paint);
+
+    //SkAutoCanvasRestore acr(canvas, true);
+    canvas->concat(*matrix);
+    canvas->drawBitmap(*srcBitmap, 0, 0, &paint);
 
     delete canvas;
     delete matrix;
@@ -1387,15 +1325,11 @@ int ImagePlayerService::prepare() {
 
     SkStream *stream;
     if (mFileDescription >= 0) {
-#ifdef AM_KITKAT
         SkAutoTUnref<SkData> data(SkData::NewFromFD(mFileDescription));
         if (data.get() == NULL) {
             return RET_ERR_BAD_VALUE;
         }
         stream = new SkMemoryStream(data);
-#else
-        stream = new SkFDStream(mFileDescription, false);
-#endif
     } else if (!strncasecmp("http://", mImageUrl, 7) || !strncasecmp("https://", mImageUrl, 8)) {
         stream = new SkHttpStream(mImageUrl, mHttpService);
     } else {
@@ -1565,9 +1499,6 @@ int ImagePlayerService::showBuf() {
         return RET_ERR_BAD_VALUE;
     }
 
-    ALOGI("show buffer, buffer bitmap config:%d, kARGB_8888_Config:%d",
-        mBufBitmap->getConfig(), SkBitmap::kARGB_8888_Config);
-
     if (mMovieImage)
         return MovieThreadStart();
 
@@ -1581,11 +1512,7 @@ int ImagePlayerService::showBuf() {
 
     //copy bitmap data to showing bitmap
     bool ret = false;
-#ifdef AM_LOLLIPOP
     ret = mBufBitmap->copyTo(mBitmap, kN32_SkColorType);
-#else
-    ret = mBufBitmap->copyTo(mBitmap, SkBitmap::kARGB_8888_Config);
-#endif
 
     if (!ret) {
         ALOGE("show buffer, copy buffer to show bitmap error");
@@ -1984,23 +1911,14 @@ bool ImagePlayerService::MovieShow() {
         SkBitmap *scaleBitmap = NULL;
         SkBitmap *rotateBitmap = NULL;
         SkBitmap bitmap;//= mSkMovie->bitmap();
-
-    #ifdef AM_LOLLIPOP
         mSkMovie->bitmap().copyTo(&bitmap, kN32_SkColorType);
-    #else
-        mSkMovie->bitmap().copyTo(&bitmap, SkBitmap::kARGB_8888_Config);
-    #endif
         if ((bitmap.width() > surfaceWidth) || (bitmap.height() > surfaceHeight)) {
             ALOGW("MovieShow, origin width:%d or height:%d > surface w:%d or h:%d",
                     bitmap.width(), bitmap.height(), surfaceWidth, surfaceHeight);
 
             SkBitmap *dstCrop = fillSurface(&bitmap);
             if (NULL != dstCrop) {
-            #ifdef AM_LOLLIPOP
                 dstCrop->copyTo(&bitmap, kN32_SkColorType);
-            #else
-                dstCrop->copyTo(&bitmap, SkBitmap::kARGB_8888_Config);
-            #endif
                 delete dstCrop;
             }
         }
@@ -2186,11 +2104,7 @@ status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
                     int sysTime = (int)nanoseconds_to_milliseconds(systemTime(SYSTEM_TIME_MONOTONIC));
                     mSkMovie->setTime(sysTime % mSkMovie->duration());
 
-                #ifdef AM_LOLLIPOP
                     mSkMovie->bitmap().copyTo(&copy, kN32_SkColorType);
-                #else
-                    mSkMovie->bitmap().copyTo(&copy, SkBitmap::kARGB_8888_Config);
-                #endif
                     if (!SkImageEncoder::EncodeFile(bufPath, copy,
                             SkImageEncoder::kPNG_Type, SkImageEncoder::kDefaultQuality)) {
                         result.appendFormat("ImagePlayerService: [error]encode to png file:%s\n", bufPath);

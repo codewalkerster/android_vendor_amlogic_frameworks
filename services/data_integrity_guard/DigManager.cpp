@@ -225,8 +225,8 @@ void DigManager::HanldeSysChksumError(char* error_file_path) {
             } else {
                 snprintf(msg, sizeof(msg), "system crash");
             }
-            mBroadcaster->sendBroadcast(ResponseCode::DigReport_SystemChanged,
-                    msg, false);
+            //mBroadcaster->sendBroadcast(ResponseCode::DigReport_SystemChanged,
+            //        msg, false);
         }
 #endif
     }
@@ -320,8 +320,8 @@ void DigManager::handleDataRo() {
         if (mBroadcaster != NULL) {
             char msg[256];
             snprintf(msg, sizeof(msg), "data mount ro");
-            mBroadcaster->sendBroadcast(ResponseCode::DigReport_DataReadOnly,
-                    msg, false);
+            //mBroadcaster->sendBroadcast(ResponseCode::DigReport_DataReadOnly,
+            //        msg, false);
         }
 #endif
     }
@@ -522,8 +522,8 @@ void DigManager::handleInitMountDataFail() {
     if (mBroadcaster != NULL) {
         char msg[256] = {0};
         snprintf(msg, sizeof(msg), "data mount fail");
-        mBroadcaster->sendBroadcast(ResponseCode::DigReport_DataCrash,
-                    msg, false);
+        //mBroadcaster->sendBroadcast(ResponseCode::DigReport_DataCrash,
+        //            msg, false);
     }
 #endif
 }
