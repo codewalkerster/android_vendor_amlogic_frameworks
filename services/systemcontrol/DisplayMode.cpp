@@ -1058,9 +1058,9 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
     sprintf(axis, "%s %d %d", displaySize, w, h);
     pSysWrite->writeSysfs(DISPLAY_FB1_SCALE_AXIS, axis);
     if (DISPLAY_TYPE_TV == mDisplayType && !strncmp(cur_mode, "1080", 4)) {
-        pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
+        pSysWrite->writeSysfs(DISPLAY_FB1_SCALE, "0");
     } else {
-        pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0x10001");
+        pSysWrite->writeSysfs(DISPLAY_FB1_SCALE, "0x10001");
     }
 }
 
