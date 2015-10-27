@@ -1052,8 +1052,17 @@ bool DisplayMode::isEdidChange() {
 #endif
 
 bool DisplayMode::isBestOutputmode() {
+#if defined(ODROIDC2)
+	/*
+	 * FIXME: Don't we discover best output mode from EDID?
+	 * Currently return 'false' will force the output resolution as hdmi
+	 * mode in 'boot.ini'
+	 */
+	return false;
+#else
     char isBestMode[MODE_LEN] = {0};
     return !getBootEnv(UBOOTENV_ISBESTMODE, isBestMode) || strcmp(isBestMode, "true") == 0;
+#endif
 }
 
 void DisplayMode::startDisableOsdThread() {
