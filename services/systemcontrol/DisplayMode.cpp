@@ -870,7 +870,11 @@ void* DisplayMode::bootanimDetect(void* data) {
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
-    pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+    if (DISPLAY_TYPE_TV == pThiz->mDisplayType && !strncmp(outputmode, "1080", 4)) {
+        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
+    } else {
+        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+    }
 
     pThiz->pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
     if (strcmp(bootvideo, "1"))
@@ -1053,7 +1057,11 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
 
     sprintf(axis, "%s %d %d", displaySize, w, h);
     pSysWrite->writeSysfs(DISPLAY_FB1_SCALE_AXIS, axis);
-    pSysWrite->writeSysfs(DISPLAY_FB1_SCALE, "0x10001");
+    if (DISPLAY_TYPE_TV == mDisplayType && !strncmp(cur_mode, "1080", 4)) {
+        pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
+    } else {
+        pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0x10001");
+    }
 }
 
 void DisplayMode::getPosition(const char* curMode, int *position) {
