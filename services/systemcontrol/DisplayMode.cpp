@@ -310,7 +310,9 @@ DisplayMode::DisplayMode(const char *path)
         pConfigPath = path;
     }
 
+#if !defined(ODROIDC2)
     SYS_LOGI("display mode config path: %s", pConfigPath);
+#endif
 
     pSysWrite = new SysWrite();
     mVideoAxisMap.clear();
@@ -322,6 +324,9 @@ DisplayMode::~DisplayMode() {
 }
 
 void DisplayMode::init() {
+#if defined(ODROIDC2)
+	setMboxDisplay(NULL, true);
+#else
     parseConfigFile();
 
     SYS_LOGI("display mode init type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s, default UI:%s",
@@ -341,6 +346,7 @@ void DisplayMode::init() {
     else if (DISPLAY_TYPE_TV == mDisplayType) {
         setTVDisplay();
     }
+#endif
 }
 
 void DisplayMode:: getDisplayInfo(int &type, char* socType, char* defaultUI) {
