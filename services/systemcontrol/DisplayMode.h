@@ -284,6 +284,7 @@ private:
     void startBootanimDetectThread();
     void startDisableOsdThread();
     void setTVDisplay();
+    void fbset(int width, int height, int bits);
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
     void setVideoAxis(const char *preMode, const char *mode);
     void calcVideoAxis(const axis_t *prePosition, const axis_t *position,

@@ -463,29 +463,32 @@ int DisplayMode::parseConfigFile(){
     return status;
 }
 
-void DisplayMode::setTabletDisplay() {
-    struct fb_var_screeninfo var_set;
+void DisplayMode::fbset(int width, int height, int bits)
+{
+	struct fb_var_screeninfo var_set;
 
-    var_set.xres = mFb0Width;
+	mFb0Width = width;
+	mFb0Height = height;
+	mFb0FbBits = bits;
+
+	var_set.xres = mFb0Width;
 	var_set.yres = mFb0Height;
 	var_set.xres_virtual = mFb0Width;
-    if(mFb0TripleEnable)
-	    var_set.yres_virtual = 3*mFb0Height;
-    else
-        var_set.yres_virtual = 2*mFb0Height;
+	var_set.yres_virtual = mFb0Height * (mFb0TripleEnable ? 3 : 2);
 	var_set.bits_per_pixel = mFb0FbBits;
-    setFbParameter(DISPLAY_FB0, var_set);
+	setFbParameter(DISPLAY_FB0, var_set);
 
-    pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
-    var_set.xres = mFb1Width;
+	pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
+	var_set.xres = mFb1Width;
 	var_set.yres = mFb1Height;
 	var_set.xres_virtual = mFb1Width;
-    if (mFb1TripleEnable)
-	    var_set.yres_virtual = 3*mFb1Height;
-    else
-        var_set.yres_virtual = 2*mFb1Height;
+	var_set.yres_virtual = mFb1Height * (mFb1TripleEnable ? 3 : 2);
 	var_set.bits_per_pixel = mFb1FbBits;
-    setFbParameter(DISPLAY_FB1, var_set);
+	setFbParameter(DISPLAY_FB1, var_set);
+}
+
+void DisplayMode::setTabletDisplay() {
+	fbset(mFb0Width, mFb0Height, mFb0FbBits);
 
     char axis[512] = {0};
     sprintf(axis, "%d %d %d %d %d %d %d %d",
@@ -505,6 +508,16 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
     initHdmiData(&data, hpdstate);
 #if defined(ODROIDC2)
     getBootEnv(UBOOTENV_OUTPUTMODE, outputmode);
+
+    getBootEnv(UBOOTENV_HDMIMODE, data.ubootenv_hdmimode);
+
+    if (!strncmp(data.ubootenv_hdmimode, "2160", 3))
+	    fbset(3840, 2160, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1080", 3))
+	    fbset(1920, 1080, 32);
+    else
+	    fbset(1280, 720, 32);
+    strcpy(mDefaultUI, outputmode);
 #else
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
         if (!strcmp(data.hpd_state, "1")) {
