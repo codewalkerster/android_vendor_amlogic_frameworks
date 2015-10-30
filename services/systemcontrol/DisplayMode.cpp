@@ -262,7 +262,7 @@ static void* HdmiPlugDetectThread(void* data) {
 
         buffer[length] = '\0';
 
-    #if 1
+    #if 0
         //change@/devices/virtual/switch/hdmi ACTION=change DEVPATH=/devices/virtual/switch/hdmi
         //SUBSYSTEM=switch SWITCH_NAME=hdmi SWITCH_STATE=0 SEQNUM=2791
         char printBuf[1024] = {0};
@@ -554,6 +554,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
         }
     }
 
+    //output mode not the same
     if (strcmp(data.current_mode, outputmode)) {
         if (initState) {
             //when change mode, need close uboot logo to avoid logo scaling wrong
@@ -561,11 +562,11 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
             pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
             pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
         } else {
+            #if 0
             //when change mode, it need time to set osd register,
             //so we disable osd 1 second to avoid screen flicker
             char bootvideo[MODE_LEN] = {0};
             char state_bootanim[MODE_LEN] = {"sleep"};
-            #if 0
             pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
             pSysWrite->getPropertyString(PROP_BOOTANIM, state_bootanim, "sleep");
             //boot video not start or not running, need close osd, then open osd
@@ -692,8 +693,8 @@ void DisplayMode::setNativeWindowRect(int x, int y, int w, int h) {
     getPosition(currMode, currPos);
 
     //need base as display width and height
-    float scaleW = currPos[2]/mDisplayWidth;
-    float scaleH = currPos[3]/mDisplayHeight;
+    float scaleW = (float)currPos[2]/mDisplayWidth;
+    float scaleH = (float)currPos[3]/mDisplayHeight;
 
     //scale down or up the native window position
     int outputx = currPos[0] + x*scaleW;
@@ -983,7 +984,7 @@ void* DisplayMode::bootanimDetect(void* data) {
         int timeout = 40;
         while (timeout > 0) {
             pThiz->pSysWrite->getPropertyString(PROP_BOOTANIM, state_bootanim, "sleep");
-            //boot animation is running, so is not boot video playing
+            //boot animation or boot video is running
             if (!strcmp(state_bootanim, "running"))
                 break;
 
@@ -995,27 +996,26 @@ void* DisplayMode::bootanimDetect(void* data) {
         usleep(delayMs * 1000);
     }
 
-    /*
     pThiz->pSysWrite->writeSysfs(DISPLAY_LOGO_INDEX, "0");
-    pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
+    //pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
+    //need close fb1, because uboot logo show in fb1
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
-    if (DISPLAY_TYPE_TV == pThiz->mDisplayType && !strncmp(outputmode, "1080", 4)) {
-        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
-    } else {
-        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-    }*/
 
     pThiz->pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
     SYS_LOGI("boot animation detect boot video:%s\n", bootvideo);
-    //not boot video used
+    //not boot video running, boot animation running
     if (strcmp(bootvideo, "1")) {
+        //open fb0, let bootanimation show in it
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
-        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+        if (DISPLAY_TYPE_TV == pThiz->mDisplayType && !strncmp(outputmode, "1080", 4)) {
+            pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
+        } else {
+            pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+        }
     }
 
     pThiz->setOsdMouse(outputmode);
-
     return NULL;
 }
 
@@ -1427,13 +1427,13 @@ void DisplayMode::hdcpAuthenticate() {
     //14 22 00 HDCP TX
     pSysWrite->readSysfs(DISPLAY_HDMI_HDCP_KEY, hdcpKey);
     SYS_LOGI("HDCP TX key:%s\n", hdcpKey);
-    if (strlen(hdcpKey) == 0)
+    if ((strlen(hdcpKey) == 0) || !(strcmp(hdcpKey, "00")))
         return;
 
     //14 22 00 HDCP RX
     pSysWrite->readSysfs(DISPLAY_HDMI_HDCP_VER, hdcpVer);
     SYS_LOGI("HDCP RX version:%s\n", hdcpVer);
-    if (strlen(hdcpVer) == 0)
+    if ((strlen(hdcpVer) == 0) || !(strcmp(hdcpVer, "00")))
         return;
 
 #ifdef HDCP_AUTHENTICATION
