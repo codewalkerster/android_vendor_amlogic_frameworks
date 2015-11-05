@@ -503,6 +503,9 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
     memset(&data, 0, sizeof(hdmi_data_t));
 
     initHdmiData(&data, hpdstate);
+#if defined(ODROIDC2)
+    getBootEnv(UBOOTENV_OUTPUTMODE, outputmode);
+#else
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
         if (!strcmp(data.hpd_state, "1")) {
             if ((!strcmp(data.current_mode, MODE_480CVBS) || !strcmp(data.current_mode, MODE_576CVBS))
@@ -523,6 +526,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
     else {
         getBootEnv(UBOOTENV_OUTPUTMODE, outputmode);
     }
+#endif
 
     //if the tv don't support current outputmode,then switch to best outputmode
     if (strcmp(data.hpd_state, "1")) {
