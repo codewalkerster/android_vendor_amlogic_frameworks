@@ -127,7 +127,7 @@ class ImagePlayerService :  public BnImagePlayerService {
 
     int post();
     int render(int format, SkBitmap *bitmap);
-    SkBitmap* decode(SkStream *stream, InitParameter *parameter);
+    SkBitmap* decode(SkStreamRewindable *stream, InitParameter *parameter);
     SkBitmap* decodeTiff(const char *filePath);
     SkBitmap* scale(SkBitmap *srcBitmap, float sx, float sy);
     SkBitmap* rotate(SkBitmap *srcBitmap, float degrees);

@@ -71,7 +71,7 @@
 #define VIDEO_LAYER_FORMAT_ARGB     2
 
 namespace android {
-class SkHttpStream : public SkStream {
+class SkHttpStream : public SkStreamRewindable {
 public:
     SkHttpStream(const char url[] = NULL, const sp<IMediaHTTPService> &httpservice = NULL)
         : fURL(strdup(url)), dataSource(NULL),
@@ -111,6 +111,11 @@ public:
         }
 
         return connect();
+    }
+
+
+    SkHttpStream* duplicate() const {
+        return new SkHttpStream(fURL, httpsService);
     }
 
     size_t read(void* buffer, size_t size) {
@@ -186,7 +191,7 @@ static bool verifyBySkImageDecoder(SkStream *stream, SkBitmap **bitmap) {
     SkImageDecoder::Format format = SkImageDecoder::kUnknown_Format;
 
     SkAutoTDelete<SkStreamRewindable> bufferedStream(
-            SkFrontBufferedStream::Create(stream, BYTES_TO_BUFFER));
+            SkFrontBufferedStream::Create(stream->duplicate(), BYTES_TO_BUFFER));
     SkASSERT(bufferedStream.get() != NULL);
     SkImageDecoder* codec = SkImageDecoder::Factory(bufferedStream);
 
@@ -199,14 +204,17 @@ static bool verifyBySkImageDecoder(SkStream *stream, SkBitmap **bitmap) {
             if (bitmap != NULL) {
                 *bitmap = new SkBitmap();
                 codec->setSampleSize(1);
+                /*
                 if (SkImageDecoder::kBMP_Format == format ||
-                    SkImageDecoder::kGIF_Format == format)
-                    stream->rewind();
-
-                codec->decode(stream, *bitmap,
+                    SkImageDecoder::kGIF_Format == format ||
+                    SkImageDecoder::kPNG_Format == format)
+                    stream->rewind();*/
+                stream->rewind();
+                int ret = codec->decode(stream, *bitmap,
                         kN32_SkColorType,
                         SkImageDecoder::kDecodeBounds_Mode);
             }
+
             delete codec;
             return true;
         }
@@ -1034,20 +1042,20 @@ int ImagePlayerService::release() {
     return RET_OK;
 }
 
-SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter) {
+SkBitmap* ImagePlayerService::decode(SkStreamRewindable *stream, InitParameter *mParameter) {
     SkImageDecoder::Format format = SkImageDecoder::kUnknown_Format;
     SkImageDecoder* codec = NULL;
     bool ret = false;
     SkBitmap *bitmap = NULL;
     int imageW = 0, imageH = 0;
 
-    SkAutoTDelete<SkStreamRewindable> bufferedStream(
-            SkFrontBufferedStream::Create(stream, BYTES_TO_BUFFER));
-    SkASSERT(bufferedStream.get() != NULL);
-    codec = SkImageDecoder::Factory(bufferedStream);
+    //SkAutoTDelete<SkStreamRewindable> bufferedStream(
+    //        SkFrontBufferedStream::Create(stream->duplicate(), BYTES_TO_BUFFER));
 
+    //SkASSERT(bufferedStream.get() != NULL);
+    codec = SkImageDecoder::Factory(stream);
     if (codec) {
-        ret = codec->buildTileIndex(bufferedStream, &imageW, &imageH);
+        ret = codec->buildTileIndex(stream->duplicate(), &imageW, &imageH);
         if (!ret) {
             ALOGE("buildTileIndex failed to decode using %s decoder", codec->getFormatName());
         }
@@ -1065,10 +1073,12 @@ SkBitmap* ImagePlayerService::decode(SkStream *stream, InitParameter *mParameter
             }
 
             SkBitmap decodingBitmap;
+            /*
             if (SkImageDecoder::kBMP_Format == format ||
-                SkImageDecoder::kGIF_Format == format)
-                stream->rewind();
-
+                SkImageDecoder::kGIF_Format == format ||
+                SkImageDecoder::kPNG_Format == format)
+                stream->rewind();*/
+            stream->rewind();
             ret = codec->decode(stream, &decodingBitmap,
                     kN32_SkColorType,
                     SkImageDecoder::kDecodePixels_Mode);
@@ -1323,7 +1333,7 @@ int ImagePlayerService::prepare() {
         return RET_ERR_NO_MEMORY;
     }
 
-    SkStream *stream;
+    SkStreamRewindable *stream;
     if (mFileDescription >= 0) {
         SkAutoTUnref<SkData> data(SkData::NewFromFD(mFileDescription));
         if (data.get() == NULL) {
@@ -1415,7 +1425,7 @@ int ImagePlayerService::prepareBuf(const char *uri) {
 
     ALOGI("prepare buffer image path:%s", uri);
     char path[MAX_FILE_PATH_LEN];
-    SkStream *stream;
+    SkStreamRewindable *stream;
     if (!strncasecmp("file://", uri, 7)) {
         strncpy(path, uri + 7, MAX_FILE_PATH_LEN - 1);
         stream = new SkFILEStream(path);
