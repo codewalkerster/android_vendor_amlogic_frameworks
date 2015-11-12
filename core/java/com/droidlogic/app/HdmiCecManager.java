@@ -50,10 +50,12 @@ public class HdmiCecManager {
     }
 
     public void initCec() {
-        String fun = mSystemControlManager.readSysFs(CEC_SYS);
         if (mSystemControlManager != null) {
-            Log.d(TAG, "set cec fun = " + fun);
-            mSystemControlManager.writeSysFs(CEC_SYS, fun);
+            String fun = mSystemControlManager.readSysFs(CEC_SYS);
+            if (fun != null) {
+                Log.d(TAG, "set cec fun = " + fun);
+                mSystemControlManager.writeSysFs(CEC_SYS, fun);
+            }
         }
     }
 
@@ -98,6 +100,8 @@ public class HdmiCecManager {
         boolean exist = new File(CEC_SYS).exists();
         if (exist) {
             String cec_cfg = mSystemControlManager.readSysFs(CEC_SYS);
+            if (cec_cfg == null)
+                return false;
             int value = Integer.valueOf(cec_cfg.substring(2, cec_cfg.length()), 16);
             Log.d(TAG, "cec_cfg:" + cec_cfg + ", value:" + value);
             return (value & MASK_AUTO_CHANGE_LANGUAGE) != 0;

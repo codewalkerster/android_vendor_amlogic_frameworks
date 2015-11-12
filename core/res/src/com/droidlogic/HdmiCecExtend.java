@@ -252,6 +252,10 @@ public class HdmiCecExtend {
 
     public void onLanguageChange(String lan) {
         Slog.d(TAG, "onLanguageChange:" + lan);
+
+        if (lan == null)
+            return;
+
         HdmiCecLanguageHelp cecLanguage = new HdmiCecLanguageHelp(lan);
         Locale l = new Locale(cecLanguage.LanguageCode(), cecLanguage.CountryCode());
         mLanguangeChanged = updateLanguage(l);
