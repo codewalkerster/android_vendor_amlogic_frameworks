@@ -89,6 +89,9 @@ public class CecService extends Service {
     private void updateCECLanguage(String lan) {
         if (DEBUG) Log.d(TAG, "get the language code is : " + lan);
 
+        if (lan == null)
+            return;
+
         if (!mHdmiCecManager.isChangeLanguageOpen()) {
             if (DEBUG) Log.d(TAG, "cec language not open");
             return;
