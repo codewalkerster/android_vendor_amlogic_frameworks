@@ -26,6 +26,10 @@
 #include "SysWrite.h"
 #include "common.h"
 
+#include <map>
+#include <cmath>
+#include <string>
+
 #define DEVICE_STR_MID                  "MID"
 #define DEVICE_STR_MBOX                 "MBOX"
 #define DEVICE_STR_TV                   "TV"
@@ -45,6 +49,7 @@
 #define SYSFS_VIDEO_AXIS                "/sys/class/video/axis"
 #define DISPLAY_FB0_BLANK               "/sys/class/graphics/fb0/blank"
 #define DISPLAY_FB1_BLANK               "/sys/class/graphics/fb1/blank"
+#define DISPLAY_LOGO_INDEX              "/sys/module/fb/parameters/osd_logo_index"
 
 #define DISPLAY_FB0_FREESCALE           "/sys/class/graphics/fb0/free_scale"
 #define DISPLAY_FB1_FREESCALE           "/sys/class/graphics/fb1/free_scale"
@@ -57,14 +62,24 @@
 #define DISPLAY_FB0_FREESCALE_AXIS      "/sys/class/graphics/fb0/free_scale_axis"
 #define DISPLAY_FB0_WINDOW_AXIS         "/sys/class/graphics/fb0/window_axis"
 
+#define DISPLAY_HDMI_HDCP_STOP          "stop14" //stop HDCP authenticate
+#define DISPLAY_HDMI_HDCP_14            "1"
+#define DISPLAY_HDMI_HDCP_22            "2"
+#define DISPLAY_HDMI_HDCP_VER           "/sys/class/amhdmitx/amhdmitx0/hdcp_ver"//RX support HDCP version
+#define DISPLAY_HDMI_HDCP_MODE          "/sys/class/amhdmitx/amhdmitx0/hdcp_mode"//set HDCP mode
+#define DISPLAY_HDMI_HDCP_AUTH          "/sys/module/hdmitx20/parameters/hdmi_authenticated"//HDCP Authentication
+#define DISPLAY_HDMI_HDCP_CONF          "/sys/class/amhdmitx/amhdmitx0/hdcp_ctrl" //HDCP config
+#define DISPLAY_HDMI_HDCP_KEY           "/sys/class/amhdmitx/amhdmitx0/hdcp_lstore"//TX have 22 or 14 or none key
+
 #define DISPLAY_HPD_STATE               "/sys/class/amhdmitx/amhdmitx0/hpd_state"
-#define DISPLAY_HDMI_EDID               "/sys/class/amhdmitx/amhdmitx0/disp_cap"
+#define DISPLAY_HDMI_EDID               "/sys/class/amhdmitx/amhdmitx0/disp_cap"//RX support display mode
 #define DISPLAY_HDMI_AVMUTE             "/sys/devices/virtual/amhdmitx/amhdmitx0/avmute"
 #define DISPLAY_EDID_VALUE              "/sys/class/amhdmitx/amhdmitx0/edid"
 
 #define AUDIO_DSP_DIGITAL_RAW           "/sys/class/audiodsp/digital_raw"
 
 #define HDMI_UEVENT                     "DEVPATH=/devices/virtual/switch/hdmi"
+#define HDMI_POWER_UEVENT               "DEVPATH=/devices/virtual/switch/hdmi_power"
 
 #define PROP_HDMIONLY                   "ro.platform.hdmionly"
 #define PROP_LCD_DENSITY                "ro.sf.lcd_density"
@@ -212,6 +227,13 @@ typedef struct hdmi_data {
     char ubootenv_hdmimode[MODE_LEN];
 }hdmi_data_t;
 
+typedef struct axis_s {
+    int x;
+    int y;
+    int w;
+    int h;
+} axis_t;
+
 // ----------------------------------------------------------------------------
 
 class DisplayMode
@@ -237,6 +259,11 @@ public:
     static void* tmpDisableOsd(void *data);
 
     void setMboxDisplay(char* hpdstate, bool initState);
+
+    void setNativeWindowRect(int x, int y, int w, int h);
+    void setVideoPlaying(bool playing);
+
+    void hdcpSwitch();
 private:
 
     bool getBootEnv(const char* key, char* value);
@@ -251,14 +278,26 @@ private:
     bool isBestOutputmode();
     void initHdmiData(hdmi_data_t* data, char* hpdstate);
     void setMboxOutputMode(const char* outputmode, bool initState);
+    void setTVOutputMode(const char* outputmode);
     int modeToIndex(const char *mode);
     void startHdmiPlugDetectThread();
     void startBootanimDetectThread();
     void startDisableOsdThread();
     void setTVDisplay();
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
+    void setVideoAxis(const char *preMode, const char *mode);
+    void calcVideoAxis(const axis_t *prePosition, const axis_t *position,
+            const axis_t *axis, axis_t *videoAxis);
+    bool axisValid(const axis_t *axis);
+    bool axisEqual(int value1, int value2);
+    bool checkAxisSame(const axis_t *axis1, const axis_t *axis2);
+    void axisStr(const axis_t *axis, char *str);
 
     int getBootenvInt(const char* key, int defaultVal);
+    bool hdcpInit(bool *pHdcp22, bool *pHdcp14);
+    void hdcpAuthenticate(bool useHdcp22, bool useHdcp14);
+
+    std::map<std::string, axis_t> mVideoAxisMap;
 
     const char* pConfigPath;
     int mDisplayType;
@@ -271,6 +310,11 @@ private:
     int mFb1Height;
     int mFb1FbBits;
     bool mFb1TripleEnable;//Triple Buffer enable or not
+    bool mVideoPlaying;
+    int mNativeWinX;
+    int mNativeWinY;
+    int mNativeWinW;
+    int mNativeWinH;
 
     int mDisplayWidth;
     int mDisplayHeight;

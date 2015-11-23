@@ -227,6 +227,20 @@ void SystemControl::reInit() {
     bootenv_reinit();
 }
 
+void SystemControl::setNativeWindowRect(int x, int y, int w, int h) {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("set native window rect x:%d y:%d w:%d h:%d", x, y, w, h);
+    }
+    pDisplayMode->setNativeWindowRect(x, y, w, h);
+}
+
+void SystemControl::setVideoPlaying(bool playing) {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("set video playing :%d", playing?1:0);
+    }
+    pDisplayMode->setVideoPlaying(playing);
+}
+
 void SystemControl::traceValue(const String16& type, const String16& key, const String16& value) {
     if (mLogLevel > LOG_LEVEL_0) {
         String16 procName;
@@ -296,6 +310,7 @@ status_t SystemControl::dump(int fd, const Vector<String16>& args) {
             String16 debugLevel("-l");
             String16 bootenv("-b");
             String16 display("-d");
+            String16 hdcp("-hdcp");
             String16 help("-h");
             if (args[i] == debugLevel) {
                 if (i + 1 < len) {
@@ -346,6 +361,10 @@ status_t SystemControl::dump(int fd, const Vector<String16>& args) {
                 result.append(String8(buf));
                 break;
             }
+            else if (args[i] == hdcp) {
+                pDisplayMode->hdcpSwitch();
+                break;
+            }
             else if (args[i] == help) {
                 result.appendFormat(
                     "system_control service use to control the system sysfs property and boot env \n"
@@ -356,6 +375,7 @@ status_t SystemControl::dump(int fd, const Vector<String16>& args) {
                     "-l: debug level \n"
                     "-b: set or get bootenv \n"
                     "-d: dump display mode info \n"
+                    "-hdcp: stop hdcp and start hdcp tx \n"
                     "-h: help \n");
             }
         }
