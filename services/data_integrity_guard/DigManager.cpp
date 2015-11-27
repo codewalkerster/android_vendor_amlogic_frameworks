@@ -93,14 +93,14 @@ void* DigManager::workThread() {
             }
         }
 
-        //check data ro
-        if (isVolumeRo("/data")) {
-            handleDataRo();
-        }
-
         //check cache ro
         if (isVolumeRo("/cache")) {
             handleCacheRo();
+        }
+
+        //check data ro
+        if (isVolumeRo("/data")) {
+            handleDataRo();
         }
 
         //check system partition
@@ -225,8 +225,8 @@ void DigManager::HanldeSysChksumError(char* error_file_path) {
             } else {
                 snprintf(msg, sizeof(msg), "system crash");
             }
-            //mBroadcaster->sendBroadcast(ResponseCode::DigReport_SystemChanged,
-            //        msg, false);
+            mBroadcaster->sendBroadcast(ResponseCode::DigReport_SystemChanged,
+                    msg, false);
         }
 #endif
     }
@@ -320,8 +320,8 @@ void DigManager::handleDataRo() {
         if (mBroadcaster != NULL) {
             char msg[256];
             snprintf(msg, sizeof(msg), "data mount ro");
-            //mBroadcaster->sendBroadcast(ResponseCode::DigReport_DataReadOnly,
-            //        msg, false);
+            mBroadcaster->sendBroadcast(ResponseCode::DigReport_DataReadOnly,
+                    msg, false);
         }
 #endif
     }
@@ -396,7 +396,7 @@ int DigManager::fRead(const char*  filename, char* buff, size_t  buffsize)
 bool DigManager::isVolumeRo(char *device)
 {
     bool ro = false;
-    char mounts[2048], *start, *end, *line;
+    char mounts[4096], *start, *end, *line;
     fRead("/proc/mounts", mounts, sizeof(mounts));
     start = mounts;
 
@@ -522,8 +522,8 @@ void DigManager::handleInitMountDataFail() {
     if (mBroadcaster != NULL) {
         char msg[256] = {0};
         snprintf(msg, sizeof(msg), "data mount fail");
-        //mBroadcaster->sendBroadcast(ResponseCode::DigReport_DataCrash,
-        //            msg, false);
+        mBroadcaster->sendBroadcast(ResponseCode::DigReport_DataCrash,
+                    msg, false);
     }
 #endif
 }
