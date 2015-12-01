@@ -587,8 +587,9 @@ int DigManager::doMount(char *name, char *device) {
     int status;
     struct fstab *fstab;
 
-    if (!access(file, W_OK)) {
+    if (access(file, F_OK)) {
         ERROR("%s don`t exsit", file);
+        return -1;
     }
 
     fstab = fs_mgr_read_fstab(file);
