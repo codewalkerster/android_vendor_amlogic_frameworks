@@ -88,10 +88,11 @@ private:
     void setDataRoCount(int count);
     void handleDataRo();
     void handleCacheRo();
+    void handleCacheNull();
     void doRemount( char* dev, char* target, char* system, int readonly );
     int uRead(int  fd, void*  buff, int  len);
     int fRead(const char*  filename, char* buff, size_t  buffsize);
-    bool isVolumeRo(char *device);
+    int isVolumeRo(char *device);
     int isBootCompleted();
     void hextoa(char *szBuf, unsigned char nData[], int len);
     int getMd5(const char *path, unsigned char* md5);
@@ -99,5 +100,6 @@ private:
     void handleInitMountDataFail();
     int getDataRoCountMax();
     bool isRebooting();
+    int doMount(char *name, char *device);
 };
 #endif

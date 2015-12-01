@@ -52,7 +52,7 @@
 #include "DigManager.h"
 #include "make_ext4fs.h"
 #include "ResponseCode.h"
-
+#include "fs_mgr.h"
 
 DigManager *DigManager::sInstance = NULL;
 
@@ -94,12 +94,15 @@ void* DigManager::workThread() {
         }
 
         //check cache ro
-        if (isVolumeRo("/cache")) {
+        int ret = -1;
+        if ((ret = isVolumeRo("/cache")) > 0) {
             handleCacheRo();
+        } else if (ret < 0) {
+            handleCacheNull();
         }
 
         //check data ro
-        if (isVolumeRo("/data")) {
+        if (isVolumeRo("/data") > 0) {
             handleDataRo();
         }
 
@@ -331,11 +334,8 @@ void DigManager::handleCacheRo() {
     if (isRebooting())
         return;
 
-    const char cache_dev[] = "/dev/block/cache";
-    const char target[] = "/cache";
-    const char sys[] = "ext4";
-    int flags = MS_NOATIME | MS_NODIRATIME | MS_NOSUID | MS_NODEV;
-    const char options[] = "noauto_da_alloc";
+    char cache_dev[] = "/dev/block/cache";
+    char target[] = "/cache";
 
     if (isFileExist(cache_dev) == 0) {
         ERROR("handleCacheRo cache_dev:%s not exist", cache_dev);
@@ -351,13 +351,42 @@ void DigManager::handleCacheRo() {
             ERROR("handleCacheRo, format cache make_extf4fs err[%s]\n", strerror(errno) );
         }
 
-        //mount ext4 /dev/block/cache /cache noatime nodiratime norelatime nosuid nodev noauto_da_alloc
-        result = mount(cache_dev, target, sys, flags, options);
+        result = doMount(target, cache_dev);
         if (result) {
             ERROR("handleCacheRo, check cache ro,re-mount failed on err[%s]\n", strerror(errno) );
         }
     } else {
         ERROR("handleCacheRo, check cache ro,umount cache fail");
+    }
+}
+
+void DigManager::handleCacheNull() {
+    if (isRebooting())
+        return;
+
+    char cache_dev[] = "/dev/block/cache";
+    char target[] = "/cache";
+
+    if (isFileExist(cache_dev) == 0) {
+        ERROR("handleCacheRo cache_dev:%s not exist", cache_dev);
+        return;
+    }
+
+    int result = doMount(target, cache_dev);
+    if (result) {
+        ERROR("handleCacheNull, mount /cache failed on err[%s]\n", strerror(errno) );
+        ERROR("make_ext4fs cache_dev:%s,target:%s ", cache_dev, target);
+        result = make_ext4fs(cache_dev, 0, target, mSehandle);
+        if (result != 0) {
+            ERROR("handleCacheNull, format cache make_extf4fs err[%s]\n", strerror(errno) );
+        }
+
+        result = doMount(target, cache_dev);
+        if (result) {
+            ERROR("handleCacheNull, re-mount failed on err[%s]\n", strerror(errno) );
+        }
+    } else {
+        ERROR("handleCacheNull, mount cache successful\n");
     }
 }
 
@@ -393,9 +422,9 @@ int DigManager::fRead(const char*  filename, char* buff, size_t  buffsize)
 }
 
 
-bool DigManager::isVolumeRo(char *device)
+int DigManager::isVolumeRo(char *device)
 {
-    bool ro = false;
+    int ro = -1;
     char mounts[4096], *start, *end, *line;
     fRead("/proc/mounts", mounts, sizeof(mounts));
     start = mounts;
@@ -408,12 +437,17 @@ bool DigManager::isVolumeRo(char *device)
         if (strstr(line, device) != NULL) {
             if (strstr(line, "ro,") != NULL) {
                 ERROR("%s became read-only!\n", device);
-                ro = true;
+                ro = 1;
+            } else if (strstr(line, "rw,") != NULL) {
+                ro = 0;
             }
             break;
         }
     }
 
+    if (ro == -1) {
+        ERROR("%s hasn't mounted!\n", device);
+    }
     return ro;
 }
 
@@ -543,4 +577,27 @@ bool DigManager::isRebooting() {
         return true;
     }
     return false;
+}
+
+int DigManager::doMount(char *name, char *device) {
+    const char *file = "/fstab.amlogic";
+    pid_t pid;
+    int ret = -1;
+    int child_ret = -1;
+    int status;
+    struct fstab *fstab;
+
+    if (!access(file, W_OK)) {
+        ERROR("%s don`t exsit", file);
+    }
+
+    fstab = fs_mgr_read_fstab(file);
+    ret = fs_mgr_do_mount(fstab, name, device, NULL);
+    fs_mgr_free_fstab(fstab);
+    if (ret == -1) {
+        ERROR("fs_mgr_do_mount returned an error");
+        return -1;
+    }
+
+    return 0;
 }
