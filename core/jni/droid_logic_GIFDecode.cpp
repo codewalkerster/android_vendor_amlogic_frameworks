@@ -23,6 +23,7 @@
 #include "SkStream.h"
 #include "SkTemplates.h"
 #include "SkUtils.h"
+#include "SkFrontBufferedStream.h"
 
 #include "gif_lib.h"
 
@@ -283,13 +284,13 @@ namespace android
             startIndex = 0;
 
             // create bitmap
-            //if (!bm->allocPixels(SkImageInfo::MakeN32Premul(width, height))) {
-             //   return false;
-            //}
+            if (!bm->tryAllocN32Pixels(width, height)) {
+                return false;
+            }
             // create bitmap for backup
-            //if (!fBackup.allocPixels(SkImageInfo::MakeN32Premul(width, height))) {
-            //    return false;
-            //}
+            if (!fBackup.tryAllocN32Pixels(width, height)) {
+                return false;
+            }
         } else if (startIndex > fCurrIndex) {
             // rewind to 1st frame for repeat
             startIndex = 0;
@@ -375,6 +376,8 @@ namespace android
             return;
         }
         GIFCreate(strm);
+        SkAutoTDelete<SkStreamRewindable> bufferedStream(SkFrontBufferedStream::Create(strm, 6));
+        SkASSERT(bufferedStream.get() != NULL);
         //strm->unref();
     }
 
@@ -436,9 +439,15 @@ namespace android
             return NULL;
         }
         fCurrIndex = frameIndex;
+        SkBitmap result;
         SkBitmap *createdBitmap = createFrameBitmap();
         if (createdBitmap != NULL) {
-            //return GraphicsJNI::createBitmap(env, createdBitmap, false, NULL);
+            JavaPixelAllocator  allocator(env);
+            if (createdBitmap->copyTo(&result, &allocator)) {
+                Bitmap* bitmap = allocator.getStorageObjAndReset();
+                if (bitmap != NULL)
+                    return GraphicsJNI::createBitmap(env, bitmap, false);
+            }
         }
         return NULL;
     }
