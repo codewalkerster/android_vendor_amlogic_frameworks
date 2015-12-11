@@ -423,6 +423,7 @@ public class MediaPlayerDroidlogic extends MediaPlayer {
     }
 
     public void reset() {
+        mIBinder = null;
         mStopFast = true;
         super.reset();
     }
