@@ -109,7 +109,7 @@ public class ChannelInfo {
     private String mAudioLangs[];
     private int mAudioStd;
     private int mIsAutoStd;
-    private int mAudioTrackIndex;
+    private int mAudioTrackIndex; //-1:not select, -2:off, >=0:index
     private int mAudioCompensation;
     private int mAudioChannel;
 
@@ -121,7 +121,7 @@ public class ChannelInfo {
     private int mSubtitleId1s[];
     private int mSubtitleId2s[];
     private String mSubtitleLangs[];
-    private int mSubtitleTrackIndex;
+    private int mSubtitleTrackIndex;//-1:not select, -2:off, >=0:index
 
     private int mFrequency;
     private int mBandwidth;
@@ -491,6 +491,10 @@ public class ChannelInfo {
         mSubtitleTrackIndex = index;
     }
 
+    public void setFinetune(int finetune) {
+        mFineTune = finetune;
+    }
+
     public void copyFrom(ChannelInfo channel) {
         if (this == channel)
             return;
@@ -542,7 +546,7 @@ public class ChannelInfo {
             mChannel.mPcrPid = -1;
             mChannel.mFrequency = -1;
             mChannel.mBandwidth = -1;
-            mChannel.mFineTune = -1;
+            mChannel.mFineTune = 0;
 
             mChannel.mBrowsable = false;
             mChannel.mIsFavourite = false;
@@ -856,6 +860,7 @@ public class ChannelInfo {
                 "\n AudioChannel = " + mAudioChannel +
                 "\n PcrPid = " + mPcrPid +
                 "\n mFrequency = " + mFrequency +
+                "\n mFinetune = " + mFineTune +
                 "\n Browsable = " + mBrowsable +
                 "\n IsFavourite = " + mIsFavourite +
                 "\n IsPassthrough = " + mIsPassthrough +

@@ -4839,7 +4839,6 @@ public class TvControlManager {
         return sendCmdIntArray(SET_FRONTEND_PARA, val);
     }
 
-
     public enum CC_PARAM_COUNTRY {
         CC_PARAM_COUNTRY_USA(0),
         CC_PARAM_COUNTRY_KOREA(1);
