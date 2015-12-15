@@ -13,6 +13,7 @@ LOCAL_MODULE_TAGS := optional
 
 # Install thie to system/priv-app
 LOCAL_PRIVILEGED_MODULE := true
+LOCAL_PROGUARD_ENABLED := disabled
 
 include $(BUILD_PACKAGE)
 
