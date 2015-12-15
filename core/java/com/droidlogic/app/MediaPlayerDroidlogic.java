@@ -206,6 +206,7 @@ public class MediaPlayerDroidlogic extends MediaPlayer {
     }
 
     private boolean setParameter(int key, Parcel value) {
+        boolean ret = false;
         if (DEBUG) Log.i(TAG,"[setParameter]mIBinder:" + mIBinder + ",key:" + key + ",Parcel value:" + value);
         if (null == mIBinder) {
             prepareIBinder();
@@ -221,9 +222,15 @@ public class MediaPlayerDroidlogic extends MediaPlayer {
                     data.appendFrom(value, 0, value.dataSize());
                 }
                 mIBinder.transact(SET_PARAMETER, data, reply, 0);
+                if (0 == reply.readInt()) { //OK
+                    ret = true;
+                }
+                else {
+                    ret = false;
+                }
                 reply.recycle();
                 data.recycle();
-                return true;
+                return ret;
             }
         } catch (RemoteException ex) {
             Log.e(TAG, "setParameter:" + ex);
