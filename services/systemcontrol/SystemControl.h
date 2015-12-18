@@ -70,7 +70,7 @@ public:
     virtual void getPosition(const String16& mode, int &x, int &y, int &w, int &h);
     virtual void reInit();
     virtual void setNativeWindowRect(int x, int y, int w, int h);
-    virtual void setVideoPlaying(bool playing);
+    virtual void setVideoPlayingAxis();
 
     static void instantiate(const char *cfgpath);
 

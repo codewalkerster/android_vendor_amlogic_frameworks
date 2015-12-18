@@ -355,16 +355,15 @@ public:
         }
     }
 
-    virtual void setVideoPlaying(bool playing)
+    virtual void setVideoPlayingAxis(void)
     {
         Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
-        data.writeInt32(playing?1:0);
 
-        ALOGV("setVideoPlaying playing:%d\n", playing?1:0);
+        ALOGV("setVideoPlayingAxis\n");
 
         if (remote()->transact(SET_VIDEO_PLAYING, data, &reply) != NO_ERROR) {
-            ALOGE("setVideoPlaying could not contact remote\n");
+            ALOGE("setVideoPlayingAxis could not contact remote\n");
             return;
         }
     }
@@ -545,8 +544,7 @@ status_t BnISystemControlService::onTransact(
         }
         case SET_VIDEO_PLAYING:{
             CHECK_INTERFACE(ISystemControlService, data, reply);
-            int32_t playing = data.readInt32();
-            setVideoPlaying((1 == playing)?true:false);
+            setVideoPlayingAxis();
             return NO_ERROR;
         }
 

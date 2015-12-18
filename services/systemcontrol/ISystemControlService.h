@@ -96,7 +96,7 @@ public:
     virtual void reInit(void) = 0;
 
     virtual void setNativeWindowRect(int x, int y, int w, int h) = 0;
-    virtual void setVideoPlaying(bool playing) = 0;
+    virtual void setVideoPlayingAxis(void) = 0;
     //virtual void setPowerMode(int mode) = 0;
 };
 

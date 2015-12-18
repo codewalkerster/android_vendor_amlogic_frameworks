@@ -47,6 +47,7 @@
 #define SYSFS_DISPLAY_MODE2             "/sys/class/display2/mode"
 #define SYSFS_DISPLAY_AXIS              "/sys/class/display/axis"
 #define SYSFS_VIDEO_AXIS                "/sys/class/video/axis"
+#define SYSFS_VIDEO_LAYER_STATE         "/sys/class/video/video_layer1_state"
 #define DISPLAY_FB0_BLANK               "/sys/class/graphics/fb0/blank"
 #define DISPLAY_FB1_BLANK               "/sys/class/graphics/fb1/blank"
 #define DISPLAY_LOGO_INDEX              "/sys/module/fb/parameters/osd_logo_index"
@@ -261,7 +262,7 @@ public:
     void setMboxDisplay(char* hpdstate, bool initState);
 
     void setNativeWindowRect(int x, int y, int w, int h);
-    void setVideoPlaying(bool playing);
+    void setVideoPlayingAxis();
 
     void hdcpSwitch();
 private:
@@ -310,7 +311,6 @@ private:
     int mFb1Height;
     int mFb1FbBits;
     bool mFb1TripleEnable;//Triple Buffer enable or not
-    bool mVideoPlaying;
     int mNativeWinX;
     int mNativeWinY;
     int mNativeWinW;

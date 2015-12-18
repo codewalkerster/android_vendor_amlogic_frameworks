@@ -297,7 +297,6 @@ DisplayMode::DisplayMode(const char *path)
     mFb1Height(-1),
     mFb1FbBits(-1),
     mFb1TripleEnable(true),
-    mVideoPlaying(false),
     mNativeWinX(0), mNativeWinY(0), mNativeWinW(0), mNativeWinH(0),
     mDisplayWidth(FULL_WIDTH_1080),
     mDisplayHeight(FULL_HEIGHT_1080),
@@ -637,7 +636,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
             outputx, outputy, outputx + outputwidth - 1, outputy + outputheight -1);
     pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
     //setVideoAxis(preMode, outputmode);
-    setNativeWindowRect(mNativeWinX, mNativeWinY, mNativeWinW, mNativeWinH);
+    setVideoPlayingAxis();
 
     //only HDMI mode need HDCP authenticate
     if (!cvbsMode) {
@@ -681,18 +680,23 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
 }
 
 void DisplayMode::setNativeWindowRect(int x, int y, int w, int h) {
-    char currMode[MODE_LEN] = {0};
-    int currPos[4] = {0};
-
-    if (!mVideoPlaying) {
-        SYS_LOGI("video is not playing, don't need set video axis\n");
-        return;
-    }
-
     mNativeWinX = x;
     mNativeWinY = y;
     mNativeWinW = w;
     mNativeWinH = h;
+}
+
+void DisplayMode::setVideoPlayingAxis() {
+    char currMode[MODE_LEN] = {0};
+    int currPos[4] = {0};
+    char videoPlaying[MODE_LEN] = {0};
+
+    SYS_LOGD("set video playing axis\n");
+    pSysWrite->readSysfs(SYSFS_VIDEO_LAYER_STATE, videoPlaying);
+    if (videoPlaying[0] == '0') {
+        SYS_LOGI("video is not playing, don't need set video axis\n");
+        return;
+    }
 
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, currMode);
     getPosition(currMode, currPos);
@@ -702,21 +706,16 @@ void DisplayMode::setNativeWindowRect(int x, int y, int w, int h) {
     float scaleH = (float)currPos[3]/mDisplayHeight;
 
     //scale down or up the native window position
-    int outputx = currPos[0] + x*scaleW;
-    int outputy = currPos[1] + y*scaleH;
-    int outputwidth = w*scaleW;
-    int outputheight = h*scaleH;
+    int outputx = currPos[0] + mNativeWinX*scaleW;
+    int outputy = currPos[1] + mNativeWinY*scaleH;
+    int outputwidth = mNativeWinW*scaleW;
+    int outputheight = mNativeWinH*scaleH;
 
     char axis[MAX_STR_LEN] = {0};
     sprintf(axis, "%d %d %d %d",
             outputx, outputy, outputx + outputwidth - 1, outputy + outputheight - 1);
     SYS_LOGD("write %s: %s\n", SYSFS_VIDEO_AXIS, axis);
     pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, axis);
-}
-
-void DisplayMode::setVideoPlaying(bool playing) {
-    mVideoPlaying = playing;
-    SYS_LOGD("set video playing %d\n", playing?1:0);
 }
 
 bool DisplayMode::axisValid(const axis_t *axis) {

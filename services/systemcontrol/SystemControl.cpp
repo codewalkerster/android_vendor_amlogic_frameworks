@@ -234,11 +234,11 @@ void SystemControl::setNativeWindowRect(int x, int y, int w, int h) {
     pDisplayMode->setNativeWindowRect(x, y, w, h);
 }
 
-void SystemControl::setVideoPlaying(bool playing) {
+void SystemControl::setVideoPlayingAxis() {
     if (mLogLevel > LOG_LEVEL_1) {
-        ALOGI("set video playing :%d", playing?1:0);
+        ALOGI("set video playing axis");
     }
-    pDisplayMode->setVideoPlaying(playing);
+    pDisplayMode->setVideoPlayingAxis();
 }
 
 void SystemControl::traceValue(const String16& type, const String16& key, const String16& value) {
