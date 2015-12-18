@@ -545,7 +545,6 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
     else {
         getBootEnv(UBOOTENV_OUTPUTMODE, outputmode);
     }
-#endif
 
     //if the tv don't support current outputmode,then switch to best outputmode
     if (strcmp(data.hpd_state, "1")) {
@@ -553,6 +552,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
             strcpy(outputmode, MODE_576CVBS);
         }
     }
+#endif
 
     SYS_LOGI("init mbox display hpdstate:%s, old outputmode:%s, new outputmode:%s\n",
             data.hpd_state,
