@@ -47,8 +47,8 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_576I,
     MODE_576P,
     MODE_576CVBS,
-    MODE_720P,
     MODE_720P50HZ,
+    MODE_720P,
     MODE_1080P24HZ,
     MODE_1080I50HZ,
     MODE_1080P50HZ,
@@ -61,7 +61,20 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_4K2K50HZ420,
     MODE_4K2K60HZ,
     MODE_4K2K60HZ420,
-    MODE_4K2KSMPTE
+    MODE_4K2KSMPTE,
+    MODE_640X480P60HZ,
+    MODE_800X600P60HZ,
+    MODE_800X480P60HZ,
+    MODE_1024X600P60HZ,
+    MODE_1024X768P60HZ,
+    MODE_1280X800P60HZ,
+    MODE_1280X1024P60HZ,
+    MODE_1360X768P60HZ,
+    MODE_1366X768P60HZ,
+    MODE_1440X900P60HZ,
+    MODE_1600X900P60HZ,
+    MODE_1680X1050P60HZ,
+    MODE_1920X1200P60HZ
 };
 
 /**
@@ -516,6 +529,36 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
 	    fbset(1920, 1080, 32);
     } else if (!strncmp(data.ubootenv_hdmimode, "1080", 3))
 	    fbset(1920, 1080, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "640x480", 7))
+	    fbset(640, 480, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "800x600", 7))
+	    fbset(800, 600, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "800x480", 7))
+	    fbset(800, 480, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1024x600", 8))
+	    fbset(1024, 600, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1024x768", 8))
+	    fbset(1024, 768, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1280x800", 8))
+	    fbset(1280, 800, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1280x1024", 9))
+	    fbset(1280, 1024, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1360x768", 8))
+	    fbset(1360, 768, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1366x768", 8))
+	    fbset(1366, 768, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1440x900", 8))
+	    fbset(1440, 900, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1600x900", 8))
+	    fbset(1600, 900, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1680x1050", 9))
+	    fbset(1680, 1050, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1920x1200", 9))
+	    fbset(1920, 1200, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "480p", 4))
+	    fbset(720, 480, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "576p", 4))
+	    fbset(720, 576, 32);
     else
 	    fbset(1280, 720, 32);
 
@@ -568,12 +611,102 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
             pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_720P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "720");
+        } else if (!strncmp(mDefaultUI, "480", 3)) {
+            mDisplayWidth = 720;
+            mDisplayHeight = 480;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "720");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "480");
+        } else if (!strncmp(mDefaultUI, "576", 3)) {
+            mDisplayWidth = 720;
+            mDisplayHeight = 576;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "720");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "576");
         } else if (!strncmp(mDefaultUI, "1080", 4)) {
             mDisplayWidth = FULL_WIDTH_1080;
             mDisplayHeight = FULL_HEIGHT_1080;
             pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
+	} else if (!strncmp(mDefaultUI, "640x480", 7)) {
+            mDisplayWidth = 640;
+            mDisplayHeight = 480;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "640");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "480");
+	} else if (!strncmp(mDefaultUI, "800x600", 7)) {
+            mDisplayWidth = 800;
+            mDisplayHeight = 600;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "800");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "600");
+	} else if (!strncmp(mDefaultUI, "800x480", 7)) {
+            mDisplayWidth = 800;
+            mDisplayHeight = 480;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "800");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "480");
+	} else if (!strncmp(mDefaultUI, "1024x600", 8)) {
+            mDisplayWidth = 1024;
+            mDisplayHeight = 600;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1024");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "480");
+	} else if (!strncmp(mDefaultUI, "1024x768", 8)) {
+            mDisplayWidth = 1024;
+            mDisplayHeight = 768;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1024");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "768");
+	} else if (!strncmp(mDefaultUI, "1280x800", 8)) {
+            mDisplayWidth = 1280;
+            mDisplayHeight = 800;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "800");
+	} else if (!strncmp(mDefaultUI, "1280x1024", 9)) {
+            mDisplayWidth = 1280;
+            mDisplayHeight = 1024;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1024");
+	} else if (!strncmp(mDefaultUI, "1360x768", 8)) {
+            mDisplayWidth = 1360;
+            mDisplayHeight = 768;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1360");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "768");
+	} else if (!strncmp(mDefaultUI, "1366x768", 8)) {
+            mDisplayWidth = 1366;
+            mDisplayHeight = 768;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1366");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "768");
+	} else if (!strncmp(mDefaultUI, "1440x900", 8)) {
+            mDisplayWidth = 1440;
+            mDisplayHeight = 900;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1440");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "900");
+	} else if (!strncmp(mDefaultUI, "1600x900", 8)) {
+            mDisplayWidth = 1600;
+            mDisplayHeight = 900;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1600");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "900");
+	} else if (!strncmp(mDefaultUI, "1680x1050", 9)) {
+            mDisplayWidth = 1680;
+            mDisplayHeight = 1050;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1600");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1050");
+	} else if (!strncmp(mDefaultUI, "1920x1200", 9)) {
+            mDisplayWidth = 1920;
+            mDisplayHeight = 1200;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1200");
         } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
             mDisplayWidth = FULL_WIDTH_4K2K;
             mDisplayHeight = FULL_HEIGHT_4K2K;
@@ -1215,13 +1348,42 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
     SYS_LOGI("set osd mouse x:%d y:%d w:%d h:%d", x, y, w, h);
 
     const char* displaySize = "1920 1080";
-    if (!strncmp(mDefaultUI, "720", 3)) {
-        displaySize = "1280 720";
-    } else if (!strncmp(mDefaultUI, "1080", 4)) {
-        displaySize = "1920 1080";
-    } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
-        displaySize = "3840 2160";
-    }
+    if (!strncmp(mDefaultUI, "720", 3))
+	    displaySize = "1280 720";
+    else if (!strncmp(mDefaultUI, "480", 3))
+	    displaySize = "720 480";
+    else if (!strncmp(mDefaultUI, "576", 3))
+	    displaySize = "720 576";
+    else if (!strncmp(mDefaultUI, "1080", 4))
+	    displaySize = "1920 1080";
+    else if (!strncmp(mDefaultUI, "4k2k", 4))
+	    displaySize = "3840 2160";
+    else if (!strncmp(mDefaultUI, "640x480", 7))
+	    displaySize = "640 480";
+    else if (!strncmp(mDefaultUI, "800x600", 7))
+	    displaySize = "800 600";
+    else if (!strncmp(mDefaultUI, "800x480", 7))
+	    displaySize = "800, 480";
+    else if (!strncmp(mDefaultUI, "1024x600", 8))
+	    displaySize = "1024 600";
+    else if (!strncmp(mDefaultUI, "1024x768", 8))
+	    displaySize = "1024 768";
+    else if (!strncmp(mDefaultUI, "1280x800", 8))
+	    displaySize = "1280 800";
+    else if (!strncmp(mDefaultUI, "1280x1024", 9))
+	    displaySize = "1280 1024";
+    else if (!strncmp(mDefaultUI, "1360x768", 8))
+	    displaySize = "1360 768";
+    else if (!strncmp(mDefaultUI, "1366x768", 8))
+	    displaySize = "1366 768";
+    else if (!strncmp(mDefaultUI, "1440x900", 8))
+	    displaySize = "1440 900";
+    else if (!strncmp(mDefaultUI, "1600x900", 8))
+	    displaySize = "1600 900";
+    else if (!strncmp(mDefaultUI, "1680x1050", 9))
+	    displaySize = "1680 1050";
+    else if (!strncmp(mDefaultUI, "1920x1200", 9))
+	    displaySize = "1920 1200";
 
     char cur_mode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, cur_mode);
@@ -1334,6 +1496,84 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
             position[2] = getBootenvInt(ENV_4K2KSMPTE_W, FULL_WIDTH_4K2KSMPTE);
             position[3] = getBootenvInt(ENV_4K2KSMPTE_H, FULL_HEIGHT_4K2KSMPTE);
             break;
+	case DISPLAY_MODE_640X480P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 640;
+            position[3] = 480;
+	    break;
+	case DISPLAY_MODE_800X600P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 800;
+            position[3] = 600;
+	    break;
+	case DISPLAY_MODE_800X480P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 800;
+            position[3] = 480;
+	    break;
+	case DISPLAY_MODE_1024X600P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1024;
+            position[3] = 600;
+	    break;
+	case DISPLAY_MODE_1024X768P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1024;
+            position[3] = 768;
+	    break;
+	case DISPLAY_MODE_1280X800P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1280;
+            position[3] = 800;
+	    break;
+	case DISPLAY_MODE_1280X1024P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1280;
+            position[3] = 1024;
+	    break;
+	case DISPLAY_MODE_1360X768P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1360;
+            position[3] = 768;
+	    break;
+	case DISPLAY_MODE_1366X768P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1366;
+            position[3] = 768;
+	    break;
+	case DISPLAY_MODE_1440X900P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1440;
+            position[3] = 900;
+	    break;
+	case DISPLAY_MODE_1600X900P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1600;
+            position[3] = 900;
+	    break;
+	case DISPLAY_MODE_1680X1050P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1680;
+            position[3] = 1050;
+	    break;
+	case DISPLAY_MODE_1920X1200P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1920;
+            position[3] = 1200;
+	    break;
         default: //1080p
             position[0] = getBootenvInt(ENV_1080P_X, 0);
             position[1] = getBootenvInt(ENV_1080P_Y, 0);
