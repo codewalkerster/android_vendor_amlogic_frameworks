@@ -29,6 +29,8 @@
 #include <map>
 #include <cmath>
 #include <string>
+#include <pthread.h>
+#include <semaphore.h>
 
 #define DEVICE_STR_MID                  "MID"
 #define DEVICE_STR_MBOX                 "MBOX"
@@ -81,6 +83,8 @@
 
 #define HDMI_UEVENT                     "DEVPATH=/devices/virtual/switch/hdmi"
 #define HDMI_POWER_UEVENT               "DEVPATH=/devices/virtual/switch/hdmi_power"
+
+#define VIDEO_LAYER1_UEVENT             "DEVPATH=/devices/virtual/switch/video_layer1"
 
 #define PROP_HDMIONLY                   "ro.platform.hdmionly"
 #define PROP_LCD_DENSITY                "ro.sf.lcd_density"
@@ -235,6 +239,13 @@ typedef struct axis_s {
     int h;
 } axis_t;
 
+typedef struct uevent_data {
+    int len;
+    char buf[1024];
+    char name[128];
+    char state[128];
+} uevent_data_t;
+
 // ----------------------------------------------------------------------------
 
 class DisplayMode
@@ -244,6 +255,7 @@ public:
     ~DisplayMode();
 
     void init();
+    void reInit();
 
     void getDisplayInfo(int &type, char* socType, char* defaultUI);
     void getFbInfo(int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
@@ -279,12 +291,12 @@ private:
     bool isBestOutputmode();
     void initHdmiData(hdmi_data_t* data, char* hpdstate);
     void setMboxOutputMode(const char* outputmode, bool initState);
-    void setTVOutputMode(const char* outputmode);
+    void setTVOutputMode(const char* outputmode, bool initState);
     int modeToIndex(const char *mode);
     void startHdmiPlugDetectThread();
     void startBootanimDetectThread();
     void startDisableOsdThread();
-    void setTVDisplay();
+    void setTVDisplay(bool initState);
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
     void setVideoAxis(const char *preMode, const char *mode);
     void calcVideoAxis(const axis_t *prePosition, const axis_t *position,
@@ -295,8 +307,11 @@ private:
     void axisStr(const axis_t *axis, char *str);
 
     int getBootenvInt(const char* key, int defaultVal);
-    bool hdcpInit(bool *pHdcp22, bool *pHdcp14);
-    void hdcpAuthenticate(bool useHdcp22, bool useHdcp14);
+    static bool hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14);
+    static void hdcpAuthenticate(SysWrite *pSysWrite, bool useHdcp22, bool useHdcp14);
+    static void* hdcpThreadLoop(void* data);
+    int hdcpThreadStart();
+    int hdcpThreadExit(pthread_t thread_id);
 
     std::map<std::string, axis_t> mVideoAxisMap;
 
@@ -311,6 +326,7 @@ private:
     int mFb1Height;
     int mFb1FbBits;
     bool mFb1TripleEnable;//Triple Buffer enable or not
+    bool mVideoPlaying;
     int mNativeWinX;
     int mNativeWinY;
     int mNativeWinW;
@@ -323,6 +339,10 @@ private:
     char mDefaultUI[MAX_STR_LEN];//this used for mbox
     int mLogLevel;
     SysWrite *pSysWrite = NULL;
+
+    pthread_mutex_t pthreadMutex;
+    sem_t pthreadSem;
+    pthread_t pthreadIdHdcp;
 };
 
 #endif // ANDROID_DISPLAY_MODE_H

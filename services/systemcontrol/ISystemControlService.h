@@ -59,6 +59,7 @@ enum {
     SET_VIDEO_PLAYING       = IBinder::FIRST_CALL_TRANSACTION + 19,
 
     SET_POWER_MODE          = IBinder::FIRST_CALL_TRANSACTION + 20,
+    INSTABOOT_RESET_DISPLAY = IBinder::FIRST_CALL_TRANSACTION + 21,
 };
 
 // ----------------------------------------------------------------------------
@@ -94,6 +95,7 @@ public:
     virtual void setPosition(int left, int top, int width, int height) = 0;
     virtual void getPosition(const String16& mode, int &x, int &y, int &w, int &h) = 0;
     virtual void reInit(void) = 0;
+    virtual void instabootResetDisplay(void) = 0;
 
     virtual void setNativeWindowRect(int x, int y, int w, int h) = 0;
     virtual void setVideoPlayingAxis(void) = 0;

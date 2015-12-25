@@ -23,6 +23,7 @@
 //#define LOG_NDEBUG 0
 
 #include <stdio.h>
+#include <errno.h>
 #include <string.h>
 #include <fcntl.h>
 #include <pthread.h>
@@ -35,10 +36,20 @@
 #include <sys/types.h>
 #include <linux/netlink.h>
 
+#ifndef RECOVERY_MODE
+#include <binder/IBinder.h>
+#include <binder/IServiceManager.h>
+#include <binder/Parcel.h>
+#endif
+
 #include <cutils/properties.h>
 #include "ubootenv.h"
 #include "DisplayMode.h"
 #include "SysTokenizer.h"
+
+#ifndef RECOVERY_MODE
+using namespace android;
+#endif
 
 static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_480I,
@@ -189,26 +200,22 @@ static int uevent_next_event(int fd, char* buffer, int buffer_length)
     return 0;
 }
 
-static bool isMatch(const char* buffer, size_t length, char* switch_state, char* switch_name) {
+static bool isMatch(uevent_data_t* ueventData, const char* matchName) {
     bool matched = false;
     // Consider all zero-delimited fields of the buffer.
-    const char* field = buffer;
-    const char* end = buffer + length + 1;
+    const char* field = ueventData->buf;
+    const char* end = ueventData->buf + ueventData->len + 1;
     do {
-        if (strstr(field, HDMI_UEVENT)) {
-            SYS_LOGI("Matched uevent message with pattern: %s", HDMI_UEVENT);
-            matched = true;
-        }
-        else if (strstr(field, HDMI_POWER_UEVENT)) {
-            SYS_LOGI("Matched uevent message with pattern: %s", HDMI_POWER_UEVENT);
+        if (strstr(field, matchName)) {
+            SYS_LOGI("Matched uevent message with pattern: %s", matchName);
             matched = true;
         }
         //SWITCH_STATE=1, SWITCH_NAME=hdmi
         else if (strstr(field, "SWITCH_STATE=")) {
-            strcpy(switch_state, field + strlen("SWITCH_STATE="));
+            strcpy(ueventData->state, field + strlen("SWITCH_STATE="));
         }
         else if (strstr(field, "SWITCH_NAME=")) {
-            strcpy(switch_name, field + strlen("SWITCH_NAME="));
+            strcpy(ueventData->name, field + strlen("SWITCH_NAME="));
         }
         field += strlen(field) + 1;
     } while (field != end);
@@ -245,9 +252,9 @@ static void* HdmiPlugDetectThread(void* data) {
 #endif
 
     //use uevent instead of usleep, because it's has some delay
-    char buffer[1024] = {0};
-    char switch_name[128] = {0};
-    char switch_state[128] = {0};
+    uevent_data_t u_data;
+
+    memset(&u_data, 0, sizeof(uevent_data_t));
     int fd = uevent_init();
     while (fd >= 0) {
         if (property_get("instaboot.status", status, "completed") &&
@@ -256,32 +263,51 @@ static void* HdmiPlugDetectThread(void* data) {
             continue;
         }
 
-        int length = uevent_next_event(fd, buffer, sizeof(buffer) - 1);
-        if (length <= 0)
+        u_data.len= uevent_next_event(fd, u_data.buf, sizeof(u_data.buf) - 1);
+        if (u_data.len <= 0)
             continue;
 
-        buffer[length] = '\0';
+        u_data.buf[u_data.len] = '\0';
 
     #if 0
         //change@/devices/virtual/switch/hdmi ACTION=change DEVPATH=/devices/virtual/switch/hdmi
         //SUBSYSTEM=switch SWITCH_NAME=hdmi SWITCH_STATE=0 SEQNUM=2791
         char printBuf[1024] = {0};
-        memcpy(printBuf, buffer, length);
-        for (int i = 0; i < length; i++) {
+        memcpy(printBuf, u_data.buf, u_data.len);
+        for (int i = 0; i < u_data.len; i++) {
             if (printBuf[i] == 0x0)
                 printBuf[i] = ' ';
         }
         SYS_LOGI("Received uevent message: %s", printBuf);
     #endif
 
-        if (isMatch(buffer, length, switch_state, switch_name)) {
-            SYS_LOGI("HDMI switch_state: %s switch_name: %s\n", switch_state, switch_name);
-            if (!strcmp(switch_name, "hdmi") ||
+        if (isMatch(&u_data, HDMI_UEVENT)
+            || isMatch(&u_data, HDMI_POWER_UEVENT)) {
+            SYS_LOGI("HDMI switch_state: %s switch_name: %s\n", u_data.state, u_data.name);
+            if (!strcmp(u_data.name, "hdmi") ||
                 //0: hdmi suspend 1:hdmi resume
-                (!strcmp(switch_name, "hdmi_power") && !strcmp(switch_state, "1"))) {
-                pThiz->setMboxDisplay(switch_state, false);
+                (!strcmp(u_data.name, "hdmi_power") && !strcmp(u_data.state, "1"))) {
+                pThiz->setMboxDisplay(u_data.state, false);
             }
         }
+
+
+#ifndef RECOVERY_MODE
+        if (isMatch(&u_data, VIDEO_LAYER1_UEVENT)) {
+            //0: no aml video data, 1: aml video data aviliable
+            if (!strcmp(u_data.name, "video_layer1") && !strcmp(u_data.state, "1")) {
+                SYS_LOGI("Video Layer1 switch_state: %s switch_name: %s\n", u_data.state, u_data.name);
+                sp<IServiceManager> sm = defaultServiceManager();
+                sp<IBinder> sf = sm->getService(String16("SurfaceFlinger"));
+                if (sf != NULL) {
+                    Parcel data;
+                    data.writeInterfaceToken(String16("android.ui.ISurfaceComposer"));
+                    //SYS_LOGI("send message to sf to repaint everything!\n");
+                    sf->transact(1004, data, NULL);
+                }
+            }
+        }
+#endif
     }
 
     return NULL;
@@ -300,7 +326,8 @@ DisplayMode::DisplayMode(const char *path)
     mNativeWinX(0), mNativeWinY(0), mNativeWinW(0), mNativeWinH(0),
     mDisplayWidth(FULL_WIDTH_1080),
     mDisplayHeight(FULL_HEIGHT_1080),
-    mLogLevel(LOG_LEVEL_DEFAULT) {
+    mLogLevel(LOG_LEVEL_DEFAULT),
+    pthreadIdHdcp(0) {
 
     if (NULL == path) {
         pConfigPath = DISPLAY_CFG_FILE;
@@ -318,9 +345,16 @@ DisplayMode::DisplayMode(const char *path)
 DisplayMode::~DisplayMode() {
     mVideoAxisMap.clear();
     delete pSysWrite;
+
+    sem_destroy(&pthreadSem);
 }
 
 void DisplayMode::init() {
+    if (sem_init(&pthreadSem, 0, 0) < 0) {
+        SYS_LOGE("display mode, sem_init failed\n");
+        exit(0);
+    }
+
     parseConfigFile();
 
     SYS_LOGI("display mode init type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s, default UI:%s",
@@ -338,7 +372,22 @@ void DisplayMode::init() {
         }
     }
     else if (DISPLAY_TYPE_TV == mDisplayType) {
-        setTVDisplay();
+        setTVDisplay(true);
+    }
+}
+
+void DisplayMode::reInit() {
+
+    SYS_LOGI("display mode reinit type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s, default UI:%s",
+        mDisplayType, mSocType, mDefaultUI);
+    if (DISPLAY_TYPE_TABLET == mDisplayType) {
+        setTabletDisplay();
+    }
+    else if (DISPLAY_TYPE_MBOX == mDisplayType) {
+        setMboxDisplay(NULL, false);
+    }
+    else if (DISPLAY_TYPE_TV == mDisplayType) {
+        setTVDisplay(false);
     }
 }
 
@@ -620,8 +669,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE2, "null");
     }
     else {
-        if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS) ||
-            !strcmp(outputmode, MODE_480P) || !strcmp(outputmode, MODE_576P))
+        if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS))
             cvbsMode = true;
 
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
@@ -638,8 +686,10 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
     //setVideoAxis(preMode, outputmode);
     setVideoPlayingAxis();
 
+    SYS_LOGI("setMboxOutputMode cvbsMode = %d\n", cvbsMode);
     //only HDMI mode need HDCP authenticate
     if (!cvbsMode) {
+        /*
         bool hdcp22 = false;
         bool hdcp14 = false;
         if (hdcpInit(&hdcp22, &hdcp14)) {
@@ -647,7 +697,14 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
             pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
 
             hdcpAuthenticate(hdcp22, hdcp14);
+        }*/
+
+        if (0 != pthreadIdHdcp) {
+            hdcpThreadExit(pthreadIdHdcp);
+            pthreadIdHdcp = 0;
         }
+
+        hdcpThreadStart();
     }
 
     if (initState) {
@@ -925,11 +982,10 @@ void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
         if (isBestOutputmode()) {
             getBestHdmiMode(mode, data);
         } else {
-            //filterHdmiMode(mode, data);
             if (!edidChange && strlen(data->ubootenv_hdmimode) > 0) {
                 strcpy(mode, data->ubootenv_hdmimode);
             } else {
-                getBestHdmiMode(mode, data);
+                filterHdmiMode(mode, data);
             }
         }
     }
@@ -1005,12 +1061,7 @@ void* DisplayMode::bootanimDetect(void* data) {
     //need close fb1, because uboot logo show in fb1
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
     pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
-
-    if (DISPLAY_TYPE_TV == pThiz->mDisplayType && !strncmp(outputmode, "1080", 4)) {
-        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
-    } else {
-        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-    }
+    pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
 
     pThiz->pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
     SYS_LOGI("boot animation detect boot video:%s\n", bootvideo);
@@ -1064,7 +1115,8 @@ void* DisplayMode::tmpDisableOsd(void* data){
     return NULL;
 }
 
-void DisplayMode::setTVOutputMode(const char* outputmode) {
+//this function only running in bootup time
+void DisplayMode::setTVOutputMode(const char* outputmode, bool initState) {
     int outputx = 0;
     int outputy = 0;
     int outputwidth = 0;
@@ -1088,18 +1140,15 @@ void DisplayMode::setTVOutputMode(const char* outputmode) {
             outputx, outputy, outputx + outputwidth - 1, outputy + outputheight -1);
     pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
 
-    if (outputwidth == FULL_WIDTH_4K2K) {
-        pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_MODE, "1");
-        pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-        //setOsdMouse(outputmode);
-    } else {
-        pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
-    }
-
+    if (initState)
     startBootanimDetectThread();
+    else {
+        pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
+        setOsdMouse(outputmode);
+    }
 }
 
-void DisplayMode::setTVDisplay() {
+void DisplayMode::setTVDisplay(bool initState) {
     char current_mode[MODE_LEN] = {0};
     char outputmode[MODE_LEN] = {0};
 
@@ -1130,15 +1179,13 @@ void DisplayMode::setTVDisplay() {
         pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
     }
     if (strcmp(current_mode, outputmode)) {
-        char bootvideo[MODE_LEN] = {0};
-        char state_bootanim[MODE_LEN] = {"sleep"};
-        pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
-        pSysWrite->getPropertyString(PROP_BOOTANIM, state_bootanim, "sleep");
-        if (!(!strcmp(bootvideo, "1") && !strcmp(state_bootanim, "running")))
-            startDisableOsdThread();
+        //when change mode, need close uboot logo to avoid logo scaling wrong
+        pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
+        pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
+        pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
     }
 
-    setTVOutputMode(outputmode);
+    setTVOutputMode(outputmode, initState);
 }
 
 void DisplayMode::setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set) {
@@ -1423,7 +1470,7 @@ int DisplayMode::modeToIndex(const char *mode) {
     return index;
 }
 
-bool DisplayMode::hdcpInit(bool *pHdcp22, bool *pHdcp14) {
+bool DisplayMode::hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
     bool useHdcp22 = false;
     bool useHdcp14 = false;
 #ifdef HDCP_AUTHENTICATION
@@ -1469,12 +1516,13 @@ bool DisplayMode::hdcpInit(bool *pHdcp22, bool *pHdcp14) {
         return false;
     }
 #endif
+    pSysWrite = pSysWrite;
     *pHdcp22 = useHdcp22;
     *pHdcp14 = useHdcp14;
     return true;
 }
 
-void DisplayMode::hdcpAuthenticate(bool useHdcp22, bool useHdcp14) {
+void DisplayMode::hdcpAuthenticate(SysWrite *pSysWrite, bool useHdcp22, bool useHdcp14) {
 #ifdef HDCP_AUTHENTICATION
 
 #if 0
@@ -1555,9 +1603,75 @@ void DisplayMode::hdcpAuthenticate(bool useHdcp22, bool useHdcp14) {
     }
     SYS_LOGI("authenticate finish\n");
 #else
+    pSysWrite = pSysWrite;
     useHdcp22 = useHdcp22;
     useHdcp14 = useHdcp14;
 #endif
+}
+
+void* DisplayMode::hdcpThreadLoop(void* data) {
+    bool hdcp22 = false;
+    bool hdcp14 = false;
+    DisplayMode *pThiz = (DisplayMode*)data;
+    SysWrite *sysWrite = pThiz->pSysWrite;
+
+    SYS_LOGI("HDCP thread loop entry\n");
+    sem_post(&pThiz->pthreadSem);
+    if (hdcpInit(sysWrite, &hdcp22, &hdcp14)) {
+        //first close osd, after HDCP authenticate completely, then open osd
+        sysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
+
+        hdcpAuthenticate(sysWrite, hdcp22, hdcp14);
+
+        sysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
+        sysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+    }
+    return NULL;
+}
+
+int DisplayMode::hdcpThreadStart() {
+    int ret;
+    pthread_t thread_id;
+
+    SYS_LOGI("HDCP thread start\n");
+    if (pthread_mutex_lock(&pthreadMutex) == EDEADLK) {
+        SYS_LOGE("display mode create hdcp thread, Mutex is deadlock\n");
+        return -1;
+    }
+
+    ret = pthread_create(&thread_id, NULL, hdcpThreadLoop, this);
+    if (ret != 0) SYS_LOGE("display mode, thread create failed\n");
+
+    ret = sem_wait(&pthreadSem);
+    if (ret < 0) SYS_LOGE("display mode, sem_wait failed\n");
+
+    pthreadIdHdcp = thread_id;
+    pthread_mutex_unlock(&pthreadMutex);
+    SYS_LOGI("display mode, create hdcp thread thread id = %lu\n", thread_id);
+    return 1;
+}
+
+int DisplayMode::hdcpThreadExit(pthread_t thread_id) {
+    void *threadResult;
+    int ret = 1;
+
+    SYS_LOGI("HDCP thread exit pthread_exit id = %lu\n", thread_id);
+    if (0 != thread_id) {
+        if (pthread_mutex_lock(&pthreadMutex) == EDEADLK) {
+            SYS_LOGE("display mode exit hdcp thread, Mutex is deadlock\n");
+            return -1;
+        }
+
+        if (0 != pthread_join(thread_id, &threadResult)) {
+            SYS_LOGE("display mode exit failed\n");
+            ret = 0;
+        }
+
+        pthread_mutex_unlock(&pthreadMutex);
+        SYS_LOGI("display mode, pthread_exit id = %lu, %s\n", thread_id, (char *)threadResult);
+    }
+
+    return ret;
 }
 
 void DisplayMode::hdcpSwitch() {

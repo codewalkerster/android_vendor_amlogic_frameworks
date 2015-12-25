@@ -69,6 +69,7 @@ public:
     virtual void setPosition(int left, int top, int width, int height);
     virtual void getPosition(const String16& mode, int &x, int &y, int &w, int &h);
     virtual void reInit();
+    virtual void instabootResetDisplay(void);
     virtual void setNativeWindowRect(int x, int y, int w, int h);
     virtual void setVideoPlayingAxis();
 
