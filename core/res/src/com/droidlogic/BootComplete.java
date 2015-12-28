@@ -9,6 +9,7 @@ import android.util.Log;
 
 import com.droidlogic.app.PlayBackManager;
 import com.droidlogic.app.UsbCameraManager;
+import com.droidlogic.HdmiCecExtend;
 
 public class BootComplete extends BroadcastReceiver {
     private static final String TAG             = "BootComplete";
@@ -38,14 +39,8 @@ public class BootComplete extends BroadcastReceiver {
 
             new PlayBackManager(context).initHdmiSelfadaption();
 
-            cecLanguageCheck(context);
+            new HdmiCecExtend(context);
         }
-    }
-
-    public void cecLanguageCheck(Context context){
-        Intent serviceIntent = new Intent(context, CecService.class);
-        serviceIntent.setAction("CEC_LANGUAGE_AUTO_SWITCH");
-        context.startService(serviceIntent);
     }
 }
 
