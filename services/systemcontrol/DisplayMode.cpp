@@ -642,7 +642,11 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
 
     if (!initState) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
-        usleep(30000);//30ms
+        usleep(50000);//50ms
+        pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, "-1");
+        usleep(100000);//100ms
+        pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); /* Turn off TMDS PHY */
+        usleep(50000);//50ms
     }
 
     memset(preMode, 0, sizeof(preMode));
@@ -687,24 +691,17 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
     setVideoPlayingAxis();
 
     SYS_LOGI("setMboxOutputMode cvbsMode = %d\n", cvbsMode);
+    if (0 != pthreadIdHdcp) {
+        hdcpThreadExit(pthreadIdHdcp);
+        pthreadIdHdcp = 0;
+    }
     //only HDMI mode need HDCP authenticate
     if (!cvbsMode) {
-        /*
-        bool hdcp22 = false;
-        bool hdcp14 = false;
-        if (hdcpInit(&hdcp22, &hdcp14)) {
-            //first close osd, after HDCP authenticate completely, then open osd
-            pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
-
-            hdcpAuthenticate(hdcp22, hdcp14);
-        }*/
-
-        if (0 != pthreadIdHdcp) {
-            hdcpThreadExit(pthreadIdHdcp);
-            pthreadIdHdcp = 0;
-        }
-
         hdcpThreadStart();
+    }
+    else {
+        SYS_LOGI("CVBS mode need stop hdcp_tx22 daemon\n");
+        pSysWrite->setProperty("ctl.stop", "hdcp_tx22");
     }
 
     if (initState) {
@@ -1504,7 +1501,7 @@ bool DisplayMode::hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
     }
 
     if (!useHdcp22 && (_strstr(hdcpRxVer, (char *)"14") != NULL) &&
-        ((_strstr(hdcpTxKey, (char *)"22") != NULL) || (_strstr(hdcpTxKey, (char *)"14") != NULL))) {
+        (_strstr(hdcpTxKey, (char *)"14") != NULL)) {
         useHdcp14 = true;
         SYS_LOGI("HDCP 1.4\n");
         pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, DISPLAY_HDMI_HDCP_14);
@@ -1522,7 +1519,7 @@ bool DisplayMode::hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
     return true;
 }
 
-void DisplayMode::hdcpAuthenticate(SysWrite *pSysWrite, bool useHdcp22, bool useHdcp14) {
+void DisplayMode::hdcpAuthenticate(DisplayMode *disMode, SysWrite *pSysWrite, bool useHdcp22, bool useHdcp14) {
 #ifdef HDCP_AUTHENTICATION
 
 #if 0
@@ -1573,8 +1570,8 @@ void DisplayMode::hdcpAuthenticate(SysWrite *pSysWrite, bool useHdcp22, bool use
 
     SYS_LOGI("begin to authenticate\n");
     int count = 0;
-    while (true) {
-        usleep(500*1000);//sleep 500ms
+    while (!disMode->mExitHdcpThread) {
+        usleep(200*1000);//sleep 200ms
 
         char auth[MODE_LEN] = {0};
         pSysWrite->readSysfs(DISPLAY_HDMI_HDCP_AUTH, auth);
@@ -1582,7 +1579,7 @@ void DisplayMode::hdcpAuthenticate(SysWrite *pSysWrite, bool useHdcp22, bool use
             break;
 
         count++;
-        if (count > 10) { //max 5s it will authenticate completely
+        if (count > 25) { //max 200msx25 = 5s it will authenticate completely
             if (useHdcp22) {
                 SYS_LOGE("HDCP22 authenticate fail, 5s timeout\n");
 
@@ -1603,6 +1600,7 @@ void DisplayMode::hdcpAuthenticate(SysWrite *pSysWrite, bool useHdcp22, bool use
     }
     SYS_LOGI("authenticate finish\n");
 #else
+    disMode = disMode;
     pSysWrite = pSysWrite;
     useHdcp22 = useHdcp22;
     useHdcp14 = useHdcp14;
@@ -1621,7 +1619,7 @@ void* DisplayMode::hdcpThreadLoop(void* data) {
         //first close osd, after HDCP authenticate completely, then open osd
         sysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
 
-        hdcpAuthenticate(sysWrite, hdcp22, hdcp14);
+        hdcpAuthenticate(pThiz, sysWrite, hdcp22, hdcp14);
 
         sysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
         sysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
@@ -1639,6 +1637,7 @@ int DisplayMode::hdcpThreadStart() {
         return -1;
     }
 
+    mExitHdcpThread = false;
     ret = pthread_create(&thread_id, NULL, hdcpThreadLoop, this);
     if (ret != 0) SYS_LOGE("display mode, thread create failed\n");
 
@@ -1656,6 +1655,8 @@ int DisplayMode::hdcpThreadExit(pthread_t thread_id) {
     int ret = 1;
 
     SYS_LOGI("HDCP thread exit pthread_exit id = %lu\n", thread_id);
+
+    mExitHdcpThread = true;
     if (0 != thread_id) {
         if (pthread_mutex_lock(&pthreadMutex) == EDEADLK) {
             SYS_LOGE("display mode exit hdcp thread, Mutex is deadlock\n");
@@ -1668,7 +1669,7 @@ int DisplayMode::hdcpThreadExit(pthread_t thread_id) {
         }
 
         pthread_mutex_unlock(&pthreadMutex);
-        SYS_LOGI("display mode, pthread_exit id = %lu, %s\n", thread_id, (char *)threadResult);
+        SYS_LOGI("display mode, pthread_exit id = %lu, %s\n done", thread_id, (char *)threadResult);
     }
 
     return ret;

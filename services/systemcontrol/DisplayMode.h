@@ -78,6 +78,7 @@
 #define DISPLAY_HDMI_EDID               "/sys/class/amhdmitx/amhdmitx0/disp_cap"//RX support display mode
 #define DISPLAY_HDMI_AVMUTE             "/sys/devices/virtual/amhdmitx/amhdmitx0/avmute"
 #define DISPLAY_EDID_VALUE              "/sys/class/amhdmitx/amhdmitx0/edid"
+#define DISPLAY_HDMI_PHY                "/sys/class/amhdmitx/amhdmitx0/phy"
 
 #define AUDIO_DSP_DIGITAL_RAW           "/sys/class/audiodsp/digital_raw"
 
@@ -308,7 +309,7 @@ private:
 
     int getBootenvInt(const char* key, int defaultVal);
     static bool hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14);
-    static void hdcpAuthenticate(SysWrite *pSysWrite, bool useHdcp22, bool useHdcp14);
+    static void hdcpAuthenticate(DisplayMode *disMode, SysWrite *pSysWrite, bool useHdcp22, bool useHdcp14);
     static void* hdcpThreadLoop(void* data);
     int hdcpThreadStart();
     int hdcpThreadExit(pthread_t thread_id);
@@ -343,6 +344,7 @@ private:
     pthread_mutex_t pthreadMutex;
     sem_t pthreadSem;
     pthread_t pthreadIdHdcp;
+    bool mExitHdcpThread;
 };
 
 #endif // ANDROID_DISPLAY_MODE_H
