@@ -25,6 +25,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <sys/socket.h>
 #include <sys/select.h>
@@ -49,9 +50,9 @@
 #include "log.h"
 #include "md5.h"
 
+#include "DigCommandListener.h"
 #include "DigManager.h"
 #include "make_ext4fs.h"
-#include "ResponseCode.h"
 #include "fs_mgr.h"
 
 DigManager *DigManager::sInstance = NULL;
@@ -66,8 +67,12 @@ DigManager::DigManager(): mBootCompleted(false),
 	mSupportSysBak(false),
 	mDataRoCountMax(0),
 	mCheckInterval(INTERVAL_IN_BOOT),
-	mCheckSystemCount(CHECK_SYSTEM_COUNT) {
+	mCheckSystemCount(CHECK_SYSTEM_COUNT),
+	mConnected(false) {
     mBroadcaster = NULL;
+#ifndef DIG_TEST
+    mBroadcaster = new DigCommandListener();
+#endif
 }
 
 DigManager::~DigManager() {
@@ -87,7 +92,7 @@ void* DigManager::workThread() {
                 mCheckInterval = INTERVAL_AFTER_BOOT;
                 setDataRoCount(0);
 
-                if (isInitMountDataFail() == 1) {
+                if (isInitMountDataFail()) {
                     handleInitMountDataFail();
                 }
             }
@@ -126,9 +131,89 @@ void* DigManager::workThread() {
     return NULL;
 }
 
+bool DigManager::waitForConnected() {
+    int count = 0;
+    const int maxCount = 50;
+
+    while (1) {
+        if (isConnected()) {
+            ERROR("wait for connected %dms\n",
+                count * 100);
+            return true;
+        } else {
+            if (count >= maxCount) {// 5s enough
+                ERROR("wait for %dms %s\n",
+                    count * 100, isConnected() ?
+                    "has connected" : "still hasn't connected");
+                return isConnected();
+            }
+        }
+        usleep(100000);
+        count ++;
+    }
+
+    return false;
+}
+
+void DigManager::sendBroadcast(
+    int code, const char *msg, bool addErrno) {
+    if (mBroadcaster && isConnected()) {
+        mBroadcaster->sendBroadcast(code, msg, addErrno);
+        return;
+    }
+
+    if (mBroadcaster && waitForConnected()) {
+        mBroadcaster->sendBroadcast(code, msg, addErrno);
+    } else {
+        ERROR("start activity by /system/bin/am\n");
+        if (!mBootCompleted) {
+            ERROR("but system has't boot completed,can't start activity!\n");
+            return;
+        }
+
+        switch (code) {
+            case DIG_REPORT_DATA_READ_ONLY:
+                system("/system/bin/am start -n com.droidlogic.dig/.activity.RebootActivity");
+                break;
+
+            case DIG_REPORT_DATA_CRASH:
+                system("/system/bin/am start -n com.droidlogic.dig/.activity.WipeActivity");
+                break;
+
+            case DIG_REPORT_SYSTEM_CHANGED:
+                if (msg && (strlen(msg) > strlen("system crash "))) {
+                    char *error_file_path = (char *)(msg + strlen("system crash"));
+                    char cmd[512] = {0};
+                    sprintf(cmd, "/system/bin/am start -n com.droidlogic.dig/.activity.RestoreSystemActivity -e error_file_path %s",
+                        error_file_path);
+                    system(cmd);
+                } else {
+                    system("/system/bin/am start -n com.droidlogic.dig/.activity.RestoreSystemActivity");
+                }
+                break;
+        }
+    }
+}
+
+void DigManager::startListener() {
+    mBroadcaster->startListener();
+}
+
+void DigManager::StartDig() {
+    if (!Instance()) {
+        ERROR("Unable to create DigManager\n");
+        return;
+    }
+    sInstance->start();
+}
+
 int DigManager::start() {
 
     ERROR("dig start!\n");
+
+#ifndef DIG_TEST
+    startListener();
+#endif
 
     struct selinux_opt seopts[] = {
        { SELABEL_OPT_PATH, "/file_contexts" }
@@ -151,7 +236,6 @@ int DigManager::start() {
 int DigManager::stop() {
     return 0;
 }
-
 
 int DigManager::isFileExist(const char* path) {
     return (access(path, F_OK) == 0);
@@ -213,24 +297,21 @@ void DigManager::HanldeSysChksumError(char* error_file_path) {
         ERROR("HanldeSysChksumError start notify activity,RestoreSystemActivity\n");
 #ifdef DIG_TEST
         char* cmd = NULL;
-        asprintf(&cmd, "/system/bin/am start -n com.droidlogic.promptuser/com.droidlogic.promptuser.RestoreSystemActivity -e error_file_path %s", error_file_path);
+        asprintf(&cmd, "/system/bin/am start -n com.droidlogic.dig/.activity.RestoreSystemActivity -e error_file_path %s", error_file_path);
         if (cmd != NULL) {
             system(cmd);
             free(cmd);
         } else {
-            system("/system/bin/am start -n com.droidlogic.promptuser/com.droidlogic.promptuser.RestoreSystemActivity");
+            system("/system/bin/am start -n com.droidlogic.dig/.activity.RestoreSystemActivity");
         }
 #else
-        if (mBroadcaster != NULL) {
-            char msg[256] = {0};
-            if (error_file_path != NULL) {
-                snprintf(msg, sizeof(msg), "system crash %s", error_file_path);
-            } else {
-                snprintf(msg, sizeof(msg), "system crash");
-            }
-            mBroadcaster->sendBroadcast(ResponseCode::DigReport_SystemChanged,
-                    msg, false);
+        char msg[256] = {0};
+        if (error_file_path != NULL) {
+            snprintf(msg, sizeof(msg), "system crash %s", error_file_path);
+        } else {
+            snprintf(msg, sizeof(msg), "system crash");
         }
+        sendBroadcast(DIG_REPORT_SYSTEM_CHANGED, msg, false);
 #endif
     }
 }
@@ -318,14 +399,11 @@ void DigManager::handleDataRo() {
         //start notify activity,RebootActivity
         ERROR("handleDataRo start notify activity,RebootActivity\n");
 #ifdef DIG_TEST
-        system("/system/bin/am start -n com.droidlogic.promptuser/com.droidlogic.promptuser.RebootActivity");
+        system("/system/bin/am start -n com.droidlogic.dig/.activity.RebootActivity");
 #else
-        if (mBroadcaster != NULL) {
-            char msg[256];
-            snprintf(msg, sizeof(msg), "data mount ro");
-            mBroadcaster->sendBroadcast(ResponseCode::DigReport_DataReadOnly,
-                    msg, false);
-        }
+        char msg[256] = {0};
+        snprintf(msg, sizeof(msg), "data mount ro");
+        sendBroadcast(DIG_REPORT_DATA_READ_ONLY, msg, false);
 #endif
     }
 }
@@ -548,17 +626,14 @@ int DigManager::checkSystemPartition(char* error_file_path) {
 }
 
 void DigManager::handleInitMountDataFail() {
-    ERROR("handle init mount data fail, start notify activity,WipeConfirmActivity\n");
+    ERROR("handle init mount data fail, start notify activity,WipeActivity\n");
 
 #ifdef DIG_TEST
-    system("/system/bin/am start -n com.droidlogic.promptuser/com.droidlogic.promptuser.WipeConfirmActivity");
+    system("/system/bin/am start -n com.droidlogic.dig/.activity.WipeActivity");
 #else
-    if (mBroadcaster != NULL) {
-        char msg[256] = {0};
-        snprintf(msg, sizeof(msg), "data mount fail");
-        mBroadcaster->sendBroadcast(ResponseCode::DigReport_DataCrash,
-                    msg, false);
-    }
+    char msg[256] = {0};
+    snprintf(msg, sizeof(msg), "data mount fail");
+    sendBroadcast(DIG_REPORT_DATA_CRASH, msg, false);
 #endif
 }
 

@@ -36,7 +36,8 @@ include $(BUILD_EXECUTABLE)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES:= \
-	DigManager.cpp
+	DigManager.cpp \
+	DigCommandListener.cpp
 
 LOCAL_CFLAGS += -DUSE_KERNEL_LOG
 
@@ -44,7 +45,8 @@ LOCAL_MODULE:= libdig
 
 LOCAL_C_INCLUDES += system/extras/ext4_utils \
                     system/vold \
-                    system/core/fs_mgr/include
+                    system/core/fs_mgr/include \
+                    system/core/include/sysutils
 
 LOCAL_SHARED_LIBRARIES := libcutils libc\
         libcrypto \
@@ -52,7 +54,8 @@ LOCAL_SHARED_LIBRARIES := libcutils libc\
         libsparse \
         libz\
         libselinux \
-        libsysutils
+        libsysutils \
+        libbase
 
 LOCAL_STATIC_LIBRARIES:= libvold \
         libfs_mgr \
