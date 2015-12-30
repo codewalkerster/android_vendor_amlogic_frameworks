@@ -270,7 +270,6 @@ public:
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
     static void* bootanimDetect(void *data);
-    static void* tmpDisableOsd(void *data);
 
     void setMboxDisplay(char* hpdstate, bool initState);
 
@@ -296,16 +295,8 @@ private:
     int modeToIndex(const char *mode);
     void startHdmiPlugDetectThread();
     void startBootanimDetectThread();
-    void startDisableOsdThread();
     void setTVDisplay(bool initState);
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
-    void setVideoAxis(const char *preMode, const char *mode);
-    void calcVideoAxis(const axis_t *prePosition, const axis_t *position,
-            const axis_t *axis, axis_t *videoAxis);
-    bool axisValid(const axis_t *axis);
-    bool axisEqual(int value1, int value2);
-    bool checkAxisSame(const axis_t *axis1, const axis_t *axis2);
-    void axisStr(const axis_t *axis, char *str);
 
     int getBootenvInt(const char* key, int defaultVal);
     static bool hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14);
@@ -313,8 +304,6 @@ private:
     static void* hdcpThreadLoop(void* data);
     int hdcpThreadStart();
     int hdcpThreadExit(pthread_t thread_id);
-
-    std::map<std::string, axis_t> mVideoAxisMap;
 
     const char* pConfigPath;
     int mDisplayType;
