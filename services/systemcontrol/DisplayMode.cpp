@@ -1372,7 +1372,7 @@ int DisplayMode::hdcpThreadStart() {
     pthread_t thread_id;
 
     SYS_LOGI("HDCP thread start\n");
-    if (pthread_mutex_lock(&pthreadMutex) == EDEADLK) {
+    if (pthread_mutex_trylock(&pthreadMutex) == EDEADLK) {
         SYS_LOGE("display mode create hdcp thread, Mutex is deadlock\n");
         return -1;
     }
@@ -1398,7 +1398,7 @@ int DisplayMode::hdcpThreadExit(pthread_t thread_id) {
 
     mExitHdcpThread = true;
     if (0 != thread_id) {
-        if (pthread_mutex_lock(&pthreadMutex) == EDEADLK) {
+        if (pthread_mutex_trylock(&pthreadMutex) == EDEADLK) {
             SYS_LOGE("display mode exit hdcp thread, Mutex is deadlock\n");
             return -1;
         }
