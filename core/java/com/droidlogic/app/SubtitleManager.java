@@ -91,6 +91,8 @@ public class SubtitleManager {
                 return;
             }
 
+            mPath = uri.getPath();
+
             String scheme = uri.getScheme();
             if (scheme == null || scheme.equals ("file") ) {
                 mPath = uri.getPath();
@@ -105,8 +107,6 @@ public class SubtitleManager {
                     MediaStore.Video.Media._ID,
                     MediaStore.Video.Media.DATA
                 };
-
-                mPath = null;
 
                 if (scheme.equals ("content") ) {
                     int idx_check = (uri.toString() ).indexOf ("media/external/video/media");
