@@ -267,7 +267,7 @@ static void* HdmiPlugDetectThread(void* data) {
             if (!strcmp(u_data.name, "hdmi") ||
                 //0: hdmi suspend 1:hdmi resume
                 (!strcmp(u_data.name, "hdmi_power") && !strcmp(u_data.state, "1"))) {
-                pThiz->setMboxDisplay(u_data.state, false);
+                pThiz->setMboxDisplay(u_data.state, OUPUT_MODE_STATE_POWER);
             }
         }
 
@@ -341,7 +341,7 @@ void DisplayMode::init() {
         setTabletDisplay();
     }
     else if (DISPLAY_TYPE_MBOX == mDisplayType) {
-        setMboxDisplay(NULL, true);
+        setMboxDisplay(NULL, OUPUT_MODE_STATE_INIT);
 
         pthread_t id;
         int ret = pthread_create(&id, NULL, HdmiPlugDetectThread, this);
@@ -361,7 +361,7 @@ void DisplayMode::reInit() {
         setTabletDisplay();
     }
     else if (DISPLAY_TYPE_MBOX == mDisplayType) {
-        setMboxDisplay(NULL, false);
+            setMboxDisplay(NULL, OUPUT_MODE_STATE_POWER);
     }
     else if (DISPLAY_TYPE_TV == mDisplayType) {
         setTVDisplay(false);
@@ -516,7 +516,7 @@ void DisplayMode::setTabletDisplay() {
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
 }
 
-void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
+void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
     hdmi_data_t data;
     char outputmode[MODE_LEN] = {0};
     memset(&data, 0, sizeof(hdmi_data_t));
@@ -525,7 +525,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
         if (!strcmp(data.hpd_state, "1")) {
             if ((!strcmp(data.current_mode, MODE_480CVBS) || !strcmp(data.current_mode, MODE_576CVBS))
-                    && initState) {
+                    && (OUPUT_MODE_STATE_INIT == state)) {
                 pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
                 pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
             }
@@ -557,7 +557,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
     if (strlen(outputmode) == 0)
         strcpy(outputmode, mDefaultUI);
 
-    if (initState) {
+    if (OUPUT_MODE_STATE_INIT == state) {
         if (!strncmp(mDefaultUI, "720", 3)) {
             mDisplayWidth= FULL_WIDTH_720;
             mDisplayHeight = FULL_HEIGHT_720;
@@ -581,21 +581,21 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
 
     //output mode not the same
     if (strcmp(data.current_mode, outputmode)) {
-        if (initState) {
+        if (OUPUT_MODE_STATE_INIT == state) {
             //when change mode, need close uboot logo to avoid logo scaling wrong
             pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
             pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
             pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
         }
     }
-    setMboxOutputMode(outputmode, initState);
+    setMboxOutputMode(outputmode, state);
 }
 
 void DisplayMode::setMboxOutputMode(const char* outputmode){
-    setMboxOutputMode(outputmode, false);
+    setMboxOutputMode(outputmode, OUPUT_MODE_STATE_SWITCH);
 }
 
-void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
+void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state state) {
     char value[MAX_STR_LEN] = {0};
     char preMode[MODE_LEN] = {0};
     int outputx = 0;
@@ -605,13 +605,15 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
     int position[4] = { 0, 0, 0, 0 };
     bool cvbsMode = false;
 
-    if (!initState) {
+    if (OUPUT_MODE_STATE_INIT != state) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
-        usleep(50000);//50ms
-        pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, "-1");
-        usleep(100000);//100ms
-        pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); /* Turn off TMDS PHY */
-        usleep(50000);//50ms
+        if (OUPUT_MODE_STATE_POWER != state) {
+            usleep(50000);//50ms
+            pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, "-1");
+            usleep(100000);//100ms
+            pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); /* Turn off TMDS PHY */
+            usleep(50000);//50ms
+        }
     }
 
     memset(preMode, 0, sizeof(preMode));
@@ -668,7 +670,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
         pSysWrite->setProperty("ctl.stop", "hdcp_tx22");
     }
 
-    if (initState) {
+    if (OUPUT_MODE_STATE_INIT == state) {
         startBootanimDetectThread();
     } else {
         pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
@@ -690,7 +692,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, bool initState) {
     }
     pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, audiovalue);
 
-    if (!initState) {
+    if (OUPUT_MODE_STATE_INIT != state) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
     }
 
