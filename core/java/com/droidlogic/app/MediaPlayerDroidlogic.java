@@ -174,13 +174,10 @@ public class MediaPlayerDroidlogic extends MediaPlayer {
                 data.writeInt(key);
                 mIBinder.transact(GET_PARAMETER, data, reply, 0);
                 data.recycle();
-                return;
             }
         } catch (RemoteException ex) {
             Log.e(TAG, "getParameter:" + ex);
         }
-
-        return;
     }
 
     public Parcel getParcelParameter(int key) {
