@@ -47,6 +47,8 @@
 #define DISPLAY_FB1                     "/dev/graphics/fb1"
 #define SYSFS_DISPLAY_MODE              "/sys/class/display/mode"
 #define SYSFS_DISPLAY_MODE2             "/sys/class/display2/mode"
+//when close freescale, will enable display axis, cut framebuffer output
+//when open freescale, will enable window axis, scale framebuffer output
 #define SYSFS_DISPLAY_AXIS              "/sys/class/display/axis"
 #define SYSFS_VIDEO_AXIS                "/sys/class/video/axis"
 #define SYSFS_VIDEO_LAYER_STATE         "/sys/class/video/video_layer1_state"

@@ -1321,9 +1321,9 @@ void DisplayMode::hdcpAuthenticate(DisplayMode *disMode, SysWrite *pSysWrite, bo
             break;
 
         count++;
-        if (count > 25) { //max 200msx25 = 5s it will authenticate completely
+        if (count > 40) { //max 200msx40 = 8s it will authenticate completely
             if (useHdcp22) {
-                SYS_LOGE("HDCP22 authenticate fail, 5s timeout\n");
+                SYS_LOGE("HDCP22 authenticate fail, 8s timeout\n");
 
                 count = 0;
                 useHdcp22 = false;
@@ -1333,7 +1333,7 @@ void DisplayMode::hdcpAuthenticate(DisplayMode *disMode, SysWrite *pSysWrite, bo
                 continue;
             }
             else if (useHdcp14) {
-                SYS_LOGE("HDCP14 authenticate fail, 5s timeout\n");
+                SYS_LOGE("HDCP14 authenticate fail, 8s timeout\n");
 
                 pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_CONF, DISPLAY_HDMI_HDCP_STOP);
             }
