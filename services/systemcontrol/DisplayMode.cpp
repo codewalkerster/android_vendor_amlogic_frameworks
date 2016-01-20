@@ -741,6 +741,35 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
     setMboxOutputMode(outputmode, initState);
 }
 
+void DisplayMode::setOverscan(const char* curMode) {
+	SYS_LOGI("%s", __func__);
+	overscan_data_t data;
+	memset(&data, 0, sizeof(overscan_data_t));
+	getBootEnv(UBOOTENV_OVERSCAN_LEFT, data.left);
+	getBootEnv(UBOOTENV_OVERSCAN_TOP, data.top);
+	getBootEnv(UBOOTENV_OVERSCAN_RIGHT, data.right);
+	getBootEnv(UBOOTENV_OVERSCAN_BOTTOM, data.bottom);
+
+	if (strlen(data.left) == 0 || strlen(data.top) == 0 || strlen(data.right) == 0
+			|| strlen(data.bottom) == 0) {
+		SYS_LOGI("overscan values is N/A");
+		return;
+	}
+
+	int position[4] = { 0, 0, 0, 0 };
+	getPosition(curMode, position);
+
+	char overscan[32] = {0};
+	sprintf(overscan, "%d %d %d %d", position[0] + atoi(data.left), position[1] + atoi(data.top),
+			position[2] - 1 - atoi(data.right), position[3] - 1 - atoi(data.bottom));
+
+	SYS_LOGI("overscan value : %s\n", overscan);
+
+	pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, overscan);
+	pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+	return;
+}
+
 void DisplayMode::setMboxOutputMode(const char* outputmode){
     setMboxOutputMode(outputmode, false);
 }
@@ -1179,6 +1208,7 @@ void* DisplayMode::bootanimDetect(void* data) {
     }
 
     pThiz->setOsdMouse(outputmode);
+    pThiz->setOverscan(outputmode);
     return NULL;
 }
 
@@ -1342,7 +1372,18 @@ void DisplayMode::setOsdMouse(const char* curMode) {
 
     int position[4] = { 0, 0, 0, 0 };
     getPosition(curMode, position);
-    setOsdMouse(position[0], position[1], position[2], position[3]);
+
+    overscan_data_t data;
+    memset(&data, 0, sizeof(overscan_data_t));
+    getBootEnv(UBOOTENV_OVERSCAN_LEFT, data.left);
+    getBootEnv(UBOOTENV_OVERSCAN_TOP, data.top);
+    getBootEnv(UBOOTENV_OVERSCAN_RIGHT, data.right);
+    getBootEnv(UBOOTENV_OVERSCAN_BOTTOM, data.bottom);
+
+    setOsdMouse(position[0] + atoi(data.left),
+            position[1] + atoi(data.top),
+            position[2] - atoi(data.right) - atoi(data.left),
+            position[3] - atoi(data.bottom) - atoi(data.top));
 }
 
 void DisplayMode::setOsdMouse(int x, int y, int w, int h) {

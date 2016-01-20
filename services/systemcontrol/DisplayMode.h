@@ -167,6 +167,10 @@
 #define UBOOTENV_OUTPUTMODE             "ubootenv.var.outputmode"
 #define UBOOTENV_ISBESTMODE             "ubootenv.var.is.bestmode"
 #define UBOOTENV_EDIDCRCVALUE           "ubootenv.var.edid.crcvalue"
+#define UBOOTENV_OVERSCAN_LEFT          "ubootenv.var.overscan_left"
+#define UBOOTENV_OVERSCAN_TOP           "ubootenv.var.overscan_top"
+#define UBOOTENV_OVERSCAN_RIGHT         "ubootenv.var.overscan_right"
+#define UBOOTENV_OVERSCAN_BOTTOM        "ubootenv.var.overscan_bottom"
 
 #define FULL_WIDTH_480                  720
 #define FULL_HEIGHT_480                 480
@@ -268,6 +272,13 @@ typedef struct hdmi_data {
     char ubootenv_hdmimode[MODE_LEN];
 }hdmi_data_t;
 
+typedef struct overscan_data {
+    char left[5];
+    char top[5];
+    char right[5];
+    char bottom[5];
+}overscan_data_t;
+
 typedef struct axis_s {
     int x;
     int y;
@@ -294,6 +305,7 @@ public:
     void setMboxOutputMode(const char* outputmode);
     void setOsdMouse(const char* curMode);
     void setOsdMouse(int x, int y, int w, int h);
+    void setOverscan(const char* curMode);
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
     static void* bootanimDetect(void *data);
