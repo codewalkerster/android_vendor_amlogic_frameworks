@@ -126,18 +126,10 @@ LOCAL_CFLAGS += -DRECOVERY_MODE
 
 LOCAL_SRC_FILES:= \
 	main_recovery.cpp \
+	ubootenv.c \
 	SysWrite.cpp \
 	DisplayMode.cpp \
 	SysTokenizer.cpp
-
-ifeq ($(TARGET_PRODUCT), odroidc2)
-LOCAL_CFLAGS += -DODROIDC2
-LOCAL_SRC_FILES+= \
-  ubootenv-odroid.c
-else
-LOCAL_SRC_FILES+= \
-  ubootenv.c
-endif
 
 LOCAL_STATIC_LIBRARIES := \
 	libcutils \
