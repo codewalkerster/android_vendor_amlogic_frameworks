@@ -40,6 +40,9 @@ public class BootComplete extends BroadcastReceiver {
             new PlayBackManager(context).initHdmiSelfadaption();
 
             new HdmiCecExtend(context);
+
+            //start optimization service
+            context.startService(new Intent(context, Optimization.class));
         }
     }
 }

@@ -45,6 +45,8 @@
             </intent-filter>
         </service>
 
+        <service android:name="com.droidlogic.Optimization" />
+
         <receiver android:name="com.droidlogic.BootComplete">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
