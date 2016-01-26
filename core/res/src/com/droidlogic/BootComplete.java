@@ -4,8 +4,11 @@ package com.droidlogic;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.RemoteException;
+import android.os.ServiceManager;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.IWindowManager;
 
 import com.droidlogic.app.PlayBackManager;
 import com.droidlogic.app.UsbCameraManager;
@@ -43,6 +46,24 @@ public class BootComplete extends BroadcastReceiver {
 
             //start optimization service
             context.startService(new Intent(context, Optimization.class));
+
+            initDefaultAnimationSettings(context);
+        }
+    }
+
+    //this function fix setting database not load AnimationSettings bug
+    private static final int INDEX_WINDOW_ANIMATION_SCALE = 0;
+    private static final int INDEX_TRANSITION_ANIMATION_SCALE = 1;
+    private void initDefaultAnimationSettings(Context context) {
+        try {
+            IWindowManager wm = IWindowManager.Stub.asInterface(ServiceManager.getService("window"));
+            if (wm.getAnimationScale(INDEX_WINDOW_ANIMATION_SCALE) != 0.0f) {
+                wm.setAnimationScale(INDEX_WINDOW_ANIMATION_SCALE, 0);
+            }
+            if (wm.getAnimationScale(INDEX_TRANSITION_ANIMATION_SCALE) != 0.0f) {
+                wm.setAnimationScale(INDEX_TRANSITION_ANIMATION_SCALE, 0);
+            }
+        } catch (RemoteException e) {
         }
     }
 }
