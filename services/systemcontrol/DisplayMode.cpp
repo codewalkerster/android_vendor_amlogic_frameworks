@@ -767,11 +767,16 @@ void DisplayMode::filterHdmiMode(char* mode, hdmi_data_t* data) {
         if (NULL == pos)
             break;
 
+        int step = 1;
+        if (*(pos - 1) == '*') {
+            pos -= 1;
+            step += 1;
+        }
         if (!strncmp(pCmp, data->ubootenv_hdmimode, pos - pCmp)) {
             strcpy(mode, data->ubootenv_hdmimode);
             return;
         }
-        pCmp = pos + 1;
+        pCmp = pos + step;
     }
 
     //old mode is not support in this TV, so switch to best mode.
