@@ -44,377 +44,51 @@ public class TvControlManager {
     private static final String OPEN_TV_LOG_FLG = "open.libtv.log.flg";
     private boolean tvLogFlg =false;
 
-    public static final int AUDIO_MUTE_ON           = 0;
-    public static final int AUDIO_MUTE_OFF          = 1;
+    public static final int AUDIO_MUTE_ON               = 0;
+    public static final int AUDIO_MUTE_OFF              = 1;
 
-    public static final int AUDIO_SWITCH_OFF        = 0;
-    public static final int AUDIO_SWITCH_ON         = 1;
+    public static final int AUDIO_SWITCH_OFF            = 0;
+    public static final int AUDIO_SWITCH_ON             = 1;
+
+    //atv media
+    public static final int ATV_AUDIO_STD_DK            = 0;
+    public static final int ATV_AUDIO_STD_I             = 1;
+    public static final int ATV_AUDIO_STD_BG            = 2;
+    public static final int ATV_AUDIO_STD_M             = 3;
+    public static final int ATV_AUDIO_STD_L             = 4;
+    public static final int ATV_AUDIO_STD_AUTO          = 5;
+    public static final int ATV_AUDIO_STD_MUTE          = 6;
+
+    public static final int ATV_VIDEO_STD_AUTO          = 0;
+    public static final int ATV_VIDEO_STD_PAL           = 1;
+    public static final int ATV_VIDEO_STD_NTSC          = 2;
+    public static final int ATV_VIDEO_STD_SECAM         = 3;
+
+    //tv run status
+    public static final int TV_RUN_STATUS_INIT_ED       = -1;
+    public static final int TV_RUN_STATUS_OPEN_ED       = 0;
+    public static final int TV_RUN_STATUS_START_ED      = 1;
+    public static final int TV_RUN_STATUS_RESUME_ED     = 2;
+    public static final int TV_RUN_STATUS_PAUSE_ED      = 3;
+    public static final int TV_RUN_STATUS_STOP_ED       = 4;
+    public static final int TV_RUN_STATUS_CLOSE_ED      = 5;
+
+    //scene mode
+    public static final int SCENE_MODE_STANDARD         = 0;
+    public static final int SCENE_MODE_GAME             = 1;
+    public static final int SCENE_MODE_FILM             = 2;
+    public static final int SCENE_MODE_USER             = 3;
+    public static final int SCENE_MODE_MAX              = 4;
 
     static {
         System.loadLibrary("tv_jni");
     }
 
-    public static enum CC_ATV_AUDIO_STANDARD {
-        CC_ATV_AUDIO_STD_DK(0),
-        CC_ATV_AUDIO_STD_I(1),
-        CC_ATV_AUDIO_STD_BG(2),
-        CC_ATV_AUDIO_STD_M(3),
-        CC_ATV_AUDIO_STD_L(4),
-        CC_ATV_AUDIO_STD_AUTO(5);
-
-        private int val;
-
-        CC_ATV_AUDIO_STANDARD(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public static  enum CC_ATV_VIDEO_STANDARD {
-
-        CC_ATV_VIDEO_STD_AUTO(0),
-        CC_ATV_VIDEO_STD_PAL(1),
-        CC_ATV_VIDEO_STD_NTSC(2),
-        CC_ATV_VIDEO_STD_SECAM(3);
-
-        private int val;
-
-        CC_ATV_VIDEO_STANDARD(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public static enum tvin_trans_fmt {
-        TVIN_TFMT_2D,
-            TVIN_TFMT_3D_LRH_OLOR,
-            TVIN_TFMT_3D_LRH_OLER,
-            TVIN_TFMT_3D_LRH_ELOR,
-            TVIN_TFMT_3D_LRH_ELER,
-            TVIN_TFMT_3D_TB,
-            TVIN_TFMT_3D_FP,
-            TVIN_TFMT_3D_FA,
-            TVIN_TFMT_3D_LA,
-            TVIN_TFMT_3D_LRF,
-            TVIN_TFMT_3D_LD,
-            TVIN_TFMT_3D_LDGD,
-            TVIN_TFMT_3D_DET_TB,
-            TVIN_TFMT_3D_DET_LR,
-            TVIN_TFMT_3D_DET_INTERLACE,
-            TVIN_TFMT_3D_DET_CHESSBOARD,
-            TVIN_TFMT_3D_MAX,
-    };
-
-    /* tvin signal format table */
-    public static enum tvin_sig_fmt_e {
-        TVIN_SIG_FMT_NULL(0),
-            //VGA Formats
-            TVIN_SIG_FMT_VGA_512X384P_60HZ_D147    (0x001),
-            TVIN_SIG_FMT_VGA_560X384P_60HZ_D147    (0x002),
-            TVIN_SIG_FMT_VGA_640X200P_59HZ_D924    (0x003),
-            TVIN_SIG_FMT_VGA_640X350P_85HZ_D080    (0x004),
-            TVIN_SIG_FMT_VGA_640X400P_59HZ_D940    (0x005),
-            TVIN_SIG_FMT_VGA_640X400P_85HZ_D080    (0x006),
-            TVIN_SIG_FMT_VGA_640X400P_59HZ_D638    (0x007),
-            TVIN_SIG_FMT_VGA_640X400P_56HZ_D416    (0x008),
-            TVIN_SIG_FMT_VGA_640X480P_66HZ_D619    (0x009),
-            TVIN_SIG_FMT_VGA_640X480P_66HZ_D667    (0x00a),
-            TVIN_SIG_FMT_VGA_640X480P_59HZ_D940    (0x00b),
-            TVIN_SIG_FMT_VGA_640X480P_60HZ_D000    (0x00c),
-            TVIN_SIG_FMT_VGA_640X480P_72HZ_D809    (0x00d),
-            TVIN_SIG_FMT_VGA_640X480P_75HZ_D000_A  (0x00e),
-            TVIN_SIG_FMT_VGA_640X480P_85HZ_D008    (0x00f),
-            TVIN_SIG_FMT_VGA_640X480P_59HZ_D638    (0x010),
-            TVIN_SIG_FMT_VGA_640X480P_75HZ_D000_B  (0x011),
-            TVIN_SIG_FMT_VGA_640X870P_75HZ_D000    (0x012),
-            TVIN_SIG_FMT_VGA_720X350P_70HZ_D086    (0x013),
-            TVIN_SIG_FMT_VGA_720X400P_85HZ_D039    (0x014),
-            TVIN_SIG_FMT_VGA_720X400P_70HZ_D086    (0x015),
-            TVIN_SIG_FMT_VGA_720X400P_87HZ_D849    (0x016),
-            TVIN_SIG_FMT_VGA_720X400P_59HZ_D940    (0x017),
-            TVIN_SIG_FMT_VGA_720X480P_59HZ_D940    (0x018),
-            TVIN_SIG_FMT_VGA_768X480P_59HZ_D896    (0x019),
-            TVIN_SIG_FMT_VGA_800X600P_56HZ_D250    (0x01a),
-            TVIN_SIG_FMT_VGA_800X600P_60HZ_D000    (0x01b),
-            TVIN_SIG_FMT_VGA_800X600P_60HZ_D000_A  (0x01c),
-            TVIN_SIG_FMT_VGA_800X600P_60HZ_D317    (0x01d),
-            TVIN_SIG_FMT_VGA_800X600P_72HZ_D188    (0x01e),
-            TVIN_SIG_FMT_VGA_800X600P_75HZ_D000    (0x01f),
-            TVIN_SIG_FMT_VGA_800X600P_85HZ_D061    (0x020),
-            TVIN_SIG_FMT_VGA_832X624P_75HZ_D087    (0x021),
-            TVIN_SIG_FMT_VGA_848X480P_84HZ_D751    (0x022),
-            TVIN_SIG_FMT_VGA_960X600P_59HZ_D635    (0x023),
-            TVIN_SIG_FMT_VGA_1024X768P_59HZ_D278   (0x024),
-            TVIN_SIG_FMT_VGA_1024X768P_60HZ_D000   (0x025),
-            TVIN_SIG_FMT_VGA_1024X768P_60HZ_D000_A (0x026),
-            TVIN_SIG_FMT_VGA_1024X768P_60HZ_D000_B (0x027),
-            TVIN_SIG_FMT_VGA_1024X768P_74HZ_D927   (0x028),
-            TVIN_SIG_FMT_VGA_1024X768P_60HZ_D004   (0x029),
-            TVIN_SIG_FMT_VGA_1024X768P_70HZ_D069   (0x02a),
-            TVIN_SIG_FMT_VGA_1024X768P_75HZ_D029   (0x02b),
-            TVIN_SIG_FMT_VGA_1024X768P_84HZ_D997   (0x02c),
-            TVIN_SIG_FMT_VGA_1024X768P_74HZ_D925   (0x02d),
-            TVIN_SIG_FMT_VGA_1024X768P_60HZ_D020   (0x02e),
-            TVIN_SIG_FMT_VGA_1024X768P_70HZ_D008   (0x02f),
-            TVIN_SIG_FMT_VGA_1024X768P_75HZ_D782   (0x030),
-            TVIN_SIG_FMT_VGA_1024X768P_77HZ_D069   (0x031),
-            TVIN_SIG_FMT_VGA_1024X768P_71HZ_D799   (0x032),
-            TVIN_SIG_FMT_VGA_1024X1024P_60HZ_D000  (0x033),
-            TVIN_SIG_FMT_VGA_1152X864P_60HZ_D000   (0x034),
-            TVIN_SIG_FMT_VGA_1152X864P_70HZ_D012   (0x035),
-            TVIN_SIG_FMT_VGA_1152X864P_75HZ_D000   (0x036),
-            TVIN_SIG_FMT_VGA_1152X864P_84HZ_D999   (0x037),
-            TVIN_SIG_FMT_VGA_1152X870P_75HZ_D062   (0x038),
-            TVIN_SIG_FMT_VGA_1152X900P_65HZ_D950   (0x039),
-            TVIN_SIG_FMT_VGA_1152X900P_66HZ_D004   (0x03a),
-            TVIN_SIG_FMT_VGA_1152X900P_76HZ_D047   (0x03b),
-            TVIN_SIG_FMT_VGA_1152X900P_76HZ_D149   (0x03c),
-            TVIN_SIG_FMT_VGA_1280X720P_59HZ_D855   (0x03d),
-            TVIN_SIG_FMT_VGA_1280X720P_60HZ_D000_A (0x03e),
-            TVIN_SIG_FMT_VGA_1280X720P_60HZ_D000_B (0x03f),
-            TVIN_SIG_FMT_VGA_1280X720P_60HZ_D000_C (0x040),
-            TVIN_SIG_FMT_VGA_1280X720P_60HZ_D000_D (0x041),
-            TVIN_SIG_FMT_VGA_1280X768P_59HZ_D870   (0x042),
-            TVIN_SIG_FMT_VGA_1280X768P_59HZ_D995   (0x043),
-            TVIN_SIG_FMT_VGA_1280X768P_60HZ_D100   (0x044),
-            TVIN_SIG_FMT_VGA_1280X768P_85HZ_D000   (0x045),
-            TVIN_SIG_FMT_VGA_1280X768P_74HZ_D893   (0x046),
-            TVIN_SIG_FMT_VGA_1280X768P_84HZ_D837   (0x047),
-            TVIN_SIG_FMT_VGA_1280X800P_59HZ_D810   (0x048),
-            TVIN_SIG_FMT_VGA_1280X800P_59HZ_D810_A (0x049),
-            TVIN_SIG_FMT_VGA_1280X800P_60HZ_D000   (0x04a),
-            TVIN_SIG_FMT_VGA_1280X800P_85HZ_D000   (0x04b),
-            TVIN_SIG_FMT_VGA_1280X960P_60HZ_D000   (0x04c),
-            TVIN_SIG_FMT_VGA_1280X960P_60HZ_D000_A (0x04d),
-            TVIN_SIG_FMT_VGA_1280X960P_75HZ_D000   (0x04e),
-            TVIN_SIG_FMT_VGA_1280X960P_85HZ_D002   (0x04f),
-            TVIN_SIG_FMT_VGA_1280X1024P_60HZ_D020  (0x050),
-            TVIN_SIG_FMT_VGA_1280X1024P_60HZ_D020_A(0x051),
-            TVIN_SIG_FMT_VGA_1280X1024P_75HZ_D025  (0x052),
-            TVIN_SIG_FMT_VGA_1280X1024P_85HZ_D024  (0x053),
-            TVIN_SIG_FMT_VGA_1280X1024P_59HZ_D979  (0x054),
-            TVIN_SIG_FMT_VGA_1280X1024P_72HZ_D005  (0x055),
-            TVIN_SIG_FMT_VGA_1280X1024P_60HZ_D002  (0x056),
-            TVIN_SIG_FMT_VGA_1280X1024P_67HZ_D003  (0x057),
-            TVIN_SIG_FMT_VGA_1280X1024P_74HZ_D112  (0x058),
-            TVIN_SIG_FMT_VGA_1280X1024P_76HZ_D179  (0x059),
-            TVIN_SIG_FMT_VGA_1280X1024P_66HZ_D718  (0x05a),
-            TVIN_SIG_FMT_VGA_1280X1024P_66HZ_D677  (0x05b),
-            TVIN_SIG_FMT_VGA_1280X1024P_76HZ_D107  (0x05c),
-            TVIN_SIG_FMT_VGA_1280X1024P_59HZ_D996  (0x05d),
-            TVIN_SIG_FMT_VGA_1280X1024P_60HZ_D000  (0x05e),
-            TVIN_SIG_FMT_VGA_1360X768P_59HZ_D799   (0x05f),
-            TVIN_SIG_FMT_VGA_1360X768P_60HZ_D015   (0x060),
-            TVIN_SIG_FMT_VGA_1360X768P_60HZ_D015_A (0x061),
-            TVIN_SIG_FMT_VGA_1360X850P_60HZ_D000   (0x062),
-            TVIN_SIG_FMT_VGA_1360X1024P_60HZ_D000  (0x063),
-            TVIN_SIG_FMT_VGA_1366X768P_59HZ_D790   (0x064),
-            TVIN_SIG_FMT_VGA_1366X768P_60HZ_D000   (0x065),
-            TVIN_SIG_FMT_VGA_1400X1050P_59HZ_D978  (0x066),
-            TVIN_SIG_FMT_VGA_1440X900P_59HZ_D887   (0x067),
-            TVIN_SIG_FMT_VGA_1440X1080P_60HZ_D000  (0x068),
-            TVIN_SIG_FMT_VGA_1600X900P_60HZ_D000   (0x069),
-            TVIN_SIG_FMT_VGA_1600X1024P_60HZ_D000  (0x06a),
-            TVIN_SIG_FMT_VGA_1600X1200P_59HZ_D869  (0x06b),
-            TVIN_SIG_FMT_VGA_1600X1200P_60HZ_D000  (0x06c),
-            TVIN_SIG_FMT_VGA_1600X1200P_65HZ_D000  (0x06d),
-            TVIN_SIG_FMT_VGA_1600X1200P_70HZ_D000  (0x06e),
-            TVIN_SIG_FMT_VGA_1680X1050P_59HZ_D954  (0x06f),
-            TVIN_SIG_FMT_VGA_1680X1080P_60HZ_D000  (0x070),
-            TVIN_SIG_FMT_VGA_1920X1080P_49HZ_D929  (0x071),
-            TVIN_SIG_FMT_VGA_1920X1080P_59HZ_D963_A(0x072),
-            TVIN_SIG_FMT_VGA_1920X1080P_59HZ_D963  (0x073),
-            TVIN_SIG_FMT_VGA_1920X1080P_60HZ_D000  (0x074),
-            TVIN_SIG_FMT_VGA_1920X1200P_59HZ_D950  (0x075),
-            TVIN_SIG_FMT_VGA_1024X768P_60HZ_D000_C (0x076),
-            TVIN_SIG_FMT_VGA_1024X768P_60HZ_D000_D (0x077),
-            TVIN_SIG_FMT_VGA_1920X1200P_59HZ_D988  (0x078),
-            TVIN_SIG_FMT_VGA_1400X900P_60HZ_D000   (0x079),
-            TVIN_SIG_FMT_VGA_1680X1050P_60HZ_D000  (0x07a),
-            TVIN_SIG_FMT_VGA_800X600P_60HZ_D062    (0x07b),
-            TVIN_SIG_FMT_VGA_800X600P_60HZ_317_B   (0x07c),
-            TVIN_SIG_FMT_VGA_RESERVE8              (0x07d),
-            TVIN_SIG_FMT_VGA_RESERVE9              (0x07e),
-            TVIN_SIG_FMT_VGA_RESERVE10             (0x07f),
-            TVIN_SIG_FMT_VGA_RESERVE11             (0x080),
-            TVIN_SIG_FMT_VGA_RESERVE12             (0x081),
-            TVIN_SIG_FMT_VGA_MAX                   (0x082),
-            TVIN_SIG_FMT_VGA_THRESHOLD             (0x200),
-            //Component Formats
-            TVIN_SIG_FMT_COMP_480P_60HZ_D000       (0x201),
-            TVIN_SIG_FMT_COMP_480I_59HZ_D940       (0x202),
-            TVIN_SIG_FMT_COMP_576P_50HZ_D000       (0x203),
-            TVIN_SIG_FMT_COMP_576I_50HZ_D000       (0x204),
-            TVIN_SIG_FMT_COMP_720P_59HZ_D940       (0x205),
-            TVIN_SIG_FMT_COMP_720P_50HZ_D000       (0x206),
-            TVIN_SIG_FMT_COMP_1080P_23HZ_D976      (0x207),
-            TVIN_SIG_FMT_COMP_1080P_24HZ_D000      (0x208),
-            TVIN_SIG_FMT_COMP_1080P_25HZ_D000      (0x209),
-            TVIN_SIG_FMT_COMP_1080P_30HZ_D000      (0x20a),
-            TVIN_SIG_FMT_COMP_1080P_50HZ_D000      (0x20b),
-            TVIN_SIG_FMT_COMP_1080P_60HZ_D000      (0x20c),
-            TVIN_SIG_FMT_COMP_1080I_47HZ_D952      (0x20d),
-            TVIN_SIG_FMT_COMP_1080I_48HZ_D000      (0x20e),
-            TVIN_SIG_FMT_COMP_1080I_50HZ_D000_A    (0x20f),
-            TVIN_SIG_FMT_COMP_1080I_50HZ_D000_B    (0x210),
-            TVIN_SIG_FMT_COMP_1080I_50HZ_D000_C    (0x211),
-            TVIN_SIG_FMT_COMP_1080I_60HZ_D000      (0x212),
-            TVIN_SIG_FMT_COMP_MAX                  (0x213),
-            TVIN_SIG_FMT_COMP_THRESHOLD            (0x400),
-            //HDMI Formats
-            TVIN_SIG_FMT_HDMI_640X480P_60HZ        (0x401),
-            TVIN_SIG_FMT_HDMI_720X480P_60HZ        (0x402),
-            TVIN_SIG_FMT_HDMI_1280X720P_60HZ       (0x403),
-            TVIN_SIG_FMT_HDMI_1920X1080I_60HZ      (0x404),
-            TVIN_SIG_FMT_HDMI_1440X480I_60HZ       (0x405),
-            TVIN_SIG_FMT_HDMI_1440X240P_60HZ       (0x406),
-            TVIN_SIG_FMT_HDMI_2880X480I_60HZ       (0x407),
-            TVIN_SIG_FMT_HDMI_2880X240P_60HZ       (0x408),
-            TVIN_SIG_FMT_HDMI_1440X480P_60HZ       (0x409),
-            TVIN_SIG_FMT_HDMI_1920X1080P_60HZ      (0x40a),
-            TVIN_SIG_FMT_HDMI_720X576P_50HZ        (0x40b),
-            TVIN_SIG_FMT_HDMI_1280X720P_50HZ       (0x40c),
-            TVIN_SIG_FMT_HDMI_1920X1080I_50HZ_A    (0x40d),
-            TVIN_SIG_FMT_HDMI_1440X576I_50HZ       (0x40e),
-            TVIN_SIG_FMT_HDMI_1440X288P_50HZ       (0x40f),
-            TVIN_SIG_FMT_HDMI_2880X576I_50HZ       (0x410),
-            TVIN_SIG_FMT_HDMI_2880X288P_50HZ       (0x411),
-            TVIN_SIG_FMT_HDMI_1440X576P_50HZ       (0x412),
-            TVIN_SIG_FMT_HDMI_1920X1080P_50HZ      (0x413),
-            TVIN_SIG_FMT_HDMI_1920X1080P_24HZ      (0x414),
-            TVIN_SIG_FMT_HDMI_1920X1080P_25HZ      (0x415),
-            TVIN_SIG_FMT_HDMI_1920X1080P_30HZ      (0x416),
-            TVIN_SIG_FMT_HDMI_2880X480P_60HZ       (0x417),
-            TVIN_SIG_FMT_HDMI_2880X576P_60HZ       (0x418),
-            TVIN_SIG_FMT_HDMI_1920X1080I_50HZ_B    (0x419),
-            TVIN_SIG_FMT_HDMI_1920X1080I_100HZ     (0x41a),
-            TVIN_SIG_FMT_HDMI_1280X720P_100HZ      (0x41b),
-            TVIN_SIG_FMT_HDMI_720X576P_100HZ       (0x41c),
-            TVIN_SIG_FMT_HDMI_1440X576I_100HZ      (0x41d),
-            TVIN_SIG_FMT_HDMI_1920X1080I_120HZ     (0x41e),
-            TVIN_SIG_FMT_HDMI_1280X720P_120HZ      (0x41f),
-            TVIN_SIG_FMT_HDMI_720X480P_120HZ       (0x420),
-            TVIN_SIG_FMT_HDMI_1440X480I_120HZ      (0x421),
-            TVIN_SIG_FMT_HDMI_720X576P_200HZ       (0x422),
-            TVIN_SIG_FMT_HDMI_1440X576I_200HZ      (0x423),
-            TVIN_SIG_FMT_HDMI_720X480P_240HZ       (0x424),
-            TVIN_SIG_FMT_HDMI_1440X480I_240HZ      (0x425),
-            TVIN_SIG_FMT_HDMI_1280X720P_24HZ       (0x426),
-            TVIN_SIG_FMT_HDMI_1280X720P_25HZ       (0x427),
-            TVIN_SIG_FMT_HDMI_1280X720P_30HZ       (0x428),
-            TVIN_SIG_FMT_HDMI_1920X1080P_120HZ     (0x429),
-            TVIN_SIG_FMT_HDMI_1920X1080P_100HZ     (0x42a),
-            TVIN_SIG_FMT_HDMI_1280X720P_60HZ_FRAME_PACKING  (0x42b),
-            TVIN_SIG_FMT_HDMI_1280X720P_50HZ_FRAME_PACKING  (0x42c),
-            TVIN_SIG_FMT_HDMI_1280X720P_24HZ_FRAME_PACKING  (0x42d),
-            TVIN_SIG_FMT_HDMI_1280X720P_30HZ_FRAME_PACKING  (0x42e),
-            TVIN_SIG_FMT_HDMI_1920X1080I_60HZ_FRAME_PACKING (0x42f),
-            TVIN_SIG_FMT_HDMI_1920X1080I_50HZ_FRAME_PACKING (0x430),
-            TVIN_SIG_FMT_HDMI_1920X1080P_24HZ_FRAME_PACKING (0x431),
-            TVIN_SIG_FMT_HDMI_1920X1080P_30HZ_FRAME_PACKING (0x432),
-            TVIN_SIG_FMT_HDMI_800X600_00HZ                  (0x433),
-            TVIN_SIG_FMT_HDMI_1024X768_00HZ                 (0x434),
-            TVIN_SIG_FMT_HDMI_720X400_00HZ                  (0x435),
-            TVIN_SIG_FMT_HDMI_1280X768_00HZ                 (0x436),
-            TVIN_SIG_FMT_HDMI_1280X800_00HZ                 (0x437),
-            TVIN_SIG_FMT_HDMI_1280X960_00HZ                 (0x438),
-            TVIN_SIG_FMT_HDMI_1280X1024_00HZ                (0x439),
-            TVIN_SIG_FMT_HDMI_1360X768_00HZ                 (0x43a),
-            TVIN_SIG_FMT_HDMI_1366X768_00HZ                 (0x43b),
-            TVIN_SIG_FMT_HDMI_1600X1200_00HZ                (0x43c),
-            TVIN_SIG_FMT_HDMI_1920X1200_00HZ                (0x43d),
-            TVIN_SIG_FMT_HDMI_1440X900_00HZ                 (0x43e),
-            TVIN_SIG_FMT_HDMI_1400X1050_00HZ                (0x43f),
-            TVIN_SIG_FMT_HDMI_1680X1050_00HZ                (0x440),
-            TVIN_SIG_FMT_HDMI_1920X1080I_60HZ_ALTERNATIVE   (0x441),
-            TVIN_SIG_FMT_HDMI_1920X1080I_50HZ_ALTERNATIVE   (0x442),
-            TVIN_SIG_FMT_HDMI_1920X1080P_24HZ_ALTERNATIVE   (0x443),
-            TVIN_SIG_FMT_HDMI_1920X1080P_30HZ_ALTERNATIVE   (0x444),
-            TVIN_SIG_FMT_HDMI_3840X2160_00HZ                (0x445),
-            TVIN_SIG_FMT_HDMI_4096X2160_00HZ                (0x446),
-            TVIN_SIG_FMT_HDMI_RESERVE7                      (0x447),
-            TVIN_SIG_FMT_HDMI_RESERVE8                      (0x448),
-            TVIN_SIG_FMT_HDMI_RESERVE9                      (0x449),
-            TVIN_SIG_FMT_HDMI_RESERVE10                     (0x44a),
-            TVIN_SIG_FMT_HDMI_RESERVE11                     (0x44b),
-            TVIN_SIG_FMT_HDMI_720X480P_60HZ_FRAME_PACKING   (0x44c),
-            TVIN_SIG_FMT_HDMI_720X576P_50HZ_FRAME_PACKING   (0x44d),
-            TVIN_SIG_FMT_HDMI_MAX                           (0x44e),
-            TVIN_SIG_FMT_HDMI_THRESHOLD                     (0x600),
-            //Video Formats
-            TVIN_SIG_FMT_CVBS_NTSC_M                        (0x601),
-            TVIN_SIG_FMT_CVBS_NTSC_443                      (0x602),
-            TVIN_SIG_FMT_CVBS_PAL_I                         (0x603),
-            TVIN_SIG_FMT_CVBS_PAL_M                         (0x604),
-            TVIN_SIG_FMT_CVBS_PAL_60                        (0x605),
-            TVIN_SIG_FMT_CVBS_PAL_CN                        (0x606),
-            TVIN_SIG_FMT_CVBS_SECAM                         (0x607),
-            TVIN_SIG_FMT_CVBS_MAX                           (0x608),
-            TVIN_SIG_FMT_CVBS_THRESHOLD                     (0x800),
-            //656 Formats
-            TVIN_SIG_FMT_BT656IN_576I_50HZ                  (0x801),
-            TVIN_SIG_FMT_BT656IN_480I_60HZ                  (0x802),
-            //601 Formats
-            TVIN_SIG_FMT_BT601IN_576I_50HZ                  (0x803),
-            TVIN_SIG_FMT_BT601IN_480I_60HZ                  (0x804),
-            //Camera Formats
-            TVIN_SIG_FMT_CAMERA_640X480P_30HZ               (0x805),
-            TVIN_SIG_FMT_CAMERA_800X600P_30HZ               (0x806),
-            TVIN_SIG_FMT_CAMERA_1024X768P_30HZ              (0x807),
-            TVIN_SIG_FMT_CAMERA_1920X1080P_30HZ             (0x808),
-            TVIN_SIG_FMT_CAMERA_1280X720P_30HZ              (0x809),
-            TVIN_SIG_FMT_BT601_MAX                          (0x80a),
-            TVIN_SIG_FMT_BT601_THRESHOLD                    (0xa00),
-            TVIN_SIG_FMT_MAX(0xFFFFFFFF);
-
-        private int val;
-
-        tvin_sig_fmt_e(int val) {
-            this.val = val;
-        }
-
-        public static tvin_sig_fmt_e valueOf(int value) {
-            for (tvin_sig_fmt_e fmt : tvin_sig_fmt_e.values()) {
-                if (fmt.toInt() == value) {
-                    return fmt;
-                }
-            }
-            return TVIN_SIG_FMT_MAX;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    // tvin signal status
-    public enum tvin_sig_status_t {
-        TVIN_SIG_STATUS_NULL,
-            TVIN_SIG_STATUS_NOSIG,
-            TVIN_SIG_STATUS_UNSTABLE,
-            TVIN_SIG_STATUS_NOTSUP,
-            TVIN_SIG_STATUS_STABLE,
-    }
-
-    // tvin signal information
-    public class tvin_info_t {
-        public tvin_trans_fmt trans_fmt;
-        public tvin_sig_fmt_e fmt;
-        public tvin_sig_status_t status;
-        public int reserved;
-    }
-
     private int mNativeContext; // accessed by native methods
     private EventHandler mEventHandler;
     private ErrorCallback mErrorCallback;
-    private SigInfoChangeListener mSigInfoChangeLister = null;
-    private SigChannelSearchListener mSigChanSearchListener = null;
+    private TVInSignalInfo.SigInfoChangeListener mSigInfoChangeLister = null;
+    private TVInSignalInfo.SigChannelSearchListener mSigChanSearchListener = null;
     private VGAAdjustChangeListener mVGAChangeListener = null;
     private Status3DChangeListener mStatus3DChangeListener = null;
     private StatusTVChangeListener mStatusTVChangeListener = null;
@@ -436,24 +110,350 @@ public class TvControlManager {
 
     private static TvControlManager mInstance;
 
-    public static TvControlManager getInstance() {
-        if (null == mInstance) mInstance = new TvControlManager();
-        return mInstance;
+    private native final void native_setup(Object tv_this);
+    private native final void native_release();
+    public native void addCallbackBuffer(byte cb[]);
+    public native final void unlock();
+    public native final void lock();
+    public native final void reconnect() throws IOException;
+    private native int processCmd(Parcel p, Parcel r);
+    private native final void native_create_video_frame_bitmap(Object bmp);
+    private native final void native_create_subtitle_bitmap(Object bmp);
+
+    private static void postEventFromNative(Object tv_ref, int what, Parcel ext) {
+        ext.setDataPosition(0);
+
+        TvControlManager c = (TvControlManager)((WeakReference) tv_ref).get();
+        if (c == null)
+            return;
+        if (c.mEventHandler != null) {
+            Message m = c.mEventHandler.obtainMessage(what, 0, 0, ext);
+            c.mEventHandler.sendMessage(m);
+        }
     }
 
-    // new Tv obj
-    public static TvControlManager open() {
-        if (mInstance == null)
-            mInstance = new TvControlManager();
+    private int sendCmdToTv(Parcel p, Parcel r) {
+        p.setDataPosition(0);
+        int ret = processCmd(p, r);
+        r.setDataPosition(0);
+        return ret;
+    }
+
+    public int sendCmd(int cmd) {
+        libtv_log_open();
+        Parcel request = Parcel.obtain();
+        Parcel reply = Parcel.obtain();
+        request.writeInt(cmd);
+        request.setDataPosition(0);
+        processCmd(request, reply);
+        reply.setDataPosition(0);
+        int ret = reply.readInt();
+
+        request.recycle();
+        reply.recycle();
+        return ret;
+    }
+
+    public int sendCmdIntArray(int cmd, int[] values) {
+        libtv_log_open();
+        Parcel request = Parcel.obtain();
+        Parcel reply = Parcel.obtain();
+        request.writeInt(cmd);
+
+        for (int i = 0; i < values.length; i++) {
+            request.writeInt(values[i]);
+        }
+        request.setDataPosition(0);
+        processCmd(request, reply);
+        reply.setDataPosition(0);
+        int ret = reply.readInt();
+
+        request.recycle();
+        reply.recycle();
+        return ret;
+    }
+
+    public int sendCmdStringArray(int cmd, String[] values) {
+        libtv_log_open();
+        Parcel request = Parcel.obtain();
+        Parcel reply = Parcel.obtain();
+        request.writeInt(cmd);
+
+        for (int i = 0; i < values.length; i++) {
+            request.writeString(values[i]);
+        }
+        request.setDataPosition(0);
+        processCmd(request, reply);
+        reply.setDataPosition(0);
+        int ret = reply.readInt();
+
+        request.recycle();
+        reply.recycle();
+        return ret;
+    }
+
+    class EventHandler extends Handler {
+        int dataArray[];
+        int cmdArray[];
+        int msgPdu[];
+
+        public EventHandler(Looper looper) {
+            super(looper);
+            dataArray = new int[512];//max data buf
+            cmdArray = new int[128];
+            msgPdu = new int[1200];
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            int i = 0, loop_count = 0, tmp_val = 0;
+            Parcel p;
+
+            switch (msg.what) {
+                case SUBTITLE_UPDATE_CALLBACK:
+                    if (mSubtitleListener != null) {
+                        mSubtitleListener.onUpdate();
+                    }
+                    break;
+                case VFRAME_BMP_EVENT_CALLBACK:
+                    p = ((Parcel) (msg.obj));
+                    if (mVframBMPListener != null) {
+                        VFrameEvent ev = new VFrameEvent();
+                        mVframBMPListener.onEvent(ev);
+                        ev.FrameNum = p.readInt();
+                        ev.FrameSize= p.readInt();
+                        ev.FrameWidth= p.readInt();
+                        ev.FrameHeight= p.readInt();
+                    }
+                    break;
+                case SCAN_EVENT_CALLBACK:
+                    p = ((Parcel) (msg.obj));
+                    if (mScannerListener != null) {
+                        ScannerEvent ev = new ScannerEvent();
+                        ev.type = p.readInt();
+                        ev.precent = p.readInt();
+                        ev.totalcount = p.readInt();
+                        ev.lock = p.readInt();
+                        ev.cnum = p.readInt();
+                        ev.freq = p.readInt();
+                        ev.programName = p.readString();
+                        ev.srvType = p.readInt();
+                        ev.msg = p.readString();
+                        ev.strength = p.readInt();
+                        ev.quality = p.readInt();
+                        ev.videoStd = p.readInt();
+                        ev.audioStd = p.readInt();
+                        ev.isAutoStd = p.readInt();
+
+                        ev.mode = p.readInt();
+                        ev.sr = p.readInt();
+                        ev.mod = p.readInt();
+                        ev.bandwidth = p.readInt();
+                        ev.ofdm_mode = p.readInt();
+                        ev.ts_id = p.readInt();
+                        ev.orig_net_id = p.readInt();
+                        ev.serviceID = p.readInt();
+                        ev.vid = p.readInt();
+                        ev.vfmt = p.readInt();
+                        int acnt = p.readInt();
+                        if (acnt != 0) {
+                            ev.aids = new int[acnt];
+                            for (i=0;i<acnt;i++)
+                                ev.aids[i] = p.readInt();
+                            ev.afmts = new int[acnt];
+                            for (i=0;i<acnt;i++)
+                                ev.afmts[i] = p.readInt();
+                            ev.alangs = new String[acnt];
+                            for (i=0;i<acnt;i++)
+                                ev.alangs[i] = p.readString();
+                            ev.atypes = new int[acnt];
+                            for (i=0;i<acnt;i++)
+                                ev.atypes[i] = p.readInt();
+                        }
+                        ev.pcr = p.readInt();
+                        int scnt = p.readInt();
+                        if (scnt != 0) {
+                            ev.stypes = new int[scnt];
+                            for (i=0;i<scnt;i++)
+                                ev.stypes[i] = p.readInt();
+                            ev.sids = new int[scnt];
+                            for (i=0;i<scnt;i++)
+                                ev.sids[i] = p.readInt();
+                            ev.sstypes = new int[scnt];
+                            for (i=0;i<scnt;i++)
+                                ev.sstypes[i] = p.readInt();
+                            ev.sid1s = new int[scnt];
+                            for (i=0;i<scnt;i++)
+                                ev.sid1s[i] = p.readInt();
+                            ev.sid2s = new int[scnt];
+                            for (i=0;i<scnt;i++)
+                                ev.sid2s[i] = p.readInt();
+                            ev.slangs = new String[scnt];
+                            for (i=0;i<scnt;i++)
+                                ev.slangs[i] = p.readString();
+                        }
+
+                        mScannerListener.onEvent(ev);
+                    }
+                    break;
+                case VCHIP_CALLBACK:
+                    Log.i(TAG,"atsc ---VCHIP_CALLBACK-----------------");
+                    p = ((Parcel) (msg.obj));
+                    if (mLockStatusListener != null) {
+                        VchipLockStatus lockStatus = new VchipLockStatus();
+                        lockStatus.blockstatus = p.readInt();
+                        lockStatus.blockType = p.readInt();
+                        lockStatus.vchipDimension = p.readString();
+                        lockStatus.vchipAbbrev = p.readString();
+                        lockStatus.vchipText = p.readString();
+                        mLockStatusListener.onLock(lockStatus);
+                    }
+                    break;
+                case EPG_EVENT_CALLBACK:
+                    p = ((Parcel) (msg.obj));
+                    if (mEpgListener != null) {
+                        EpgEvent ev = new EpgEvent();
+                        ev.type = p.readInt();
+                        ev.time = p.readInt();
+                        ev.programID = p.readInt();
+                        ev.channelID = p.readInt();
+                        mEpgListener.onEvent(ev);
+                    }
+                    break;
+                case DTV_AV_PLAYBACK_CALLBACK:
+                    p = ((Parcel) (msg.obj));
+                    if (mAVPlaybackListener != null) {
+                        int msgType= p.readInt();
+                        int programID= p.readInt();
+                        mAVPlaybackListener.onEvent(msgType, programID);
+                    }
+                    break ;
+                case SEARCH_CALLBACK:
+                    if (mSigChanSearchListener != null) {
+                        if (msgPdu != null) {
+                            loop_count = ((Parcel) (msg.obj)).readInt();
+                            for (i = 0; i < loop_count; i++) {
+                                msgPdu[i] = ((Parcel) (msg.obj)).readInt();
+                            }
+                            mSigChanSearchListener.onChannelSearchChange(msgPdu);
+                        }
+                    }
+                    break;
+                case SIGLE_DETECT_CALLBACK:
+                    if (mSigInfoChangeLister != null) {
+                        TVInSignalInfo sigInfo = new TVInSignalInfo();
+                        sigInfo.transFmt = TVInSignalInfo.TransFmt.values()[(((Parcel) (msg.obj)).readInt())];
+                        sigInfo.sigFmt = TVInSignalInfo.SignalFmt.valueOf(((Parcel) (msg.obj)).readInt());
+                        sigInfo.sigStatus = TVInSignalInfo.SignalStatus.values()[(((Parcel) (msg.obj)).readInt())];
+                        sigInfo.reserved = ((Parcel) (msg.obj)).readInt();
+                        mSigInfoChangeLister.onSigChange(sigInfo);
+                    }
+                    break;
+                case VGA_CALLBACK:
+                    if (mVGAChangeListener != null) {
+                        mVGAChangeListener.onVGAAdjustChange(((Parcel) (msg.obj)).readInt());
+                    }
+                    break;
+                case STATUS_3D_CALLBACK:
+                    if (mStatus3DChangeListener != null) {
+                        mStatus3DChangeListener.onStatus3DChange(((Parcel) (msg.obj)).readInt());
+                    }
+                    break;
+                case SOURCE_CONNECT_CALLBACK:
+                    if (mSourceConnectChangeListener != null) {
+                        mSourceConnectChangeListener.onSourceConnectChange( SourceInput.values()[((Parcel) (msg.obj)).readInt()], ((Parcel) (msg.obj)).readInt());
+                    }
+                    break;
+                case HDMIRX_CEC_CALLBACK:
+                    if (mHDMIRxCECListener != null) {
+                        if (msgPdu != null) {
+                            loop_count = ((Parcel) (msg.obj)).readInt();
+                            for (i = 0; i < loop_count; i++) {
+                                msgPdu[i] = ((Parcel) (msg.obj)).readInt();
+                            }
+                            mHDMIRxCECListener.onHDMIRxCECMessage(loop_count, msgPdu);
+                        }
+                    }
+                    break;
+                case UPGRADE_FBC_CALLBACK:
+                    if (mUpgradeFBCListener != null) {
+                        loop_count = ((Parcel) (msg.obj)).readInt();
+                        tmp_val = ((Parcel) (msg.obj)).readInt();
+                        Log.d(TAG, "state = " + loop_count + "    param = " + tmp_val);
+                        mUpgradeFBCListener.onUpgradeStatus(loop_count, tmp_val);
+                    }
+                    break;
+                case DREAM_PANEL_CALLBACK:
+                    break;
+                case ADC_CALIBRATION_CALLBACK:
+                    if (mAdcCalibrationListener != null) {
+                        mAdcCalibrationListener.onAdcCalibrationChange(((Parcel) (msg.obj)).readInt());
+                    }
+                    break;
+                case SOURCE_SWITCH_CALLBACK:
+                    if (mSourceSwitchListener != null) {
+                        mSourceSwitchListener.onSourceSwitchStatusChange(
+                                SourceInput.values()[(((Parcel) (msg.obj)).readInt())], ((Parcel) (msg.obj)).readInt());
+                    }
+                    break;
+                case CHANNEL_SELECT_CALLBACK:
+                    if (mChannelSelectListener != null) {
+                        if (msgPdu != null) {
+                            loop_count = ((Parcel) (msg.obj)).readInt();
+                            for (i = 0; i < loop_count; i++) {
+                                msgPdu[i] = ((Parcel) (msg.obj)).readInt();
+                            }
+                            mChannelSelectListener.onChannelSelect(msgPdu);
+                        }
+                    }
+                    break;
+                case SERIAL_COMMUNICATION_CALLBACK:
+                    if (mSerialCommunicationListener != null) {
+                        if (msgPdu != null) {
+                            int dev_id = ((Parcel) (msg.obj)).readInt();
+                            loop_count = ((Parcel) (msg.obj)).readInt();
+                            for (i = 0; i < loop_count; i++) {
+                                msgPdu[i] = ((Parcel) (msg.obj)).readInt();
+                            }
+                            mSerialCommunicationListener.onSerialCommunication(dev_id, loop_count, msgPdu);
+                        }
+                    }
+                    break;
+                case CLOSE_CAPTION_CALLBACK:
+                    if (mCloseCaptionListener != null) {
+                        loop_count = ((Parcel) (msg.obj)).readInt();
+                        Log.d(TAG, "cc listenner data count =" + loop_count);
+                        for (i = 0; i < loop_count; i++) {
+                            dataArray[i] = ((Parcel) (msg.obj)).readInt();
+                        }
+                        //data len write to end
+                        dataArray[dataArray.length - 1] = loop_count;
+                        loop_count = ((Parcel) (msg.obj)).readInt();
+                        for (i = 0; i < loop_count; i++) {
+                            cmdArray[i] = ((Parcel) (msg.obj)).readInt();
+                        }
+                        cmdArray[cmdArray.length - 1] =  loop_count;
+                        mCloseCaptionListener.onCloseCaptionProcess(dataArray, cmdArray);
+                    }
+                    break;
+                default:
+                    Log.e(TAG, "Unknown message type " + msg.what);
+                    break;
+            }
+        }
+    }
+
+    public static TvControlManager getInstance() {
+        if (null == mInstance) mInstance = new TvControlManager();
         return mInstance;
     }
 
     public TvControlManager() {
         Looper looper;
         if ((looper = Looper.myLooper()) != null) {
-            mEventHandler = new EventHandler(this, looper);
+            mEventHandler = new EventHandler(looper);
         } else if ((looper = Looper.getMainLooper()) != null) {
-            mEventHandler = new EventHandler(this, looper);
+            mEventHandler = new EventHandler(looper);
         } else {
             mEventHandler = null;
         }
@@ -471,206 +471,6 @@ public class TvControlManager {
     public final void release() {
         libtv_log_open();
         native_release();
-    }
-
-    public enum SourceInput {
-        TV(0),
-            AV1(1),
-            AV2(2),
-            YPBPR1(3),
-            YPBPR2(4),
-            HDMI1(5),
-            HDMI2(6),
-            HDMI3(7),
-            VGA(8),
-            XXXX(9),//not use MPEG source
-            DTV(10),
-            SVIDEO(11),
-            HDMI4K2K(12),
-            USB4K2K(13),
-            IPTV(14),
-            DUMMY(15),
-            MAX(16);
-        private int val;
-
-        SourceInput(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public enum SourceInput_Type {
-        SOURCE_TYPE_TV(0),
-            SOURCE_TYPE_AV(1),
-            SOURCE_TYPE_COMPONENT(2),
-            SOURCE_TYPE_HDMI(3),
-            SOURCE_TYPE_VGA(4),
-            SOURCE_TYPE_MPEG(5),//only use for vpp, for display ,not a source
-            SOURCE_TYPE_DTV(6),
-            SOURCE_TYPE_SVIDEO(7),
-            SOURCE_TYPE_HDMI_4K2K(8),
-            SOURCE_TYPE_USB_4K2K(9),
-            SOURCE_TYPE_MAX(7);
-
-        private int val;
-
-        SourceInput_Type(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public enum tvin_color_system_e {
-        COLOR_SYSTEM_AUTO(0),
-            COLOR_SYSTEM_PAL(1),
-            COLOR_SYSTEM_NTSC(2),
-            COLOR_SYSTEM_SECAM(3),
-            COLOR_SYSTEM_MAX(4);
-        private int val;
-
-        tvin_color_system_e(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public enum tv_program_type {//program_type
-        TV_PROGRAM_UNKNOWN(0),
-            TV_PROGRAM_DTV(1),
-            TV_PROGRAM_DRADIO(2),
-            TV_PROGRAM_ATV(3);
-        private int val;
-
-        tv_program_type(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public enum program_skip_type_e {
-        TV_PROGRAM_SKIP_NO(0),
-            TV_PROGRAM_SKIP_YES(1),
-            TV_PROGRAM_SKIP_UNKNOWN(2);
-
-        private int val;
-
-        program_skip_type_e(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public enum atsc_attenna_type_t {
-        AM_ATSC_ATTENNA_TYPE_MIX(0),
-            AM_ATSC_ATTENNA_TYPE_AIR(1),
-            AM_ATSC_ATTENNA_TYPE_CABLE_STD(2),
-            AM_ATSC_ATTENNA_TYPE_CABLE_IRC(3),
-            AM_ATSC_ATTENNA_TYPE_CABLE_HRC(4),
-            AM_ATSC_ATTENNA_TYPE_MAX(5);
-
-        private int val;
-        atsc_attenna_type_t(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public enum atv_audio_std_e {
-        ATV_AUDIO_STD_DK(0),
-            ATV_AUDIO_STD_I(1),
-            ATV_AUDIO_STD_BG(2),
-            ATV_AUDIO_STD_M(3),
-            ATV_AUDIO_STD_L(4),
-            ATV_AUDIO_STD_AUTO(5),
-            ATV_AUDIO_STD_MUTE(6);
-
-        private int val;
-
-        atv_audio_std_e(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-        public static  atv_audio_std_e  valueOf(int val) {    //  int to enum
-            switch (val) {
-                case 0:
-                    return ATV_AUDIO_STD_DK;
-                case 1:
-                    return ATV_AUDIO_STD_I;
-                case 2:
-                    return ATV_AUDIO_STD_BG;
-                case 3:
-                    return ATV_AUDIO_STD_M;
-                case 4:
-                    return ATV_AUDIO_STD_L;
-                case 5:
-                    return ATV_AUDIO_STD_AUTO;
-                case 6:
-                    return ATV_AUDIO_STD_MUTE;
-                default:
-                    return null;
-            }
-        }
-
-        public int value() {
-            return this.val;
-        }
-    }
-
-    public enum atv_video_std_e {
-        ATV_VIDEO_STD_AUTO(0),
-            ATV_VIDEO_STD_PAL(1),
-            ATV_VIDEO_STD_NTSC(2),
-            ATV_VIDEO_STD_SECAM(3);
-
-        private int val;
-
-        atv_video_std_e(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-
-        public static  atv_video_std_e  valueOf(int val) {    //  int to enum
-            switch (val) {
-                case 0:
-                    return ATV_VIDEO_STD_AUTO;
-                case 1:
-                    return ATV_VIDEO_STD_PAL;
-                case 2:
-                    return ATV_VIDEO_STD_NTSC;
-                case 3:
-                    return ATV_VIDEO_STD_SECAM;
-                default:
-                    return null;
-            }
-        }
-
-        public int value() {
-            return this.val;
-        }
     }
 
     // Tv function
@@ -700,50 +500,8 @@ public class TvControlManager {
         return sendCmd(START_TV);
     }
 
-    public enum TvRunStatus_s {
-        TV_INIT_ED(-1),
-            TV_OPEN_ED (0),
-            TV_START_ED(1),
-            TV_RESUME_ED(2),
-            TV_PAUSE_ED(3),
-            TV_STOP_ED(4),
-            TV_CLOSE_ED(5);
-
-        private int val;
-
-        TvRunStatus_s(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-
-        public static  TvRunStatus_s  valueOf(int val) {    //  int to enum
-            switch (val) {
-                case -1:
-                    return TV_INIT_ED;
-                case 0:
-                    return TV_OPEN_ED;
-                case 1:
-                    return TV_START_ED;
-                case 2:
-                    return TV_RESUME_ED;
-                case 3:
-                    return TV_PAUSE_ED;
-                case 4:
-                    return TV_STOP_ED;
-                case 5:
-                    return TV_CLOSE_ED;
-                default:
-                    return null;
-            }
-        }
-    }
-
-    public TvRunStatus_s GetTvRunStatus() {
-        int ret = sendCmd(GET_TV_STATUS);
-        return TvRunStatus_s.valueOf(ret);
+    public int GetTvRunStatus() {
+        return sendCmd(GET_TV_STATUS);
     }
 
     /**
@@ -798,18 +556,18 @@ public class TvControlManager {
      * @Param:
      * @Return: refer to class tvin_info_t
      */
-    public tvin_info_t GetCurrentSignalInfo() {
+    public TVInSignalInfo GetCurrentSignalInfo() {
         libtv_log_open();
         Parcel cmd = Parcel.obtain();
         Parcel r = Parcel.obtain();
         cmd.writeInt(GET_CURRENT_SIGNAL_INFO);
         sendCmdToTv(cmd, r);
-        tvin_info_t sig_info = new tvin_info_t();
-        sig_info.trans_fmt = tvin_trans_fmt.values()[r.readInt()];
-        sig_info.fmt = tvin_sig_fmt_e.valueOf(r.readInt());
-        sig_info.status = tvin_sig_status_t.values()[r.readInt()];
-        sig_info.reserved = r.readInt();
-        return sig_info;
+        TVInSignalInfo info = new TVInSignalInfo();
+        info.transFmt = TVInSignalInfo.TransFmt.values()[r.readInt()];
+        info.sigFmt = TVInSignalInfo.SignalFmt.valueOf(r.readInt());
+        info.sigStatus = TVInSignalInfo.SignalStatus.values()[r.readInt()];
+        info.reserved = r.readInt();
+        return info;
     }
 
     /**
@@ -860,20 +618,6 @@ public class TvControlManager {
         return sendCmd(GET_VIDEO_STREAM_STATUS);
     }
 
-    public enum first_start_type  {
-        CC_FIRST_START_TYPE_UI_SWITCH_NONE(0),
-            CC_FIRST_START_TYPE_UI_SWITCH_HOME(1),
-            CC_FIRST_START_TYPE_UI_SWITCH_SOURCE(2);
-        private int val;
-
-        first_start_type(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
     /**
      * @Function: GetFirstStartSwitchType
      * @Description: Get first start switch type.
@@ -946,7 +690,7 @@ public class TvControlManager {
      * @Param:
      * @Return: 0 success, -1 fail
      */
-    public int IsVGAAutoAdjustDone(tvin_sig_fmt_e fmt) {
+    public int IsVGAAutoAdjustDone(TVInSignalInfo.SignalFmt fmt) {
         int val[] = new int[]{fmt.toInt()};
         return sendCmdIntArray(IS_VGA_AUTO_ADJUST_DONE, val);
     }
@@ -957,7 +701,7 @@ public class TvControlManager {
      * @Param: value h pos, fmt current signal fmt
      * @Return: 0 success, -1 fail
      */
-    public int SetVGAHPos(int value, tvin_sig_fmt_e fmt) {
+    public int SetVGAHPos(int value, TVInSignalInfo.SignalFmt fmt) {
         int val[] = new int[]{value, fmt.toInt()};
         return sendCmdIntArray(SET_VGA_HPOS, val);
     }
@@ -968,7 +712,7 @@ public class TvControlManager {
      * @Param: fmt current signal fmt
      * @Return: h pos
      */
-    public int GetVGAHPos(tvin_sig_fmt_e fmt) {
+    public int GetVGAHPos(TVInSignalInfo.SignalFmt fmt) {
         int val[] = new int[]{fmt.toInt()};
         return sendCmdIntArray(GET_VGA_HPOS, val);
     }
@@ -979,7 +723,7 @@ public class TvControlManager {
      * @Param: value v pos, fmt current signal fmt
      * @Return: 0 success, -1 fail
      */
-    public int SetVGAVPos(int value, tvin_sig_fmt_e fmt) {
+    public int SetVGAVPos(int value, TVInSignalInfo.SignalFmt fmt) {
         int val[] = new int[]{value, fmt.toInt()};
         return sendCmdIntArray(SET_VGA_VPOS, val);
     }
@@ -990,7 +734,7 @@ public class TvControlManager {
      * @Param: fmt current signal fmt
      * @Return: v pos
      */
-    public int GetVGAVPos(tvin_sig_fmt_e fmt) {
+    public int GetVGAVPos(TVInSignalInfo.SignalFmt fmt) {
         int val[] = new int[]{fmt.toInt()};
         return sendCmdIntArray(GET_VGA_VPOS, val);
     }
@@ -1001,7 +745,7 @@ public class TvControlManager {
      * @Param: value clock, fmt current signal fmt
      * @Return: 0 success, -1 fail
      */
-    public int SetVGAClock(int value, tvin_sig_fmt_e fmt) {
+    public int SetVGAClock(int value, TVInSignalInfo.SignalFmt fmt) {
         int val[] = new int[]{value, fmt.toInt()};
         return sendCmdIntArray(SET_VGA_CLOCK, val);
     }
@@ -1012,7 +756,7 @@ public class TvControlManager {
      * @Param: fmt current signal fmt
      * @Return: vga clock
      */
-    public int GetVGAClock(tvin_sig_fmt_e fmt) {
+    public int GetVGAClock(TVInSignalInfo.SignalFmt fmt) {
         int val[] = new int[]{fmt.toInt()};
         return sendCmdIntArray(GET_VGA_CLOCK, val);
     }
@@ -1023,7 +767,7 @@ public class TvControlManager {
      * @Param: value clock, fmt current signal fmt
      * @Return: 0 success, -1 fail
      */
-    public int SetVGAPhase(int value, tvin_sig_fmt_e fmt) {
+    public int SetVGAPhase(int value, TVInSignalInfo.SignalFmt fmt) {
         int val[] = new int[]{value, fmt.toInt()};
         return sendCmdIntArray(SET_VGA_PHASE, val);
     }
@@ -1034,7 +778,7 @@ public class TvControlManager {
      * @Param: fmt current signal fmt
      * @Return: vga phase
      */
-    public int GetVGAPhase(tvin_sig_fmt_e fmt) {
+    public int GetVGAPhase(TVInSignalInfo.SignalFmt fmt) {
         int val[] = new int[]{fmt.toInt()};
         return sendCmdIntArray(GET_VGA_PHASE, val);
     }
@@ -1049,106 +793,6 @@ public class TvControlManager {
         return sendCmd(SET_VGAPARAM_DEFAULT);
     }
     // VGA END
-
-    // 3D
-    public enum Mode_3D {
-        MODE_3D_CLOSE(0),
-            MODE_3D_AUTO(1),
-            //        MODE_3D_2D_TO_3D(2),
-            MODE_3D_LEFT_RIGHT(2),
-            MODE_3D_UP_DOWN(3),
-            MODE_3D_LINE_ALTERNATIVE(4),
-            MODE_3D_FRAME_ALTERNATIVE(5),
-            MODE_3D_MAX(6);
-
-        private int val;
-
-        Mode_3D(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public enum Tvin_3d_Status {
-        STATUS3D_DISABLE(0),
-            STATUS3D_AUTO(1),
-            //        STATUS3D_2D_TO_3D(2),
-            STATUS3D_LR(2),
-            STATUS3D_BT(3),
-            STATUS3D_LINE_ALTERNATIVE(4),
-            STATUS3D_FRAME_ALTERNATIVE(5),
-            STATUS3D_MAX(6);
-        private int val;
-
-        Tvin_3d_Status(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public enum Mode_3D_2D {
-        MODE_3D_2D_CLOSE(0),
-            MODE_3D_2D_LEFT(1),
-            MODE_3D_2D_RIGHT(2);
-
-        private int val;
-
-        Mode_3D_2D(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public int Get3DStatus() {
-        return sendCmd(GET_3D_STATUS);
-    }
-
-    public int Set3DMode(Mode_3D mode, Tvin_3d_Status status) {
-        int val[] = new int[]{mode.toInt(), status.toInt()};
-        return sendCmdIntArray(SET_3D_MODE, val);
-    }
-
-
-    public int Get3DMode() {
-        return sendCmd(GET_3D_MODE);
-    }
-
-    public int Set3DLRSwith(int on_off, Tvin_3d_Status status) {
-        int val[] = new int[]{on_off, status.toInt()};
-        return sendCmdIntArray(SET_3D_LR_SWITH, val);
-    }
-
-    public int Get3DLRSwith() {
-        return sendCmd(GET_3D_LR_SWITH);
-    }
-
-    public int Set3DTo2DMode(Mode_3D_2D mode, Tvin_3d_Status status) {
-        int val[] = new int[]{mode.toInt(), status.toInt()};
-        return sendCmdIntArray(SET_3D_TO_2D_MODE, val);
-    }
-
-    public int Get3DTo2DMode() {
-        return sendCmd(GET_3D_TO_2D_MODE);
-    }
-
-    public int Set3DDepth(int value) {
-        int val[] = new int[]{value};
-        return sendCmdIntArray(SET_3D_DEPTH, val);
-    }
-
-    public int Get3DDepth() {
-        return sendCmd(GET_3D_DEPTH);
-    }
-    // 3D END
 
     // PQ
 
@@ -1224,7 +868,7 @@ public class TvControlManager {
      * @Param: value saturation, source refer to enum SourceInput_Type, fmt current fmt refer to tvin_sig_fmt_e, is_save 1 to save
      * @Return: 0 success, -1 fail
      */
-    public int SetSaturation(int value, SourceInput_Type source, tvin_sig_fmt_e fmt, int is_save) {
+    public int SetSaturation(int value, SourceInput_Type source, TVInSignalInfo.SignalFmt fmt, int is_save) {
         int val[] = new int[]{value, source.toInt(), fmt.toInt(), is_save};
         return sendCmdIntArray(SET_SATURATION, val);
     }
@@ -1257,7 +901,7 @@ public class TvControlManager {
      * @Param: value saturation, source refer to enum SourceInput_Type, fmt current fmt refer to tvin_sig_fmt_e, is_save 1 to save
      * @Return: 0 success, -1 fail
      */
-    public int SetHue(int value, SourceInput_Type source, tvin_sig_fmt_e fmt, int is_save) {
+    public int SetHue(int value, SourceInput_Type source, TVInSignalInfo.SignalFmt fmt, int is_save) {
         int val[] = new int[]{value, source.toInt(), fmt.toInt(), is_save};
         return sendCmdIntArray(SET_HUE, val);
     }
@@ -1284,25 +928,8 @@ public class TvControlManager {
         return sendCmdIntArray(SAVE_HUE, val);
     }
 
-    public enum Scene_Mode {
-        SCENE_MODE_STANDARD(0),
-            SCENE_MODE_GAME(1),
-            SCENE_MODE_FILM(2),
-            SCENE_MODE_USER(3),
-            SCENE_MODE_MAX(4);
-
-        private int val;
-        Scene_Mode(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public int SetSceneMode(Scene_Mode scene_mode,int is_save) {
-        int val[] = new int[]{scene_mode.toInt(), is_save};
+    public int SetSceneMode(int scene_mode,int is_save) {
+        int val[] = new int[]{scene_mode, is_save};
         return sendCmdIntArray(SET_SCENEMODE, val);
     }
 
@@ -1310,17 +937,17 @@ public class TvControlManager {
         return sendCmd(GET_SCENEMODE);
     }
 
-    public enum Pq_Mode {
+    public enum PQMode {
         PQ_MODE_STANDARD(0),
-            PQ_MODE_BRIGHT(1),
-            PQ_MODE_SOFTNESS(2),
-            PQ_MODE_USER(3),
-            PQ_MODE_MOVIE(4),
-            PQ_MODE_COLORFUL(5);
+        PQ_MODE_BRIGHT(1),
+        PQ_MODE_SOFTNESS(2),
+        PQ_MODE_USER(3),
+        PQ_MODE_MOVIE(4),
+        PQ_MODE_COLORFUL(5);
 
         private int val;
 
-        Pq_Mode(int val) {
+        PQMode(int val) {
             this.val = val;
         }
 
@@ -1332,10 +959,10 @@ public class TvControlManager {
     /**
      * @Function: SetPQMode
      * @Description: Set current source picture mode
-     * @Param: value mode refer to enum Pq_Mode, source refer to enum SourceInput_Type, is_save 1 to save
+     * @Param: value mode refer to enum PQMode, source refer to enum SourceInput_Type, is_save 1 to save
      * @Return: 0 success, -1 fail
      */
-    public int SetPQMode(Pq_Mode pq_mode, SourceInput_Type source, int is_save) {
+    public int SetPQMode(PQMode pq_mode, SourceInput_Type source, int is_save) {
         int val[] = new int[]{pq_mode.toInt(), source.toInt(), is_save};
         return sendCmdIntArray(SET_PQMODE, val);
     }
@@ -1344,7 +971,7 @@ public class TvControlManager {
      * @Function: GetPQMode
      * @Description: Get current source picture mode
      * @Param: source refer to enum SourceInput_Type
-     * @Return: picture mode refer to enum Pq_Mode
+     * @Return: picture mode refer to enum PQMode
      */
     public int GetPQMode(SourceInput_Type source) {
         int val[] = new int[]{source.toInt()};
@@ -1354,10 +981,10 @@ public class TvControlManager {
     /**
      * @Function: SavePQMode
      * @Description: Save current source picture mode
-     * @Param: picture mode refer to enum Pq_Mode, source refer to enum SourceInput_Type
+     * @Param: picture mode refer to enum PQMode, source refer to enum SourceInput_Type
      * @Return: 0 success, -1 fail
      */
-    public int SavePQMode(Pq_Mode pq_mode, SourceInput_Type source) {
+    public int SavePQMode(PQMode pq_mode, SourceInput_Type source) {
         int val[] = new int[]{pq_mode.toInt(), source.toInt()};
         return sendCmdIntArray(SAVE_PQMODE, val);
     }
@@ -1452,9 +1079,9 @@ public class TvControlManager {
 
     public enum color_temperature {
         COLOR_TEMP_STANDARD(0),
-            COLOR_TEMP_WARM(1),
-            COLOR_TEMP_COLD(2),
-            COLOR_TEMP_MAX(3);
+        COLOR_TEMP_WARM(1),
+        COLOR_TEMP_COLD(2),
+        COLOR_TEMP_MAX(3);
         private int val;
 
         color_temperature(int val) {
@@ -1501,17 +1128,17 @@ public class TvControlManager {
 
     public enum Display_Mode {
         DISPLAY_MODE_169(0),
-            DISPLAY_MODE_PERSON(1),
-            DISPLAY_MODE_MOVIE(2),
-            DISPLAY_MODE_CAPTION(3),
-            DISPLAY_MODE_MODE43(4),
-            DISPLAY_MODE_FULL(5),
-            DISPLAY_MODE_NORMAL(6),
-            DISPLAY_MODE_NOSCALEUP(7),
-            DISPLAY_MODE_CROP_FULL(8),
-            DISPLAY_MODE_CROP(9),
-            DISPLAY_MODE_ZOOM(10),
-            DISPLAY_MODE_MAX(11);
+        DISPLAY_MODE_PERSON(1),
+        DISPLAY_MODE_MOVIE(2),
+        DISPLAY_MODE_CAPTION(3),
+        DISPLAY_MODE_MODE43(4),
+        DISPLAY_MODE_FULL(5),
+        DISPLAY_MODE_NORMAL(6),
+        DISPLAY_MODE_NOSCALEUP(7),
+        DISPLAY_MODE_CROP_FULL(8),
+        DISPLAY_MODE_CROP(9),
+        DISPLAY_MODE_ZOOM(10),
+        DISPLAY_MODE_MAX(11);
         private int val;
 
         Display_Mode(int val) {
@@ -1529,7 +1156,7 @@ public class TvControlManager {
      * @Param: value mode refer to enum Display_Mode, source refer to enum SourceInput_Type, fmt refer to tvin_sig_fmt_e, is_save 1 to save
      * @Return: 0 success, -1 fail
      */
-    public int SetDisplayMode(Display_Mode display_mode, SourceInput_Type source, tvin_sig_fmt_e fmt, int is_save) {
+    public int SetDisplayMode(Display_Mode display_mode, SourceInput_Type source, TVInSignalInfo.SignalFmt fmt, int is_save) {
         int val[] = new int[]{display_mode.toInt(), source.toInt(), fmt.toInt(), is_save};
         return sendCmdIntArray(SET_DISPLAY_MODE, val);
     }
@@ -1558,10 +1185,10 @@ public class TvControlManager {
 
     public enum Noise_Reduction_Mode {
         REDUCE_NOISE_CLOSE(0),
-            REDUCE_NOISE_WEAK(1),
-            REDUCE_NOISE_MID(2),
-            REDUCE_NOISE_STRONG(3),
-            REDUCTION_MODE_AUTO(4);
+        REDUCE_NOISE_WEAK(1),
+        REDUCE_NOISE_MID(2),
+        REDUCE_NOISE_STRONG(3),
+        REDUCTION_MODE_AUTO(4);
 
         private int val;
 
@@ -1612,12 +1239,12 @@ public class TvControlManager {
     // FACTORY
     public enum TEST_PATTERN {
         TEST_PATTERN_NONE(0),
-            TEST_PATTERN_RED(1),
-            TEST_PATTERN_GREEN(2),
-            TEST_PATTERN_BLUE(3),
-            TEST_PATTERN_WHITE(4),
-            TEST_PATTERN_BLACK(5),
-            TEST_PATTERN_MAX(6);
+        TEST_PATTERN_RED(1),
+        TEST_PATTERN_GREEN(2),
+        TEST_PATTERN_BLUE(3),
+        TEST_PATTERN_WHITE(4),
+        TEST_PATTERN_BLACK(5),
+        TEST_PATTERN_MAX(6);
 
         private int val;
 
@@ -1632,12 +1259,12 @@ public class TvControlManager {
 
     public enum NOLINE_PARAMS_TYPE {
         NOLINE_PARAMS_TYPE_BRIGHTNESS(0),
-            NOLINE_PARAMS_TYPE_CONTRAST(1),
-            NOLINE_PARAMS_TYPE_SATURATION(2),
-            NOLINE_PARAMS_TYPE_HUE(3),
-            NOLINE_PARAMS_TYPE_SHARPNESS(4),
-            NOLINE_PARAMS_TYPE_VOLUME(5),
-            NOLINE_PARAMS_TYPE_MAX(6);
+        NOLINE_PARAMS_TYPE_CONTRAST(1),
+        NOLINE_PARAMS_TYPE_SATURATION(2),
+        NOLINE_PARAMS_TYPE_HUE(3),
+        NOLINE_PARAMS_TYPE_SHARPNESS(4),
+        NOLINE_PARAMS_TYPE_VOLUME(5),
+        NOLINE_PARAMS_TYPE_MAX(6);
 
         private int val;
 
@@ -1668,7 +1295,7 @@ public class TvControlManager {
     /**
      * @Function: FactorySetPQMode_Brightness
      * @Description: Adjust brightness value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, pq_mode refer to enum Pq_Mode, brightness brightness value
+     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode, brightness brightness value
      * @Return: 0 success, -1 fail
      */
     public int FactorySetPQMode_Brightness(SourceInput_Type source_type, int pq_mode, int brightness) {
@@ -1679,7 +1306,7 @@ public class TvControlManager {
     /**
      * @Function: FactoryGetPQMode_Brightness
      * @Description: Get brightness value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, pq_mode refer to enum Pq_Mode
+     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode
      * @Return: 0 success, -1 fail
      */
     public int FactoryGetPQMode_Brightness(SourceInput_Type source_type, int pq_mode) {
@@ -1690,7 +1317,7 @@ public class TvControlManager {
     /**
      * @Function: FactorySetPQMode_Contrast
      * @Description: Adjust contrast value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, pq_mode refer to enum Pq_Mode, contrast contrast value
+     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode, contrast contrast value
      * @Return: contrast value
      */
     public int FactorySetPQMode_Contrast(SourceInput_Type source_type, int pq_mode, int contrast) {
@@ -1701,7 +1328,7 @@ public class TvControlManager {
     /**
      * @Function: FactoryGetPQMode_Contrast
      * @Description: Get contrast value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, pq_mode refer to enum Pq_Mode
+     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode
      * @Return: 0 success, -1 fail
      */
     public int FactoryGetPQMode_Contrast(SourceInput_Type source_type, int pq_mode) {
@@ -1712,7 +1339,7 @@ public class TvControlManager {
     /**
      * @Function: FactorySetPQMode_Saturation
      * @Description: Adjust saturation value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, pq_mode refer to enum Pq_Mode, saturation saturation value
+     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode, saturation saturation value
      * @Return: 0 success, -1 fail
      */
     public int FactorySetPQMode_Saturation(SourceInput_Type source_type, int pq_mode, int saturation) {
@@ -1723,7 +1350,7 @@ public class TvControlManager {
     /**
      * @Function: FactoryGetPQMode_Saturation
      * @Description: Get saturation value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, pq_mode refer to enum Pq_Mode
+     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode
      * @Return: saturation value
      */
     public int FactoryGetPQMode_Saturation(SourceInput_Type source_type, int pq_mode) {
@@ -1734,7 +1361,7 @@ public class TvControlManager {
     /**
      * @Function: FactorySetPQMode_Hue
      * @Description: Adjust hue value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, pq_mode refer to enum Pq_Mode, hue hue value
+     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode, hue hue value
      * @Return: 0 success, -1 fail
      */
     public int FactorySetPQMode_Hue(SourceInput_Type source_type, int pq_mode, int hue) {
@@ -1745,7 +1372,7 @@ public class TvControlManager {
     /**
      * @Function: FactoryGetPQMode_Hue
      * @Description: Get hue value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, pq_mode refer to enum Pq_Mode
+     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode
      * @Return: hue value
      */
     public int FactoryGetPQMode_Hue(SourceInput_Type source_type, int pq_mode) {
@@ -1756,7 +1383,7 @@ public class TvControlManager {
     /**
      * @Function: FactorySetPQMode_Sharpness
      * @Description: Adjust sharpness value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, pq_mode refer to enum Pq_Mode, sharpness sharpness value
+     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode, sharpness sharpness value
      * @Return: 0 success, -1 fail
      */
     public int FactorySetPQMode_Sharpness(SourceInput_Type source_type, int pq_mode, int sharpness) {
@@ -1767,7 +1394,7 @@ public class TvControlManager {
     /**
      * @Function: FactoryGetPQMode_Sharpness
      * @Description: Get sharpness value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, pq_mode refer to enum Pq_Mode
+     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode
      * @Return: sharpness value
      */
     public int FactoryGetPQMode_Sharpness(SourceInput_Type source_type, int pq_mode) {
@@ -1911,8 +1538,8 @@ public class TvControlManager {
      * @Param: trans_fmt refer to enum tvin_trans_fmt, cutwin_t refer to class tvin_cutwin_t
      * @Return: 0 success, -1 fail
      */
-    public int FactorySetOverscanParams(SourceInput_Type source_type, tvin_sig_fmt_e fmt, Tvin_3d_Status status_3d,
-            tvin_trans_fmt trans_fmt, tvin_cutwin_t cutwin_t) {
+    public int FactorySetOverscanParams(SourceInput_Type source_type, TVInSignalInfo.SignalFmt fmt, Tvin_3d_Status status_3d,
+            TVInSignalInfo.TransFmt trans_fmt, tvin_cutwin_t cutwin_t) {
         int val[] = new int[]{source_type.toInt(), fmt.toInt(), status_3d.ordinal(),
             trans_fmt.ordinal(), cutwin_t.hs, cutwin_t.he, cutwin_t.vs, cutwin_t.ve};
         return sendCmdIntArray(FACTORY_SETOVERSCAN, val);
@@ -1925,8 +1552,8 @@ public class TvControlManager {
      * @Param: trans_fmt refer to enum tvin_trans_fmt
      * @Return: cutwin_t value for overscan refer to class tvin_cutwin_t
      */
-    public tvin_cutwin_t FactoryGetOverscanParams(SourceInput_Type source_type, tvin_sig_fmt_e fmt,
-            Tvin_3d_Status status_3d, tvin_trans_fmt trans_fmt) {
+    public tvin_cutwin_t FactoryGetOverscanParams(SourceInput_Type source_type, TVInSignalInfo.SignalFmt fmt,
+            Tvin_3d_Status status_3d, TVInSignalInfo.TransFmt trans_fmt) {
         libtv_log_open();
         Parcel cmd = Parcel.obtain();
         Parcel r = Parcel.obtain();
@@ -2045,10 +1672,10 @@ public class TvControlManager {
     // Audio macro declare
     public enum Sound_Mode {
         SOUND_MODE_STD(0),
-            SOUND_MODE_MUSIC(1),
-            SOUND_MODE_NEWS(2),
-            SOUND_MODE_THEATER(3),
-            SOUND_MODE_USER(4);
+        SOUND_MODE_MUSIC(1),
+        SOUND_MODE_NEWS(2),
+        SOUND_MODE_THEATER(3),
+        SOUND_MODE_USER(4);
 
         private int val;
 
@@ -2063,15 +1690,15 @@ public class TvControlManager {
 
     public enum EQ_Mode {
         EQ_MODE_NORMAL(0),
-            EQ_MODE_POP(1),
-            EQ_MODE_JAZZ(2),
-            EQ_MODE_ROCK(3),
-            EQ_MODE_CLASSIC(4),
-            EQ_MODE_DANCE(5),
-            EQ_MODE_PARTY(6),
-            EQ_MODE_BASS(7),
-            EQ_MODE_TREBLE(8),
-            EQ_MODE_CUSTOM(9);
+        EQ_MODE_POP(1),
+        EQ_MODE_JAZZ(2),
+        EQ_MODE_ROCK(3),
+        EQ_MODE_CLASSIC(4),
+        EQ_MODE_DANCE(5),
+        EQ_MODE_PARTY(6),
+        EQ_MODE_BASS(7),
+        EQ_MODE_TREBLE(8),
+        EQ_MODE_CUSTOM(9);
 
         private int val;
 
@@ -2086,26 +1713,11 @@ public class TvControlManager {
 
     public enum CC_AUD_SPDIF_MODE {
         CC_SPDIF_MODE_PCM(0),
-            CC_SPDIF_MODE_SOURCE(1);
+        CC_SPDIF_MODE_SOURCE(1);
 
         private int val;
 
         CC_AUD_SPDIF_MODE(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public enum CC_AMAUDIO_OUT_MODE {
-        CC_AMAUDIO_OUT_MODE_DIRECT(0),
-            CC_AMAUDIO_OUT_MODE_MIX(1);
-
-        private int val;
-
-        CC_AMAUDIO_OUT_MODE(int val) {
             this.val = val;
         }
 
@@ -2773,19 +2385,17 @@ public class TvControlManager {
      */
     public int GetAudioEQGain(int gain_buf[]) {
         libtv_log_open();
-        int i = 0, tmp_buf_size = 0, ret = 0;
         Parcel cmd = Parcel.obtain();
         Parcel r = Parcel.obtain();
         cmd.writeInt(GET_AUDIO_EQ_GAIN);
         sendCmdToTv(cmd, r);
 
-        tmp_buf_size = r.readInt();
-        for (i = 0; i < tmp_buf_size; i++) {
+        int size = r.readInt();
+        for (int i = 0; i < size; i++) {
             gain_buf[i] = r.readInt();
         }
 
-        ret = r.readInt();
-        return ret;
+        return r.readInt();
     }
 
     /**
@@ -2806,20 +2416,17 @@ public class TvControlManager {
      */
     public int GetCurEQGain(int gain_buf[]) {
         libtv_log_open();
-        int i = 0, tmp_buf_size = 0, ret = 0;
         Parcel cmd = Parcel.obtain();
         Parcel r = Parcel.obtain();
         cmd.writeInt(GET_CUR_EQ_GAIN);
         sendCmdToTv(cmd, r);
 
-        tmp_buf_size = r.readInt();
-
-        for (i = 0; i < tmp_buf_size; i++) {
+        int size = r.readInt();
+        for (int i = 0; i < size; i++) {
             gain_buf[i] = r.readInt();
         }
 
-        ret = r.readInt();
-        return ret;
+        return r.readInt();
     }
 
     /**
@@ -3123,20 +2730,18 @@ public class TvControlManager {
      */
     public int SSMWriteNBytes(int offset, int data_len, int data_buf[]) {
         libtv_log_open();
-        int i = 0, ret = 0;
         Parcel cmd = Parcel.obtain();
         Parcel r = Parcel.obtain();
 
         cmd.writeInt(SSM_SAVE_N_BYTES);
         cmd.writeInt(offset);
         cmd.writeInt(data_len);
-        for (i = 0; i < data_len; i++) {
+        for (int i = 0; i < data_len; i++) {
             cmd.writeInt(data_buf[i]);
         }
 
         sendCmdToTv(cmd, r);
-        ret = r.readInt();
-        return ret;
+        return r.readInt();
     }
 
     /**
@@ -3360,20 +2965,17 @@ public class TvControlManager {
      */
     public int SSMReadBarCode(int data_buf[]) {
         libtv_log_open();
-        int i = 0, tmp_buf_size = 0, ret = 0;
         Parcel cmd = Parcel.obtain();
         Parcel r = Parcel.obtain();
         cmd.writeInt(SSM_READ_BAR_CODE);
         sendCmdToTv(cmd, r);
 
-        tmp_buf_size = r.readInt();
-
-        for (i = 0; i < tmp_buf_size; i++) {
+        int size = r.readInt();
+        for (int i = 0; i < size; i++) {
             data_buf[i] = r.readInt();
         }
 
-        ret = r.readInt();
-        return ret;
+        return r.readInt();
     }
 
     /**
@@ -3510,15 +3112,8 @@ public class TvControlManager {
      * @Return: 0 success, -1 fail
      */
     public int SSMSaveParentalControlPassWord(String pass_wd_str) {
-        libtv_log_open();
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        int tmpRet;
-        cmd.writeInt(SSM_SAVE_PARENTAL_CTL_PASS_WORD);
-        cmd.writeString(pass_wd_str);
-        sendCmdToTv(cmd, r);
-        tmpRet = r.readInt();
-        return tmpRet;
+        String val[] = new String[]{pass_wd_str};
+        return sendCmdStringArray(SSM_SAVE_PARENTAL_CTL_PASS_WORD, val);
     }
 
     /**
@@ -3810,13 +3405,13 @@ public class TvControlManager {
 
     public enum CC_TV_TYPE {
         TV_TYPE_ATV(0),
-            TV_TYPE_DVBC(1),
-            TV_TYPE_DTMB(2),
-            TV_TYPE_ATSC(3),
-            TV_TYPE_ATV_DVBC(4),
-            TV_TYPE_ATV_DTMB(5),
-            TV_TYPE_DVBC_DTMB(6),
-            TV_TYPE_ATV_DVBC_DTMB(7);
+        TV_TYPE_DVBC(1),
+        TV_TYPE_DTMB(2),
+        TV_TYPE_ATSC(3),
+        TV_TYPE_ATV_DVBC(4),
+        TV_TYPE_ATV_DTMB(5),
+        TV_TYPE_DVBC_DTMB(6),
+        TV_TYPE_ATV_DVBC_DTMB(7);
 
         private int val;
 
@@ -3858,20 +3453,18 @@ public class TvControlManager {
      */
     public int SSMSaveHDCPKey(int data_buf[]) {
         libtv_log_open();
-        int i = 0, tmp_buf_size = 0, ret = 0;
         Parcel cmd = Parcel.obtain();
         Parcel r = Parcel.obtain();
         cmd.writeInt(SSM_SAVE_HDCPKEY);
 
-        tmp_buf_size = data_buf.length;
-        cmd.writeInt(tmp_buf_size);
-        for (i = 0; i < tmp_buf_size; i++) {
+        int size = data_buf.length;
+        cmd.writeInt(size);
+        for (int i = 0; i < size; i++) {
             cmd.writeInt(data_buf[i]);
         }
 
         sendCmdToTv(cmd, r);
-        ret = r.readInt();
-        return ret;
+        return r.readInt();
     }
 
     /**
@@ -3882,20 +3475,17 @@ public class TvControlManager {
      */
     public int SSMReadHDCPKey(int data_buf[]) {
         libtv_log_open();
-        int i = 0, tmp_buf_size = 0, ret = 0;
         Parcel cmd = Parcel.obtain();
         Parcel r = Parcel.obtain();
         cmd.writeInt(SSM_READ_HDCPKEY);
         sendCmdToTv(cmd, r);
 
-        tmp_buf_size = r.readInt();
-
-        for (i = 0; i < tmp_buf_size; i++) {
+        int size = r.readInt();
+        for (int i = 0; i < size; i++) {
             data_buf[i] = r.readInt();
         }
 
-        ret = r.readInt();
-        return ret;
+        return r.readInt();
     }
     // SSM END
 
@@ -3908,16 +3498,8 @@ public class TvControlManager {
      * @Return: 0 success, -1 fail
      */
     public int TvMiscPropertySet(String key_str, String value_str) {
-        libtv_log_open();
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        int tmpRet;
-        cmd.writeInt(MISC_PROP_SET);
-        cmd.writeString(key_str);
-        cmd.writeString(value_str);
-        sendCmdToTv(cmd, r);
-        tmpRet = r.readInt();
-        return tmpRet;
+        String val[] = new String[]{key_str, value_str};
+        return sendCmdStringArray(MISC_PROP_SET, val);
     }
 
     /**
@@ -3944,16 +3526,8 @@ public class TvControlManager {
      * @Return: 0 success, -1 fail
      */
     public int TvMiscConfigSet(String key_str, String value_str) {
-        libtv_log_open();
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        int tmpRet;
-        cmd.writeInt(MISC_CFG_SET);
-        cmd.writeString(key_str);
-        cmd.writeString(value_str);
-        sendCmdToTv(cmd, r);
-        tmpRet = r.readInt();
-        return tmpRet;
+        String val[] = new String[]{key_str, value_str};
+        return sendCmdStringArray(MISC_CFG_SET, val);
     }
 
     /**
@@ -3980,15 +3554,8 @@ public class TvControlManager {
      * @Return: 0 success, -1 fail
      */
     public int TvMiscSetGPIOCtrl(String op_cmd_str) {
-        libtv_log_open();
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        int tmpRet;
-        cmd.writeInt(MISC_SET_GPIO_CTL);
-        cmd.writeString(op_cmd_str);
-        sendCmdToTv(cmd, r);
-        tmpRet = r.readInt();
-        return tmpRet;
+        String val[] = new String[]{op_cmd_str};
+        return sendCmdStringArray(MISC_SET_GPIO_CTL, val);
     }
 
     /**
@@ -4072,10 +3639,6 @@ public class TvControlManager {
         public String build_number_ver;
     }
 
-    public class uboot_ver_info {
-        public String ver_info;
-    }
-
     public static class kernel_ver_info {
         public String linux_ver_info;
         public String build_usr_info;
@@ -4100,7 +3663,7 @@ public class TvControlManager {
 
     public class version_info {
         public android_ver_info android_ver;
-        public uboot_ver_info uboot_ver;
+        public String ubootVer;
         public kernel_ver_info kernel_ver;
         public tvapi_ver_info tvapi_ver;
         public dvb_ver_info dvb_ver;
@@ -4135,19 +3698,14 @@ public class TvControlManager {
      * @Function: TvMiscGetUbootVersion
      * @Description: Get uboot version
      * @Param: none
-     * @Return: uboot_ver_info
+     * @Return:
      */
-    public uboot_ver_info TvMiscGetUbootVersion() {
+    public String TvMiscGetUbootVersion() {
         libtv_log_open();
-        String tmp_str;
-        uboot_ver_info tmpInfo = new uboot_ver_info();
-
-        tmp_str = TvMiscPropertyGet("ro.ubootenv.varible.prefix",
+        String ubootvar = TvMiscPropertyGet("ro.ubootenv.varible.prefix",
                 "ubootenv.var");
-        tmpInfo.ver_info = TvMiscPropertyGet(tmp_str + "." + "ubootversion",
-                "VERSION_ERROR");
-
-        return tmpInfo;
+        String ver = TvMiscPropertyGet(ubootvar + "." + "ubootversion", "VERSION_ERROR");
+        return ver;
     }
 
     /**
@@ -4278,7 +3836,7 @@ public class TvControlManager {
         version_info tmpInfo = new version_info();
 
         tmpInfo.android_ver = TvMiscGetAndroidVersion();
-        tmpInfo.uboot_ver = TvMiscGetUbootVersion();
+        tmpInfo.ubootVer = TvMiscGetUbootVersion();
         tmpInfo.kernel_ver = TvMiscGetKernelVersion();
         tmpInfo.tvapi_ver = TvMiscGetTVAPIVersion();
         tmpInfo.dvb_ver = TvMiscGetDVBAPIVersion();
@@ -4311,26 +3869,11 @@ public class TvControlManager {
         return tmpInfo;
     }
 
-    public enum CC_PLATFROM_TYPE {
-        CC_PLATFROM_T868_NO_FBC(0),
-            CC_PLATFROM_T866_HAS_FBC(1);
-
-        private int val;
-
-        CC_PLATFROM_TYPE(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
     /**
      * @Function: TvMiscGetPlatformType
      * @Description: Get platform type
      * @Param: none
-     * @Return: refer as CC_PLATFROM_TYPE
+     * @Return: 0: T868 no fbc 1:T866 has fbc
      */
     public int TvMiscGetPlatformType() {
         return sendCmd(MISC_GET_PLATFORM_TYPE);
@@ -4338,8 +3881,8 @@ public class TvControlManager {
 
     public enum SerialDeviceID {
         SERIAL_A(0),
-            SERIAL_B(1),
-            SERIAL_C(2);
+        SERIAL_B(1),
+        SERIAL_C(2);
 
         private int val;
 
@@ -4374,7 +3917,6 @@ public class TvControlManager {
      */
     public int SendSerialData(SerialDeviceID dev_id, int data_len, int data_buf[]) {
         libtv_log_open();
-        int i = 0, ret = 0;
         Parcel cmd = Parcel.obtain();
         Parcel r = Parcel.obtain();
 
@@ -4386,13 +3928,12 @@ public class TvControlManager {
 
         cmd.writeInt(dev_id.toInt());
         cmd.writeInt(data_len);
-        for (i = 0; i < data_len; i++) {
+        for (int i = 0; i < data_len; i++) {
             cmd.writeInt(data_buf[i]);
         }
 
         sendCmdToTv(cmd, r);
-        ret = r.readInt();
-        return ret;
+        return r.readInt();
     }
 
     /**
@@ -4441,8 +3982,8 @@ public class TvControlManager {
         return sendCmd(DTV_SCAN_AUTO);
     }
 
-    public int DtvAutoScanAtsc(int attenna, atv_video_std_e videoStd,atv_audio_std_e audioStd) {
-        int val[] = new int[]{attenna, videoStd.toInt(), audioStd.toInt()};
+    public int DtvAutoScanAtsc(int attenna, int videoStd,int audioStd) {
+        int val[] = new int[]{attenna, videoStd, audioStd};
         return sendCmdIntArray(DTV_SCAN_AUTO_ATSC, val);
     }
 
@@ -4456,12 +3997,12 @@ public class TvControlManager {
         return sendCmdIntArray(DTV_SCAN_MANUAL, val);
     }
 
-    public int AtvAutoScan(atv_video_std_e videoStd, atv_audio_std_e audioStd) {
+    public int AtvAutoScan(int videoStd, int audioStd) {
         return AtvAutoScan(videoStd, audioStd, 0);
     }
 
-    public int AtvAutoScan(atv_video_std_e videoStd, atv_audio_std_e audioStd, int storeType) {
-        int val[] = new int[]{videoStd.toInt(), audioStd.toInt(), storeType};
+    public int AtvAutoScan(int videoStd, int audioStd, int storeType) {
+        int val[] = new int[]{videoStd, audioStd, storeType};
         return sendCmdIntArray(ATV_SCAN_AUTO, val);
     }
 
@@ -4475,9 +4016,9 @@ public class TvControlManager {
      * @Param: audioStd:scan audio standard
      * @Return: 0 ok or -1 error
      */
-    public int AtvManualScan(int startFreq, int endFreq, atv_video_std_e videoStd,
-            atv_audio_std_e audioStd, int storeType, int currentNum) {
-        int val[] = new int[]{startFreq, endFreq, videoStd.toInt(), audioStd.toInt(), storeType, currentNum};
+    public int AtvManualScan(int startFreq, int endFreq, int videoStd,
+            int audioStd, int storeType, int currentNum) {
+        int val[] = new int[]{startFreq, endFreq, videoStd, audioStd, storeType, currentNum};
         return sendCmdIntArray(ATV_SCAN_MANUAL_BY_NUMBER, val);
     }
 
@@ -4490,9 +4031,9 @@ public class TvControlManager {
      * @Param: audioStd:scan audio standard
      * @Return: 0 ok or -1 error
      */
-    public int AtvManualScan(int startFreq, int endFreq, atv_video_std_e videoStd,
-            atv_audio_std_e audioStd) {
-        int val[] = new int[]{startFreq, endFreq, videoStd.toInt(), audioStd.toInt()};
+    public int AtvManualScan(int startFreq, int endFreq, int videoStd,
+            int audioStd) {
+        int val[] = new int[]{startFreq, endFreq, videoStd, audioStd};
         return sendCmdIntArray(ATV_SCAN_MANUAL, val);
     }
 
@@ -4534,32 +4075,27 @@ public class TvControlManager {
 
     public int getAutoBacklightData(int data[]) {
         libtv_log_open();
-        int i = 0, tmp_buf_size = 0;
         Parcel cmd = Parcel.obtain();
         Parcel r = Parcel.obtain();
         cmd.writeInt(GET_AUTO_BACKLIGHT_DATA);
         sendCmdToTv(cmd, r);
 
-        tmp_buf_size = r.readInt();
-        for (i = 0; i < tmp_buf_size; i++) {
+        int size = r.readInt();
+        for (int i = 0; i < size; i++) {
             data[i] = r.readInt();
         }
 
-        return tmp_buf_size;
+        return size;
     }
 
     public int setAutoBacklightData(HashMap<String,Integer> map) {
-        libtv_log_open();
-        int ret =0;
-        String data =null;
-        data ="opcSwitch:"+map.get("opcSwitch")+",MinBacklight:"+map.get("MinBacklight")+",Offset:"+map.get("Offset")+
-                ",MaxStep:"+map.get("MaxStep")+",MinStep:"+map.get("MinStep");
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        cmd.writeInt(SET_AUTO_BACKLIGHT_DATA);
-        cmd.writeString(data);
-        sendCmdToTv(cmd, r);
-        ret = r.readInt();
+        String data ="opcSwitch:" + map.get("opcSwitch") +
+            ",MinBacklight:"+ map.get("MinBacklight") +
+            ",Offset:" + map.get("Offset") +
+            ",MaxStep:" + map.get("MaxStep") +
+            ",MinStep:" + map.get("MinStep");
+        String val[] = new String[]{data};
+        sendCmdStringArray(SET_AUTO_BACKLIGHT_DATA, val);
         return 0;
     }
 
@@ -4856,21 +4392,13 @@ public class TvControlManager {
         return sendCmd(TV_SUBTITLE_DRAW_END);
     }
 
-    //public class Subtitle
-    //{
-    private Bitmap mSubtitleBMP = null;
-    public void CreateSubtitleBitmap() {
+    public Bitmap CreateSubtitleBitmap() {
         libtv_log_open();
-        mSubtitleBMP = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888);
-        native_create_subtitle_bitmap(mSubtitleBMP);
+        Bitmap subtitleFrame = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888);
+        native_create_subtitle_bitmap(subtitleFrame);
+        return subtitleFrame;
     }
 
-    private native final void native_create_subtitle_bitmap(Object bmp);
-
-    public Bitmap getSubtitleBitmap() {
-        libtv_log_open();
-        return mSubtitleBMP;
-    }
     public void setSubtitleUpdateListener(SubtitleUpdateListener l) {
         libtv_log_open();
         mSubtitleListener = l;
@@ -4880,33 +4408,24 @@ public class TvControlManager {
         libtv_log_open();
         mScannerListener = l;
     }
-    //public onUpdate();
-    //}
 
-    private Bitmap mVideoFrameBMP = null;
-    public void CreateVideoFrameBitmap(int inputSourceMode) {
+    public Bitmap CreateVideoFrameBitmap(int inputSourceMode) {
         libtv_log_open();
-        mVideoFrameBMP = Bitmap.createBitmap(1280, 720, Bitmap.Config.ARGB_8888);
-        native_create_video_frame_bitmap(mVideoFrameBMP);
+        Bitmap videoFrame = Bitmap.createBitmap(1280, 720, Bitmap.Config.ARGB_8888);
+        native_create_video_frame_bitmap(videoFrame);
+        return videoFrame;
     }
 
-    private native final void native_create_video_frame_bitmap(Object bmp);
-
-    public Bitmap getVideoFrameBitmap() {
-        libtv_log_open();
-        return mVideoFrameBMP;
-    }
-
-    public final static int EVENT_SCAN_PROGRESS = 0;
-    public final static int EVENT_STORE_BEGIN   = 1;
-    public final static int EVENT_STORE_END     = 2;
-    public final static int EVENT_SCAN_END     = 3;
-    public final static int EVENT_BLINDSCAN_PROGRESS = 4;
-    public final static int EVENT_BLINDSCAN_NEWCHANNEL = 5;
-    public final static int EVENT_BLINDSCAN_END    = 6;
-    public final static int EVENT_ATV_PROG_DATA = 7;
-    public final static int EVENT_DTV_PROG_DATA = 8;
-    public final static int EVENT_SCAN_EXIT     = 9;
+    public final static int EVENT_SCAN_PROGRESS             = 0;
+    public final static int EVENT_STORE_BEGIN               = 1;
+    public final static int EVENT_STORE_END                 = 2;
+    public final static int EVENT_SCAN_END                  = 3;
+    public final static int EVENT_BLINDSCAN_PROGRESS        = 4;
+    public final static int EVENT_BLINDSCAN_NEWCHANNEL      = 5;
+    public final static int EVENT_BLINDSCAN_END             = 6;
+    public final static int EVENT_ATV_PROG_DATA             = 7;
+    public final static int EVENT_DTV_PROG_DATA             = 8;
+    public final static int EVENT_SCAN_EXIT                 = 9;
 
     public class ScannerEvent {
         public int type;
@@ -4922,7 +4441,7 @@ public class TvControlManager {
         public int quality;
 
         //for ATV
-        public int  videoStd;
+        public int videoStd;
         public int audioStd;
         public int isAutoStd;
         public int fineTune;
@@ -4951,8 +4470,8 @@ public class TvControlManager {
         public int[] sid1s;
         public int[] sid2s;
         public String[] slangs;
-
     }
+
     public interface ScannerEventListener {
         void onEvent(ScannerEvent ev);
     }
@@ -5287,11 +4806,11 @@ public class TvControlManager {
 
     public enum tv_fe_type_e {
         TV_FE_QPSK(0),
-            TV_FE_QAM(1),
-            TV_FE_OFDM(2),
-            TV_FE_ATSC(3),
-            TV_FE_ANALOG(4),
-            TV_FE_DTMB(5);
+        TV_FE_QAM(1),
+        TV_FE_OFDM(2),
+        TV_FE_ATSC(3),
+        TV_FE_ANALOG(4),
+        TV_FE_DTMB(5);
 
         private int val;
 
@@ -5323,7 +4842,7 @@ public class TvControlManager {
 
     public enum CC_PARAM_COUNTRY {
         CC_PARAM_COUNTRY_USA(0),
-            CC_PARAM_COUNTRY_KOREA(1);
+        CC_PARAM_COUNTRY_KOREA(1);
 
         private int val;
 
@@ -5338,7 +4857,7 @@ public class TvControlManager {
 
     public enum CC_PARAM_SOURCE_TYPE {
         CC_PARAM_SOURCE_VBIDATA(0),
-            CC_PARAM_SOURCE_USERDATA(1);
+        CC_PARAM_SOURCE_USERDATA(1);
 
         private int val;
 
@@ -5353,20 +4872,20 @@ public class TvControlManager {
 
     public enum CC_PARAM_CAPTION_TYPE {
         CC_PARAM_ANALOG_CAPTION_TYPE_CC1(0),
-            CC_PARAM_ANALOG_CAPTION_TYPE_CC2(1),
-            CC_PARAM_ANALOG_CAPTION_TYPE_CC3(2),
-            CC_PARAM_ANALOG_CAPTION_TYPE_CC4(3),
-            CC_PARAM_ANALOG_CAPTION_TYPE_TEXT1(4),
-            CC_PARAM_ANALOG_CAPTION_TYPE_TEXT2(5),
-            CC_PARAM_ANALOG_CAPTION_TYPE_TEXT3(6),
-            CC_PARAM_ANALOG_CAPTION_TYPE_TEXT4(7),
-            //
-            CC_PARAM_DIGITAL_CAPTION_TYPE_SERVICE1(8),
-            CC_PARAM_DIGITAL_CAPTION_TYPE_SERVICE2(9),
-            CC_PARAM_DIGITAL_CAPTION_TYPE_SERVICE3(10),
-            CC_PARAM_DIGITAL_CAPTION_TYPE_SERVICE4(11),
-            CC_PARAM_DIGITAL_CAPTION_TYPE_SERVICE5(12),
-            CC_PARAM_DIGITAL_CAPTION_TYPE_SERVICE6(13);
+        CC_PARAM_ANALOG_CAPTION_TYPE_CC2(1),
+        CC_PARAM_ANALOG_CAPTION_TYPE_CC3(2),
+        CC_PARAM_ANALOG_CAPTION_TYPE_CC4(3),
+        CC_PARAM_ANALOG_CAPTION_TYPE_TEXT1(4),
+        CC_PARAM_ANALOG_CAPTION_TYPE_TEXT2(5),
+        CC_PARAM_ANALOG_CAPTION_TYPE_TEXT3(6),
+        CC_PARAM_ANALOG_CAPTION_TYPE_TEXT4(7),
+        //
+        CC_PARAM_DIGITAL_CAPTION_TYPE_SERVICE1(8),
+        CC_PARAM_DIGITAL_CAPTION_TYPE_SERVICE2(9),
+        CC_PARAM_DIGITAL_CAPTION_TYPE_SERVICE3(10),
+        CC_PARAM_DIGITAL_CAPTION_TYPE_SERVICE4(11),
+        CC_PARAM_DIGITAL_CAPTION_TYPE_SERVICE5(12),
+        CC_PARAM_DIGITAL_CAPTION_TYPE_SERVICE6(13);
 
         private int val;
 
@@ -5382,46 +4901,46 @@ public class TvControlManager {
 
     /*
      * 1, Set the country first and parameters should be either USA or KOREA
-#define CMD_SET_COUNTRY_USA                 0x5001
-#define CMD_SET_COUNTRY_KOREA            0x5002
+    #define CMD_SET_COUNTRY_USA                 0x5001
+    #define CMD_SET_COUNTRY_KOREA            0x5002
 
-2, Set the source type which including
-a)VBI data(for analog program only)
-b)USER data(for AIR or Cable service)
-CMD_CC_SET_VBIDATA   = 0x7001,
-CMD_CC_SET_USERDATA = 0x7002,
-2.1 If the frontend type is Analog we must set the channel Index
-with command 'CMD_CC_SET_CHAN_NUM' and the parameter is like 57M
-we set 0x20000, this should according to USA standard frequency
-table.
+    2, Set the source type which including
+    a)VBI data(for analog program only)
+    b)USER data(for AIR or Cable service)
+    CMD_CC_SET_VBIDATA   = 0x7001,
+    CMD_CC_SET_USERDATA = 0x7002,
+    2.1 If the frontend type is Analog we must set the channel Index
+    with command 'CMD_CC_SET_CHAN_NUM' and the parameter is like 57M
+    we set 0x20000, this should according to USA standard frequency
+    table.
 
-3, Next is to set the CC service type
+    3, Next is to set the CC service type
 
-#define CMD_CC_1                        0x3001
-#define CMD_CC_2                        0x3002
-#define CMD_CC_3                        0x3003
-#define CMD_CC_4                        0x3004
+    #define CMD_CC_1                        0x3001
+    #define CMD_CC_2                        0x3002
+    #define CMD_CC_3                        0x3003
+    #define CMD_CC_4                        0x3004
 
-    //this doesn't support currently
-#define CMD_TT_1                        0x3005
-#define CMD_TT_2                        0x3006
-#define CMD_TT_3                        0x3007
-#define CMD_TT_4                        0x3008
+        //this doesn't support currently
+    #define CMD_TT_1                        0x3005
+    #define CMD_TT_2                        0x3006
+    #define CMD_TT_3                        0x3007
+    #define CMD_TT_4                        0x3008
 
-#define CMD_SERVICE_1                 0x4001
-#define CMD_SERVICE_2                 0x4002
-#define CMD_SERVICE_3                 0x4003
-#define CMD_SERVICE_4                 0x4004
-#define CMD_SERVICE_5                 0x4005
-#define CMD_SERVICE_6                 0x4006
+    #define CMD_SERVICE_1                 0x4001
+    #define CMD_SERVICE_2                 0x4002
+    #define CMD_SERVICE_3                 0x4003
+    #define CMD_SERVICE_4                 0x4004
+    #define CMD_SERVICE_5                 0x4005
+    #define CMD_SERVICE_6                 0x4006
 
-4, Then set CMD_CC_START to start the CC service, and you needn't to stop
+    4, Then set CMD_CC_START to start the CC service, and you needn't to stop
 
-CC service while switching services
+    CC service while switching services
 
-5, CMD_CC_STOP should be called in some cases like switch source, change
+    5, CMD_CC_STOP should be called in some cases like switch source, change
 
-program, no signal, blocked...*/
+    program, no signal, blocked...*/
 
     //channel_num == 0 ,if frontend is dtv
     //else != 0
@@ -5557,17 +5076,17 @@ program, no signal, blocked...*/
         Parcel r = Parcel.obtain();
         cmd.writeInt(DTV_GET_CURRENT_VCHIP_BLOCK);
         sendCmdToTv(cmd, r);
-        VchipLockStatus lockStatus =new VchipLockStatus();
-        lockStatus.blockstatus=r.readInt();
-        lockStatus.vchipDimension =r.readString();
-        lockStatus.vchipAbbrev =r.readString();
+        VchipLockStatus lockStatus = new VchipLockStatus();
+        lockStatus.blockstatus = r.readInt();
+        lockStatus.vchipDimension = r.readString();
+        lockStatus.vchipAbbrev = r.readString();
         return lockStatus;
     }
 
     private void libtv_log_open(){
         if (tvLogFlg) {
             StackTraceElement traceElement = ((new Exception()).getStackTrace())[1];
-            Log.i(TAG,traceElement.getMethodName());
+            Log.i(TAG, traceElement.getMethodName());
         }
     }
 
@@ -5596,8 +5115,8 @@ program, no signal, blocked...*/
 
     public enum SOUND_TRACK_MODE {
         SOUND_TRACK_MODE_MONO(0),
-            SOUND_TRACK_MODE_STEREO(1),
-            SOUND_TRACK_MODE_SAP(2);
+        SOUND_TRACK_MODE_STEREO(1),
+        SOUND_TRACK_MODE_SAP(2);
         private int val;
 
         SOUND_TRACK_MODE(int val) {
@@ -5620,9 +5139,9 @@ program, no signal, blocked...*/
 
     public enum LEFT_RIGHT_SOUND_CHANNEL {
         LEFT_RIGHT_SOUND_CHANNEL_STEREO(0),
-            LEFT_RIGHT_SOUND_CHANNEL_LEFT(1),
-            LEFT_RIGHT_SOUND_CHANNEL_RIGHT(2),
-            LEFT_RIGHT_SOUND_CHANNEL_SWAP(3);
+        LEFT_RIGHT_SOUND_CHANNEL_LEFT(1),
+        LEFT_RIGHT_SOUND_CHANNEL_RIGHT(2),
+        LEFT_RIGHT_SOUND_CHANNEL_SWAP(3);
         private int val;
 
         LEFT_RIGHT_SOUND_CHANNEL(int val) {
@@ -5717,9 +5236,9 @@ program, no signal, blocked...*/
 
     public enum vpp_display_resolution_t {
         VPP_DISPLAY_RESOLUTION_1366X768(0),
-            VPP_DISPLAY_RESOLUTION_1920X1080(1),
-            VPP_DISPLAY_RESOLUTION_3840X2160(2),
-            VPP_DISPLAY_RESOLUTION_MAX(3);
+        VPP_DISPLAY_RESOLUTION_1920X1080(1),
+        VPP_DISPLAY_RESOLUTION_3840X2160(2),
+        VPP_DISPLAY_RESOLUTION_MAX(3);
         private int val;
 
         vpp_display_resolution_t(int val) {
@@ -5907,9 +5426,9 @@ program, no signal, blocked...*/
 
     public enum FBCUpgradeState {
         STATE_STOPED(0),
-            STATE_RUNNING(1),
-            STATE_FINISHED(2),
-            STATE_ABORT(3);
+        STATE_RUNNING(1),
+        STATE_FINISHED(2),
+        STATE_ABORT(3);
 
         private int val;
 
@@ -5924,8 +5443,8 @@ program, no signal, blocked...*/
 
     public enum FBCUpgradeErrorCode {
         ERR_SERIAL_CONNECT(-1),
-            ERR_OPEN_BIN_FILE(-2),
-            ERR_BIN_FILE_SIZE(-3);
+        ERR_OPEN_BIN_FILE(-2),
+        ERR_BIN_FILE_SIZE(-3);
 
         private int val;
 
@@ -6402,12 +5921,8 @@ program, no signal, blocked...*/
      * @Return 0 is success,else is fail:
      */
     public int FactorySet_FBC_SN_Info(String strFactorySN,int len) {
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        cmd.writeInt(FACTORY_SET_SN);
-        cmd.writeString(strFactorySN);
-        sendCmdToTv(cmd, r);
-        return r.readInt();
+        String val[] = new String[]{strFactorySN};
+        return sendCmdStringArray(FACTORY_SET_SN, val);
     }
 
     public String FactoryGet_FBC_SN_Info() {
@@ -6613,196 +6128,197 @@ program, no signal, blocked...*/
     }
 
     //value:
-    /*#define REBOOT_FLAG_NORMAL              0x00000000
-#define REBOOT_FLAG_UPGRADE             0x80808080
-#define REBOOT_FLAG_UPGRADE2    0x88888888      // reserved
-#define REBOOT_FLAG_SUSPEND             0x12345678*/
+    /*
+    #define REBOOT_FLAG_NORMAL              0x00000000
+    #define REBOOT_FLAG_UPGRADE             0x80808080
+    #define REBOOT_FLAG_UPGRADE2            0x88888888      // reserved
+    #define REBOOT_FLAG_SUSPEND             0x12345678*/
     public int FactorySet_FBC_Power_Reboot(int value) {
         int val[] = new int[]{value};
         return sendCmdIntArray(FACTORY_FBC_POWER_REBOOT, val);
     }
 
     //ref to FBC include/key_const.h
-    public static final int AML_FBC_KEY_NOP  =  0;
-    public static final int AML_FBC_KEY_NUM_PLUS10  =  1;
-    public static final int AML_FBC_KEY_NUM_0  =  2;
-    public static final int AML_FBC_KEY_NUM_1  =  3;
-    public static final int AML_FBC_KEY_NUM_2  =  4;
-    public static final int AML_FBC_KEY_NUM_3  =  5;
-    public static final int AML_FBC_KEY_NUM_4  =  6;
-    public static final int AML_FBC_KEY_NUM_5  =  7;
-    public static final int AML_FBC_KEY_NUM_6  =  8;
-    public static final int AML_FBC_KEY_NUM_7   = 9;
-    public static final int AML_FBC_KEY_NUM_8  =  10;
-    public static final int AML_FBC_KEY_NUM_9  =  11;
-    public static final int AML_FBC_KEY_UP   = 12;
-    public static final int AML_FBC_KEY_DOWN   = 13;
-    public static final int AML_FBC_KEY_LEFT  =  14;
-    public static final int AML_FBC_KEY_RIGHT  =  15;
-    public static final int AML_FBC_KEY_ENTER  =  16;
-    public static final int AML_FBC_KEY_EXIT   = 17;
-    public static final int AML_FBC_KEY_PAGE_UP  =  18;
-    public static final int AML_FBC_KEY_PAGE_DOWN  =  19;
-    public static final int AML_FBC_KEY_POWER  =  20;
-    public static final int AML_FBC_KEY_SLEEP  =  21;
-    public static final int AML_FBC_KEY_HOME   = 22;
-    public static final int AML_FBC_KEY_SETUP  =  23;
-    public static final int AML_FBC_KEY_OSD  =  24;
-    public static final int AML_FBC_KEY_MENU  =  25;
-    public static final int AML_FBC_KEY_DISPLAY   = 26;
-    public static final int AML_FBC_KEY_MARK   = 27;
-    public static final int AML_FBC_KEY_CLEAR  =  28;
-    public static final int AML_FBC_KEY_PLAY_PAUSE  =  29;
-    public static final int AML_FBC_KEY_STOP  =  30;
-    public static final int AML_FBC_KEY_PAUSE  =  31;
-    public static final int AML_FBC_KEY_NEXT_CHAP  =  32;
-    public static final int AML_FBC_KEY_PREVIOUS_CHAP  =  33;
-    public static final int AML_FBC_KEY_FAST_FORWARD  =  34;
-    public static final int AML_FBC_KEY_FAST_BACKWARD  =  35;
-    public static final int AML_FBC_KEY_REPEAT  =  36;
-    public static final int AML_FBC_KEY_PLAY_MODE  =  37;
-    public static final int AML_FBC_KEY_SLIDE_SHOW  =  38;
-    public static final int AML_FBC_KEY_MUTE  =  39;
-    public static final int AML_FBC_KEY_VOL_MINUS  =  40;
-    public static final int AML_FBC_KEY_VOL_PLUS   = 41;
-    public static final int AML_FBC_KEY_ZOOM  =  42;
-    public static final int AML_FBC_KEY_ROTATE  =  43;
-    public static final int AML_FBC_KEY_MOUSE_L_DOWN   = 44;
-    public static final int AML_FBC_KEY_MOUSE_L_UP  =  45;
-    public static final int AML_FBC_KEY_MOUSE_R_DOWN  =  46;
-    public static final int AML_FBC_KEY_MOUSE_R_UP  =  47;
-    public static final int AML_FBC_KEY_MOUSE_M_DOWN  =  48;
-    public static final int AML_FBC_KEY_MOUSE_M_UP   = 49;
-    public static final int AML_FBC_KEY_MOUSE_ROLL_DOWN  =  50;
-    public static final int AML_FBC_KEY_MOUSE_ROLL_UP  =  51;
-    public static final int AML_FBC_KEY_MOUSE_MOVE  =  52;
-    public static final int AML_FBC_KEY_LONG_EXIT   = 53;
-    public static final int AML_FBC_KEY_LONG_RIGHT  =  54;
-    public static final int AML_FBC_KEY_LONG_LEFT   = 55;
-    public static final int AML_FBC_KEY_LONG_DOWN  =  56;
-    public static final int AML_FBC_KEY_LONG_UP  =  57;
-    public static final int AML_FBC_KEY_LONG_ENTER  =  58;
-    public static final int AML_FBC_KEY_LONG_MENU   = 59;
-    public static final int AML_FBC_KEY_OPEN_CLOSE  =  60;
-    public static final int AML_FBC_KEY_NTSC_PAL  =  61;
-    public static final int AML_FBC_KEY_PROGRESSIVE  =  62;
-    public static final int AML_FBC_KEY_TITLE_CALL  =  63;
-    public static final int AML_FBC_KEY_AUDIO  =  64;
-    public static final int AML_FBC_KEY_SUBPICTURE  =  65;
-    public static final int AML_FBC_KEY_ANGLE   = 66;
-    public static final int AML_FBC_KEY_AB_PLAY  =  67;
-    public static final int AML_FBC_KEY_RECODE  =  68;
-    public static final int AML_FBC_KEY_SHORTCUT   = 69;
-    public static final int AML_FBC_KEY_ORIGINAL  =  70;
-    public static final int AML_FBC_KEY_BOOKING   = 71;
-    public static final int AML_FBC_KEY_ORDER_SYSTEM =   72;
-    public static final int AML_FBC_KEY_SOUND_CTRL  =  73;
-    public static final int AML_FBC_KEY_FUNCTION  =  74;
-    public static final int AML_FBC_KEY_SCHEDULE  =  75;
-    public static final int AML_FBC_KEY_FAVOR   = 76;
-    public static final int AML_FBC_KEY_RELATION  =  77;
-    public static final int AML_FBC_KEY_FIRST   = 78;
-    public static final int AML_FBC_KEY_DELETE  =  79;
-    public static final int AML_FBC_KEY_SLIDE_RELEASE   = 80;
-    public static final int AML_FBC_KEY_SLIDE_TOUCH  =  81;
-    public static final int AML_FBC_KEY_SLIDE_LEFT  =  82;
-    public static final int AML_FBC_KEY_SLIDE_RIGHT =   83;
-    public static final int AML_FBC_KEY_SLIDE_UP   = 84;
-    public static final int AML_FBC_KEY_SLIDE_DOWN =   85;
-    public static final int AML_FBC_KEY_SLIDE_CLOCKWISE   = 86;
-    public static final int AML_FBC_KEY_SLIDE_ANTI_CLOCKWISE  =  87;
-    public static final int AML_FBC_KEY_SLIDE_UP_LEFT  =  88;
-    public static final int AML_FBC_KEY_SLIDE_UP_RIGHT  =  89;
-    public static final int AML_FBC_KEY_SLIDE_DOWN_LEFT  =  90;
-    public static final int AML_FBC_KEY_SLIDE_DOWN_RIGHT =   91;
-    public static final int AML_FBC_KEY_SLIDE_NULL  =  92;
-    public static final int AML_FBC_KEY_MENU_CALL   = 93;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_A  =  94;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_B  =  95;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_C  =  96;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_D  =  97;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_E   = 98;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_F   = 99;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_G   = 100;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_H   = 101;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_I   = 102;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_J   = 103;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_K   = 104;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_L  = 105;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_M   = 106;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_N   = 107;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_O  =  108;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_P  =  109;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_Q  =  110;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_R   = 111;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_S  =  112;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_T  =  113;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_U  =  114;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_V   = 115;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_W  =  116;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_X  =  117;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_Y  =  118;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_Z  =  119;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_0  =  120;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_1   = 121;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_2  =  122;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_3  =  123;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_4  =  124;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_5  =  125;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_6  =  126;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_7  =  127;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_8   = 128;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_9  =  129;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_ENTER  =  130;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_SPACE  =  131;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_BACKSPACE  =  132;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_ESC   = 133;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_CAESURA_SIGN  =  134;
+    public static final int AML_FBC_KEY_NOP                                 = 0;
+    public static final int AML_FBC_KEY_NUM_PLUS10                          = 1;
+    public static final int AML_FBC_KEY_NUM_0                               = 2;
+    public static final int AML_FBC_KEY_NUM_1                               = 3;
+    public static final int AML_FBC_KEY_NUM_2                               = 4;
+    public static final int AML_FBC_KEY_NUM_3                               = 5;
+    public static final int AML_FBC_KEY_NUM_4                               = 6;
+    public static final int AML_FBC_KEY_NUM_5                               = 7;
+    public static final int AML_FBC_KEY_NUM_6                               = 8;
+    public static final int AML_FBC_KEY_NUM_7                               = 9;
+    public static final int AML_FBC_KEY_NUM_8                               = 10;
+    public static final int AML_FBC_KEY_NUM_9                               = 11;
+    public static final int AML_FBC_KEY_UP                                  = 12;
+    public static final int AML_FBC_KEY_DOWN                                = 13;
+    public static final int AML_FBC_KEY_LEFT                                = 14;
+    public static final int AML_FBC_KEY_RIGHT                               = 15;
+    public static final int AML_FBC_KEY_ENTER                               = 16;
+    public static final int AML_FBC_KEY_EXIT                                = 17;
+    public static final int AML_FBC_KEY_PAGE_UP                             = 18;
+    public static final int AML_FBC_KEY_PAGE_DOWN                           = 19;
+    public static final int AML_FBC_KEY_POWER                               = 20;
+    public static final int AML_FBC_KEY_SLEEP                               = 21;
+    public static final int AML_FBC_KEY_HOME                                = 22;
+    public static final int AML_FBC_KEY_SETUP                               = 23;
+    public static final int AML_FBC_KEY_OSD                                 = 24;
+    public static final int AML_FBC_KEY_MENU                                = 25;
+    public static final int AML_FBC_KEY_DISPLAY                             = 26;
+    public static final int AML_FBC_KEY_MARK                                = 27;
+    public static final int AML_FBC_KEY_CLEAR                               = 28;
+    public static final int AML_FBC_KEY_PLAY_PAUSE                          = 29;
+    public static final int AML_FBC_KEY_STOP                                = 30;
+    public static final int AML_FBC_KEY_PAUSE                               = 31;
+    public static final int AML_FBC_KEY_NEXT_CHAP                           = 32;
+    public static final int AML_FBC_KEY_PREVIOUS_CHAP                       = 33;
+    public static final int AML_FBC_KEY_FAST_FORWARD                        = 34;
+    public static final int AML_FBC_KEY_FAST_BACKWARD                       = 35;
+    public static final int AML_FBC_KEY_REPEAT                              = 36;
+    public static final int AML_FBC_KEY_PLAY_MODE                           = 37;
+    public static final int AML_FBC_KEY_SLIDE_SHOW                          = 38;
+    public static final int AML_FBC_KEY_MUTE                                = 39;
+    public static final int AML_FBC_KEY_VOL_MINUS                           = 40;
+    public static final int AML_FBC_KEY_VOL_PLUS                            = 41;
+    public static final int AML_FBC_KEY_ZOOM                                = 42;
+    public static final int AML_FBC_KEY_ROTATE                              = 43;
+    public static final int AML_FBC_KEY_MOUSE_L_DOWN                        = 44;
+    public static final int AML_FBC_KEY_MOUSE_L_UP                          = 45;
+    public static final int AML_FBC_KEY_MOUSE_R_DOWN                        = 46;
+    public static final int AML_FBC_KEY_MOUSE_R_UP                          = 47;
+    public static final int AML_FBC_KEY_MOUSE_M_DOWN                        = 48;
+    public static final int AML_FBC_KEY_MOUSE_M_UP                          = 49;
+    public static final int AML_FBC_KEY_MOUSE_ROLL_DOWN                     = 50;
+    public static final int AML_FBC_KEY_MOUSE_ROLL_UP                       = 51;
+    public static final int AML_FBC_KEY_MOUSE_MOVE                          = 52;
+    public static final int AML_FBC_KEY_LONG_EXIT                           = 53;
+    public static final int AML_FBC_KEY_LONG_RIGHT                          = 54;
+    public static final int AML_FBC_KEY_LONG_LEFT                           = 55;
+    public static final int AML_FBC_KEY_LONG_DOWN                           = 56;
+    public static final int AML_FBC_KEY_LONG_UP                             = 57;
+    public static final int AML_FBC_KEY_LONG_ENTER                          = 58;
+    public static final int AML_FBC_KEY_LONG_MENU                           = 59;
+    public static final int AML_FBC_KEY_OPEN_CLOSE                          = 60;
+    public static final int AML_FBC_KEY_NTSC_PAL                            = 61;
+    public static final int AML_FBC_KEY_PROGRESSIVE                         = 62;
+    public static final int AML_FBC_KEY_TITLE_CALL                          = 63;
+    public static final int AML_FBC_KEY_AUDIO                               = 64;
+    public static final int AML_FBC_KEY_SUBPICTURE                          = 65;
+    public static final int AML_FBC_KEY_ANGLE                               = 66;
+    public static final int AML_FBC_KEY_AB_PLAY                             = 67;
+    public static final int AML_FBC_KEY_RECODE                              = 68;
+    public static final int AML_FBC_KEY_SHORTCUT                            = 69;
+    public static final int AML_FBC_KEY_ORIGINAL                            = 70;
+    public static final int AML_FBC_KEY_BOOKING                             = 71;
+    public static final int AML_FBC_KEY_ORDER_SYSTEM                        = 72;
+    public static final int AML_FBC_KEY_SOUND_CTRL                          = 73;
+    public static final int AML_FBC_KEY_FUNCTION                            = 74;
+    public static final int AML_FBC_KEY_SCHEDULE                            = 75;
+    public static final int AML_FBC_KEY_FAVOR                               = 76;
+    public static final int AML_FBC_KEY_RELATION                            = 77;
+    public static final int AML_FBC_KEY_FIRST                               = 78;
+    public static final int AML_FBC_KEY_DELETE                              = 79;
+    public static final int AML_FBC_KEY_SLIDE_RELEASE                       = 80;
+    public static final int AML_FBC_KEY_SLIDE_TOUCH                         = 81;
+    public static final int AML_FBC_KEY_SLIDE_LEFT                          = 82;
+    public static final int AML_FBC_KEY_SLIDE_RIGHT                         = 83;
+    public static final int AML_FBC_KEY_SLIDE_UP                            = 84;
+    public static final int AML_FBC_KEY_SLIDE_DOWN                          = 85;
+    public static final int AML_FBC_KEY_SLIDE_CLOCKWISE                     = 86;
+    public static final int AML_FBC_KEY_SLIDE_ANTI_CLOCKWISE                = 87;
+    public static final int AML_FBC_KEY_SLIDE_UP_LEFT                       = 88;
+    public static final int AML_FBC_KEY_SLIDE_UP_RIGHT                      = 89;
+    public static final int AML_FBC_KEY_SLIDE_DOWN_LEFT                     = 90;
+    public static final int AML_FBC_KEY_SLIDE_DOWN_RIGHT                    = 91;
+    public static final int AML_FBC_KEY_SLIDE_NULL                          = 92;
+    public static final int AML_FBC_KEY_MENU_CALL                           = 93;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_A                  = 94;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_B                  = 95;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_C                  = 96;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_D                  = 97;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_E                  = 98;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_F                  = 99;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_G                  = 100;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_H                  = 101;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_I                  = 102;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_J                  = 103;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_K                  = 104;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_L                  = 105;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_M                  = 106;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_N                  = 107;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_O                  = 108;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_P                  = 109;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_Q                  = 110;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_R                  = 111;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_S                  = 112;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_T                  = 113;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_U                  = 114;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_V                  = 115;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_W                  = 116;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_X                  = 117;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_Y                  = 118;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_Z                  = 119;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_0                  = 120;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_1                  = 121;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_2                  = 122;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_3                  = 123;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_4                  = 124;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_5                  = 125;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_6                  = 126;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_7                  = 127;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_8                  = 128;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_9                  = 129;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_ENTER              = 130;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_SPACE              = 131;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_BACKSPACE          = 132;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_ESC                = 133;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_CAESURA_SIGN       = 134;
     public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_SUBTRACTION_SIGN   = 135;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_EQUALS_SIGN  =  136;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_LEFT_BRACKET  =  137;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_RIGHT_BRACKET   = 138;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_BACKSLASH   = 139;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_SEMICOLON  =  140;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_QUOTATION_MARK   = 141;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_COMMA   = 142;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_POINT  =  143;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_SLASH  =  144;
-    public static final int AML_FBC_KEY_ALARM_SET  =  145;
-    public static final int AML_FBC_KEY_ALARM_OFF  =  146;
-    public static final int AML_FBC_KEY_IPOD_PLAY_PAUSE  =  147;
-    public static final int AML_FBC_KEY_B_TIME_SET_MINUS  =  148;
-    public static final int AML_FBC_KEY_B_TIME_SET_PLUS  =  149;
-    public static final int AML_FBC_KEY_ALARM_B_ONOFF  =  150;
-    public static final int AML_FBC_KEY_SNOOZE_BRIGHTNESS   = 151;
-    public static final int AML_FBC_KEY_ALARM_A_ONOFF   = 152;
-    public static final int AML_FBC_KEY_A_TIME_SET_MINUS  =  153;
-    public static final int AML_FBC_KEY_A_TIME_SET_PLUS  =  154;
-    public static final int AML_FBC_KEY_BACK   = 155;
-    public static final int AML_FBC_KEY_RADIO_BAND   = 156;
-    public static final int AML_FBC_KEY_OPTION  =  157;
-    public static final int AML_FBC_KEY_LONG_B_TIME_SET_MINUS  =  158;
-    public static final int AML_FBC_KEY_LONG_B_TIME_SET_PLUS   = 159;
-    public static final int AML_FBC_KEY_LONG_A_TIME_SET_MINUS  =  160;
-    public static final int AML_FBC_KEY_LONG_A_TIME_SET_PLUS  =  161;
-    public static final int AML_FBC_KEY_LONG2_B_TIME_SET_MINUS  =  162;
-    public static final int AML_FBC_KEY_LONG2_B_TIME_SET_PLUS   = 163;
-    public static final int AML_FBC_KEY_LONG2_A_TIME_SET_MINUS  =  164;
-    public static final int AML_FBC_KEY_LONG2_A_TIME_SET_PLUS  =  165;
-    public static final int AML_FBC_KEY_LONG2_LEFT   = 166;
-    public static final int AML_FBC_KEY_LONG2_RIGHT   = 167;
-    public static final int AML_FBC_KEY_LONGRLS_LEFT   = 168;
-    public static final int AML_FBC_KEY_LONGRLS_RIGHT   = 169;
-    public static final int AML_FBC_KEY_LONGRLS_B_TIME_SET_MINUS  =  170;
-    public static final int AML_FBC_KEY_LONGRLS_B_TIME_SET_PLUS   = 171;
-    public static final int AML_FBC_KEY_LONGRLS_A_TIME_SET_MINUS  =  172;
-    public static final int AML_FBC_KEY_LONGRLS_A_TIME_SET_PLUS   = 173;
-    public static final int AML_FBC_KEY_LONG2RLS_LEFT   = 174;
-    public static final int AML_FBC_KEY_LONG2RLS_RIGHT   = 175;
-    public static final int AML_FBC_KEY_LONG2RLS_B_TIME_SET_MINUS  =  176;
-    public static final int AML_FBC_KEY_LONG2RLS_B_TIME_SET_PLUS   = 177;
-    public static final int AML_FBC_KEY_LONG2RLS_A_TIME_SET_MINUS  =  178;
-    public static final int AML_FBC_KEY_LONG2RLS_A_TIME_SET_PLUS   = 179;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_EQUALS_SIGN        = 136;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_LEFT_BRACKET       = 137;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_RIGHT_BRACKET      = 138;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_BACKSLASH          = 139;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_SEMICOLON          = 140;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_QUOTATION_MARK     = 141;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_COMMA              = 142;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_POINT              = 143;
+    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_SLASH              = 144;
+    public static final int AML_FBC_KEY_ALARM_SET                           = 145;
+    public static final int AML_FBC_KEY_ALARM_OFF                           = 146;
+    public static final int AML_FBC_KEY_IPOD_PLAY_PAUSE                     = 147;
+    public static final int AML_FBC_KEY_B_TIME_SET_MINUS                    = 148;
+    public static final int AML_FBC_KEY_B_TIME_SET_PLUS                     = 149;
+    public static final int AML_FBC_KEY_ALARM_B_ONOFF                       = 150;
+    public static final int AML_FBC_KEY_SNOOZE_BRIGHTNESS                   = 151;
+    public static final int AML_FBC_KEY_ALARM_A_ONOFF                       = 152;
+    public static final int AML_FBC_KEY_A_TIME_SET_MINUS                    = 153;
+    public static final int AML_FBC_KEY_A_TIME_SET_PLUS                     = 154;
+    public static final int AML_FBC_KEY_BACK                                = 155;
+    public static final int AML_FBC_KEY_RADIO_BAND                          = 156;
+    public static final int AML_FBC_KEY_OPTION                              = 157;
+    public static final int AML_FBC_KEY_LONG_B_TIME_SET_MINUS               = 158;
+    public static final int AML_FBC_KEY_LONG_B_TIME_SET_PLUS                = 159;
+    public static final int AML_FBC_KEY_LONG_A_TIME_SET_MINUS               = 160;
+    public static final int AML_FBC_KEY_LONG_A_TIME_SET_PLUS                = 161;
+    public static final int AML_FBC_KEY_LONG2_B_TIME_SET_MINUS              = 162;
+    public static final int AML_FBC_KEY_LONG2_B_TIME_SET_PLUS               = 163;
+    public static final int AML_FBC_KEY_LONG2_A_TIME_SET_MINUS              = 164;
+    public static final int AML_FBC_KEY_LONG2_A_TIME_SET_PLUS               = 165;
+    public static final int AML_FBC_KEY_LONG2_LEFT                          = 166;
+    public static final int AML_FBC_KEY_LONG2_RIGHT                         = 167;
+    public static final int AML_FBC_KEY_LONGRLS_LEFT                        = 168;
+    public static final int AML_FBC_KEY_LONGRLS_RIGHT                       = 169;
+    public static final int AML_FBC_KEY_LONGRLS_B_TIME_SET_MINUS            = 170;
+    public static final int AML_FBC_KEY_LONGRLS_B_TIME_SET_PLUS             = 171;
+    public static final int AML_FBC_KEY_LONGRLS_A_TIME_SET_MINUS            = 172;
+    public static final int AML_FBC_KEY_LONGRLS_A_TIME_SET_PLUS             = 173;
+    public static final int AML_FBC_KEY_LONG2RLS_LEFT                       = 174;
+    public static final int AML_FBC_KEY_LONG2RLS_RIGHT                      = 175;
+    public static final int AML_FBC_KEY_LONG2RLS_B_TIME_SET_MINUS           = 176;
+    public static final int AML_FBC_KEY_LONG2RLS_B_TIME_SET_PLUS            = 177;
+    public static final int AML_FBC_KEY_LONG2RLS_A_TIME_SET_MINUS           = 178;
+    public static final int AML_FBC_KEY_LONG2RLS_A_TIME_SET_PLUS            = 179;
 
     //@param:keyCode  AML_FBC_KEY_XXX   param:default 0
     public int FactorySet_FBC_SEND_KEY_TO_FBC(int keyCode, int param) {
@@ -6815,17 +6331,9 @@ program, no signal, blocked...*/
      * @Return:0 success,-1 fail
      */
     public int CopyFile (String srcPath,String desPath) {
-        libtv_log_open();
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        cmd.writeInt(FACTORY_COPY_FILE);
-        cmd.writeString(srcPath);
-        cmd.writeString(desPath);
-        sendCmdToTv(cmd, r);
-        int tmpRet = r.readInt();
-        return tmpRet;
+        String val[] = new String[]{srcPath, desPath};
+        return sendCmdStringArray(FACTORY_COPY_FILE, val);
     }
-
 
     /**
      * @Function: TvMiscChannelExport
@@ -6834,15 +6342,8 @@ program, no signal, blocked...*/
      * @Return: 0 success , -1 copy fail , -2 other
      */
     public int TvMiscChannelExport(String destPath) {
-        libtv_log_open();
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        int ret;
-        cmd.writeInt(MISC_CHANNEL_EXPORT);
-        cmd.writeString(destPath);
-        sendCmdToTv(cmd, r);
-        ret = r.readInt();
-        return ret;
+        String val[] = new String[]{destPath};
+        return sendCmdStringArray(MISC_CHANNEL_EXPORT, val);
     }
 
     /**
@@ -6852,303 +6353,24 @@ program, no signal, blocked...*/
      * @Return: 0 success , -1 copy fail , -2 other
      */
     public int TvMiscChannelImport(String srcPath) {
-        libtv_log_open();
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        int ret;
-        cmd.writeInt(MISC_CHANNEL_IMPORT);
-        cmd.writeString(srcPath);
-        sendCmdToTv(cmd, r);
-        ret = r.readInt();
-        return ret;
+        String val[] = new String[]{srcPath};
+        return sendCmdStringArray(MISC_CHANNEL_IMPORT, val);
     }
 
     // set listener when not need to listen set null
 
     public final static int EVENT_AV_PLAYBACK_NODATA            = 1;
-    public final static int EVENT_AV_PLAYBACK_RESUME           = 2;
-    public final static int EVENT_AV_SCRAMBLED               = 3;
-    public final static int EVENT_AV_UNSUPPORT               = 4;
-
-    public class AVPlaybackEvent {
-        public int mMsgType;
-        public int programID;
-    }
+    public final static int EVENT_AV_PLAYBACK_RESUME            = 2;
+    public final static int EVENT_AV_SCRAMBLED                  = 3;
+    public final static int EVENT_AV_UNSUPPORT                  = 4;
 
     public interface AVPlaybackListener {
-        void onEvent(AVPlaybackEvent ev);
+        void onEvent(int msgType, int programID);
     };
 
     public void SetAVPlaybackListener(AVPlaybackListener l) {
         libtv_log_open();
         mAVPlaybackListener = l;
-    }
-
-    private class EventHandler extends Handler {
-        private TvControlManager mTv;
-        int mCC_data_array[];
-        int mCC_cmd_array[];
-        int msg_pdu[];
-
-        public EventHandler(TvControlManager c, Looper looper) {
-            super(looper);
-            mTv = c;
-            mCC_data_array = new int[512];//max data buf
-            mCC_cmd_array = new int[128];
-            msg_pdu = new int[1200];
-        }
-
-        @Override
-            public void handleMessage(Message msg) {
-                int i = 0, loop_count = 0, tmp_val = 0;
-                Parcel p;
-
-                switch (msg.what) {
-                    case SUBTITLE_UPDATE_CALLBACK:
-                        if (mSubtitleListener != null) {
-                            mSubtitleListener.onUpdate();
-                        }
-                        break;
-                    case VFRAME_BMP_EVENT_CALLBACK:
-                        p = ((Parcel) (msg.obj));
-                        if (mVframBMPListener != null) {
-                            VFrameEvent ev = new VFrameEvent();
-                            mVframBMPListener.onEvent(ev);
-                            ev.FrameNum = p.readInt();
-                            ev.FrameSize= p.readInt();
-                            ev.FrameWidth= p.readInt();
-                            ev.FrameHeight= p.readInt();
-                        }
-                        break;
-                    case SCAN_EVENT_CALLBACK:
-                        p = ((Parcel) (msg.obj));
-                        if (mScannerListener != null) {
-                            ScannerEvent ev = new ScannerEvent();
-                            ev.type = p.readInt();
-                            ev.precent = p.readInt();
-                            ev.totalcount = p.readInt();
-                            ev.lock = p.readInt();
-                            ev.cnum = p.readInt();
-                            ev.freq = p.readInt();
-                            ev.programName = p.readString();
-                            ev.srvType = p.readInt();
-                            ev.msg = p.readString();
-                            ev.strength = p.readInt();
-                            ev.quality = p.readInt();
-                            ev.videoStd = p.readInt();
-                            ev.audioStd = p.readInt();
-                            ev.isAutoStd = p.readInt();
-
-                            ev.mode = p.readInt();
-                            ev.sr = p.readInt();
-                            ev.mod = p.readInt();
-                            ev.bandwidth = p.readInt();
-                            ev.ofdm_mode = p.readInt();
-                            ev.ts_id = p.readInt();
-                            ev.orig_net_id = p.readInt();
-                            ev.serviceID = p.readInt();
-                            ev.vid = p.readInt();
-                            ev.vfmt = p.readInt();
-                            int acnt = p.readInt();
-                            if (acnt != 0) {
-                                ev.aids = new int[acnt];
-                                for (i=0;i<acnt;i++)
-                                    ev.aids[i] = p.readInt();
-                                ev.afmts = new int[acnt];
-                                for (i=0;i<acnt;i++)
-                                    ev.afmts[i] = p.readInt();
-                                ev.alangs = new String[acnt];
-                                for (i=0;i<acnt;i++)
-                                    ev.alangs[i] = p.readString();
-                                ev.atypes = new int[acnt];
-                                for (i=0;i<acnt;i++)
-                                    ev.atypes[i] = p.readInt();
-                            }
-                            ev.pcr = p.readInt();
-                            int scnt = p.readInt();
-                            if (scnt != 0) {
-                                ev.stypes = new int[scnt];
-                                for (i=0;i<scnt;i++)
-                                    ev.stypes[i] = p.readInt();
-                                ev.sids = new int[scnt];
-                                for (i=0;i<scnt;i++)
-                                    ev.sids[i] = p.readInt();
-                                ev.sstypes = new int[scnt];
-                                for (i=0;i<scnt;i++)
-                                    ev.sstypes[i] = p.readInt();
-                                ev.sid1s = new int[scnt];
-                                for (i=0;i<scnt;i++)
-                                    ev.sid1s[i] = p.readInt();
-                                ev.sid2s = new int[scnt];
-                                for (i=0;i<scnt;i++)
-                                    ev.sid2s[i] = p.readInt();
-                                ev.slangs = new String[scnt];
-                                for (i=0;i<scnt;i++)
-                                    ev.slangs[i] = p.readString();
-                            }
-
-                            mScannerListener.onEvent(ev);
-                        }
-                        break;
-                    case VCHIP_CALLBACK:
-                        Log.i(TAG,"atsc ---VCHIP_CALLBACK-----------------");
-                        p = ((Parcel) (msg.obj));
-                        if (mLockStatusListener != null) {
-                            VchipLockStatus lockStatus = new VchipLockStatus();
-                            lockStatus.blockstatus = p.readInt();
-                            lockStatus.blockType = p.readInt();
-                            lockStatus.vchipDimension = p.readString();
-                            lockStatus.vchipAbbrev = p.readString();
-                            lockStatus.vchipText = p.readString();
-                            mLockStatusListener.onLock(lockStatus);
-                        }
-                        break;
-                    case EPG_EVENT_CALLBACK:
-                        p = ((Parcel) (msg.obj));
-                        if (mEpgListener != null) {
-                            EpgEvent ev = new EpgEvent();
-                            ev.type = p.readInt();
-                            ev.time = p.readInt();
-                            ev.programID = p.readInt();
-                            ev.channelID = p.readInt();
-                            mEpgListener.onEvent(ev);
-                        }
-                        break;
-                    case DTV_AV_PLAYBACK_CALLBACK:
-                        p = ((Parcel) (msg.obj));
-                        if (mAVPlaybackListener != null) {
-                            AVPlaybackEvent ev = new AVPlaybackEvent();
-                            ev.mMsgType= p.readInt();
-                            ev.programID= p.readInt();
-                            mAVPlaybackListener.onEvent(ev);
-                        }
-                        break ;
-                    case SEARCH_CALLBACK:
-                        if (mSigChanSearchListener != null) {
-                            if (msg_pdu != null) {
-                                loop_count = ((Parcel) (msg.obj)).readInt();
-                                for (i = 0; i < loop_count; i++) {
-                                    msg_pdu[i] = ((Parcel) (msg.obj)).readInt();
-                                }
-                                mSigChanSearchListener.onChannelSearchChange(msg_pdu);
-                            }
-                        }
-                        break;
-                    case SIGLE_DETECT_CALLBACK:
-                        if (mSigInfoChangeLister != null) {
-                            tvin_info_t sig_info = new tvin_info_t();
-                            sig_info.trans_fmt = tvin_trans_fmt.values()[(((Parcel) (msg.obj)).readInt())];
-                            sig_info.fmt = tvin_sig_fmt_e.valueOf(((Parcel) (msg.obj)).readInt());
-                            sig_info.status = tvin_sig_status_t.values()[(((Parcel) (msg.obj)).readInt())];
-                            sig_info.reserved = ((Parcel) (msg.obj)).readInt();
-                            mSigInfoChangeLister.onSigChange(sig_info);
-                        }
-                        break;
-                    case VGA_CALLBACK:
-                        if (mVGAChangeListener != null) {
-                            mVGAChangeListener.onVGAAdjustChange(((Parcel) (msg.obj)).readInt());
-                        }
-                        break;
-                    case STATUS_3D_CALLBACK:
-                        if (mStatus3DChangeListener != null) {
-                            mStatus3DChangeListener.onStatus3DChange(((Parcel) (msg.obj)).readInt());
-                        }
-                        break;
-                    case SOURCE_CONNECT_CALLBACK:
-                        if (mSourceConnectChangeListener != null) {
-                            mSourceConnectChangeListener.onSourceConnectChange( SourceInput.values()[((Parcel) (msg.obj)).readInt()], ((Parcel) (msg.obj)).readInt());
-                        }
-                        break;
-                    case HDMIRX_CEC_CALLBACK:
-                        if (mHDMIRxCECListener != null) {
-                            if (msg_pdu != null) {
-                                loop_count = ((Parcel) (msg.obj)).readInt();
-                                for (i = 0; i < loop_count; i++) {
-                                    msg_pdu[i] = ((Parcel) (msg.obj)).readInt();
-                                }
-                                mHDMIRxCECListener.onHDMIRxCECMessage(loop_count, msg_pdu);
-                            }
-                        }
-                        break;
-                    case UPGRADE_FBC_CALLBACK:
-                        if (mUpgradeFBCListener != null) {
-                            loop_count = ((Parcel) (msg.obj)).readInt();
-                            tmp_val = ((Parcel) (msg.obj)).readInt();
-                            Log.d(TAG, "state = " + loop_count + "    param = " + tmp_val);
-                            mUpgradeFBCListener.onUpgradeStatus(loop_count, tmp_val);
-                        }
-                        break;
-                    case DREAM_PANEL_CALLBACK:
-                        break;
-                    case ADC_CALIBRATION_CALLBACK:
-                        if (mAdcCalibrationListener != null) {
-                            mAdcCalibrationListener.onAdcCalibrationChange(((Parcel) (msg.obj)).readInt());
-                        }
-                        break;
-                    case SOURCE_SWITCH_CALLBACK:
-                        if (mSourceSwitchListener != null) {
-                            mSourceSwitchListener.onSourceSwitchStatusChange(
-                                    SourceInput.values()[(((Parcel) (msg.obj)).readInt())], ((Parcel) (msg.obj)).readInt());
-                        }
-                        break;
-                    case CHANNEL_SELECT_CALLBACK:
-                        if (mChannelSelectListener != null) {
-                            if (msg_pdu != null) {
-                                loop_count = ((Parcel) (msg.obj)).readInt();
-                                for (i = 0; i < loop_count; i++) {
-                                    msg_pdu[i] = ((Parcel) (msg.obj)).readInt();
-                                }
-                                mChannelSelectListener.onChannelSelect(msg_pdu);
-                            }
-                        }
-                        break;
-                    case SERIAL_COMMUNICATION_CALLBACK:
-                        if (mSerialCommunicationListener != null) {
-                            if (msg_pdu != null) {
-                                int dev_id = ((Parcel) (msg.obj)).readInt();
-                                loop_count = ((Parcel) (msg.obj)).readInt();
-                                for (i = 0; i < loop_count; i++) {
-                                    msg_pdu[i] = ((Parcel) (msg.obj)).readInt();
-                                }
-                                mSerialCommunicationListener.onSerialCommunication(dev_id, loop_count, msg_pdu);
-                            }
-                        }
-                        break;
-                    case CLOSE_CAPTION_CALLBACK:
-                        if (mCloseCaptionListener != null) {
-                            loop_count = ((Parcel) (msg.obj)).readInt();
-                            Log.d(TAG, "cc listenner data count =" + loop_count);
-                            for (i = 0; i < loop_count; i++) {
-                                mCC_data_array[i] = ((Parcel) (msg.obj)).readInt();
-                            }
-                            //data len write to end
-                            mCC_data_array[mCC_data_array.length - 1] =  loop_count;
-                            loop_count = ((Parcel) (msg.obj)).readInt();
-                            for (i = 0; i < loop_count; i++) {
-                                mCC_cmd_array[i] = ((Parcel) (msg.obj)).readInt();
-                            }
-                            mCC_cmd_array[mCC_cmd_array.length - 1] =  loop_count;
-                            mCloseCaptionListener.onCloseCaptionProcess(mCC_data_array, mCC_cmd_array);
-                        }
-                        break;
-                    default:
-                        Log.e(TAG, "Unknown message type " + msg.what);
-                        break;
-                }
-                return;
-            }
-    }
-
-    private static void postEventFromNative(Object tv_ref, int what, Parcel ext) {
-        ext.setDataPosition(0);
-
-        TvControlManager c = (TvControlManager)((WeakReference) tv_ref).get();
-        if (c == null)
-            return;
-        if (c.mEventHandler != null) {
-            Message m = c.mEventHandler.obtainMessage(what, 0, 0, ext);
-            c.mEventHandler.sendMessage(m);
-        }
     }
 
     public static final int TV_ERROR_UNKNOWN = 1;
@@ -7158,64 +6380,28 @@ program, no signal, blocked...*/
         void onError(int error, TvControlManager tv);
     };
 
-    // set listener when not need to listen set null
-    public interface SigInfoChangeListener {
-        void onSigChange(tvin_info_t sig_info);
-    };
-
-    public void SetSigInfoChangeListener(SigInfoChangeListener l) {
+    public void SetSigInfoChangeListener(TVInSignalInfo.SigInfoChangeListener l) {
         libtv_log_open();
         mSigInfoChangeLister = l;
     }
 
-    public enum SIG_LINE_STATUS {
-        SIG_LINE_PLUG_IN(0),
-            SIG_LINE_PULL_OUT(1),
-            SIG_LINE_UNKNOW(2);
-        private int val;
-
-        SIG_LINE_STATUS(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    // set listener when not need to listen set null
-    public interface SigLineChangeListener {
-        void onSigLineStatusChange(SourceInput inputline,  SIG_LINE_STATUS status);
-    };
-
-    public void SetSigLineChangeListener(SigLineChangeListener l) {
-        //
-    }
-
-    public interface SigChannelSearchListener {
-        void onChannelSearchChange(int msg_pdu[]);
-    };
-
-    public void SetSigChannelSearchListener(SigChannelSearchListener l) {
+    public void SetSigChannelSearchListener(TVInSignalInfo.SigChannelSearchListener l) {
         libtv_log_open();
         mSigChanSearchListener = l;
     }
 
     public enum CC_VGA_AUTO_ADJUST_STATUS {
         CC_VGA_AUTO_ADJUST_START(0),
-            CC_VGA_AUTO_ADJUST_SUCCESS(1),
-            CC_VGA_AUTO_ADJUST_FAILED(-1),
-            CC_VGA_AUTO_ADJUST_CURTIMMING_FAILED(-2),
-            CC_VGA_AUTO_ADJUST_PARA_FAILED(-3),
-            CC_VGA_AUTO_ADJUST_TERMINATED(-4),
-            CC_VGA_AUTO_ADJUST_IDLE(-5);
-
+        CC_VGA_AUTO_ADJUST_SUCCESS(1),
+        CC_VGA_AUTO_ADJUST_FAILED(-1),
+        CC_VGA_AUTO_ADJUST_CURTIMMING_FAILED(-2),
+        CC_VGA_AUTO_ADJUST_PARA_FAILED(-3),
+        CC_VGA_AUTO_ADJUST_TERMINATED(-4),
+        CC_VGA_AUTO_ADJUST_IDLE(-5);
         private int val;
-
         CC_VGA_AUTO_ADJUST_STATUS(int val) {
             this.val = val;
         }
-
         public int toInt() {
             return this.val;
         }
@@ -7335,53 +6521,224 @@ program, no signal, blocked...*/
         mCloseCaptionListener = l;
     }
 
-    private native final void native_setup(Object tv_this);
-    private native final void native_release();
-    public native void addCallbackBuffer(byte cb[]);
-    public native final void unlock();
-    public native final void lock();
-    public native final void reconnect() throws IOException;
-    private native int processCmd(Parcel p, Parcel r);
+    // 3D
+    public enum Mode_3D {
+        MODE_3D_CLOSE(0),
+        MODE_3D_AUTO(1),
+        //        MODE_3D_2D_TO_3D(2),
+        MODE_3D_LEFT_RIGHT(2),
+        MODE_3D_UP_DOWN(3),
+        MODE_3D_LINE_ALTERNATIVE(4),
+        MODE_3D_FRAME_ALTERNATIVE(5),
+        MODE_3D_MAX(6);
 
-    private int sendCmdToTv(Parcel p, Parcel r) {
-        p.setDataPosition(0);
-        int ret = processCmd(p, r);
-        r.setDataPosition(0);
-        return ret;
-    }
+        private int val;
 
-    public int sendCmd(int cmd) {
-        libtv_log_open();
-        Parcel request = Parcel.obtain();
-        Parcel reply = Parcel.obtain();
-        request.writeInt(cmd);
-        request.setDataPosition(0);
-        processCmd(request, reply);
-        reply.setDataPosition(0);
-        int ret = reply.readInt();
-
-        request.recycle();
-        reply.recycle();
-        return ret;
-    }
-
-    public int sendCmdIntArray(int cmd, int[] value) {
-        libtv_log_open();
-        Parcel request = Parcel.obtain();
-        Parcel reply = Parcel.obtain();
-        request.writeInt(cmd);
-
-        for (int i = 0; i < value.length; i++) {
-            request.writeInt(value[i]);
+        Mode_3D(int val) {
+            this.val = val;
         }
-        request.setDataPosition(0);
-        processCmd(request, reply);
-        reply.setDataPosition(0);
-        int ret = reply.readInt();
 
-        request.recycle();
-        reply.recycle();
-        return ret;
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    public enum Tvin_3d_Status {
+        STATUS3D_DISABLE(0),
+        STATUS3D_AUTO(1),
+        //        STATUS3D_2D_TO_3D(2),
+        STATUS3D_LR(2),
+        STATUS3D_BT(3),
+        STATUS3D_LINE_ALTERNATIVE(4),
+        STATUS3D_FRAME_ALTERNATIVE(5),
+        STATUS3D_MAX(6);
+        private int val;
+
+        Tvin_3d_Status(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    public enum Mode_3D_2D {
+        MODE_3D_2D_CLOSE(0),
+        MODE_3D_2D_LEFT(1),
+        MODE_3D_2D_RIGHT(2);
+
+        private int val;
+
+        Mode_3D_2D(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    public int Get3DStatus() {
+        return sendCmd(GET_3D_STATUS);
+    }
+
+    public int Set3DMode(Mode_3D mode, Tvin_3d_Status status) {
+        int val[] = new int[]{mode.toInt(), status.toInt()};
+        return sendCmdIntArray(SET_3D_MODE, val);
+    }
+
+
+    public int Get3DMode() {
+        return sendCmd(GET_3D_MODE);
+    }
+
+    public int Set3DLRSwith(int on_off, Tvin_3d_Status status) {
+        int val[] = new int[]{on_off, status.toInt()};
+        return sendCmdIntArray(SET_3D_LR_SWITH, val);
+    }
+
+    public int Get3DLRSwith() {
+        return sendCmd(GET_3D_LR_SWITH);
+    }
+
+    public int Set3DTo2DMode(Mode_3D_2D mode, Tvin_3d_Status status) {
+        int val[] = new int[]{mode.toInt(), status.toInt()};
+        return sendCmdIntArray(SET_3D_TO_2D_MODE, val);
+    }
+
+    public int Get3DTo2DMode() {
+        return sendCmd(GET_3D_TO_2D_MODE);
+    }
+
+    public int Set3DDepth(int value) {
+        int val[] = new int[]{value};
+        return sendCmdIntArray(SET_3D_DEPTH, val);
+    }
+
+    public int Get3DDepth() {
+        return sendCmd(GET_3D_DEPTH);
+    }
+    // 3D END
+
+    public enum SourceInput {
+        TV(0),
+        AV1(1),
+        AV2(2),
+        YPBPR1(3),
+        YPBPR2(4),
+        HDMI1(5),
+        HDMI2(6),
+        HDMI3(7),
+        VGA(8),
+        XXXX(9),//not use MPEG source
+        DTV(10),
+        SVIDEO(11),
+        HDMI4K2K(12),
+        USB4K2K(13),
+        IPTV(14),
+        DUMMY(15),
+        MAX(16);
+        private int val;
+
+        SourceInput(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    public enum SourceInput_Type {
+        SOURCE_TYPE_TV(0),
+        SOURCE_TYPE_AV(1),
+        SOURCE_TYPE_COMPONENT(2),
+        SOURCE_TYPE_HDMI(3),
+        SOURCE_TYPE_VGA(4),
+        SOURCE_TYPE_MPEG(5),//only use for vpp, for display ,not a source
+        SOURCE_TYPE_DTV(6),
+        SOURCE_TYPE_SVIDEO(7),
+        SOURCE_TYPE_HDMI_4K2K(8),
+        SOURCE_TYPE_USB_4K2K(9),
+        SOURCE_TYPE_MAX(7);
+
+        private int val;
+
+        SourceInput_Type(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    public enum tvin_color_system_e {
+        COLOR_SYSTEM_AUTO(0),
+        COLOR_SYSTEM_PAL(1),
+        COLOR_SYSTEM_NTSC(2),
+        COLOR_SYSTEM_SECAM(3),
+        COLOR_SYSTEM_MAX(4);
+        private int val;
+
+        tvin_color_system_e(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    public enum tv_program_type {//program_type
+        TV_PROGRAM_UNKNOWN(0),
+        TV_PROGRAM_DTV(1),
+        TV_PROGRAM_DRADIO(2),
+        TV_PROGRAM_ATV(3);
+        private int val;
+
+        tv_program_type(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    public enum program_skip_type_e {
+        TV_PROGRAM_SKIP_NO(0),
+        TV_PROGRAM_SKIP_YES(1),
+        TV_PROGRAM_SKIP_UNKNOWN(2);
+
+        private int val;
+
+        program_skip_type_e(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    public enum atsc_attenna_type_t {
+        AM_ATSC_ATTENNA_TYPE_MIX(0),
+        AM_ATSC_ATTENNA_TYPE_AIR(1),
+        AM_ATSC_ATTENNA_TYPE_CABLE_STD(2),
+        AM_ATSC_ATTENNA_TYPE_CABLE_IRC(3),
+        AM_ATSC_ATTENNA_TYPE_CABLE_HRC(4),
+        AM_ATSC_ATTENNA_TYPE_MAX(5);
+
+        private int val;
+        atsc_attenna_type_t(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
     }
 }
 

@@ -5,8 +5,7 @@ import java.util.List;
 import com.droidlogic.app.tv.ChannelInfo;
 import com.droidlogic.app.tv.DroidLogicTvUtils;
 import com.droidlogic.app.tv.TvControlManager;
-import com.droidlogic.app.tv.TvControlManager.tvin_info_t;
-import com.droidlogic.app.tv.TvControlManager.tvin_sig_fmt_e;
+import com.droidlogic.app.tv.TVInSignalInfo;
 
 import android.content.Context;
 import android.content.Intent;
@@ -22,7 +21,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
 
-public class DroidLogicTvInputService extends TvInputService implements TvControlManager.SigInfoChangeListener {
+public class DroidLogicTvInputService extends TvInputService implements TVInSignalInfo.SigInfoChangeListener {
     private static final String TAG = DroidLogicTvInputService.class.getSimpleName();
     private static final boolean DEBUG = true;
 
@@ -48,7 +47,7 @@ public class DroidLogicTvInputService extends TvInputService implements TvContro
      */
     protected void registerInputSession(TvInputBaseSession session) {
         mSession = session;
-        TvControlManager.open().SetSigInfoChangeListener(this);
+        TvControlManager.getInstance().SetSigInfoChangeListener(this);
     }
 
     /**
@@ -147,11 +146,11 @@ public class DroidLogicTvInputService extends TvInputService implements TvContro
 
     protected void stopTv() {
         Log.d(TAG, "stop tv, mCurrentInputId =" + mCurrentInputId);
-        TvControlManager.open().StopTv();
+        TvControlManager.getInstance().StopTv();
     }
 
     protected void releasePlayer() {
-        TvControlManager.open().StopPlayProgram();
+        TvControlManager.getInstance().StopPlayProgram();
     }
 
     private String getInfoLabel() {
@@ -160,17 +159,17 @@ public class DroidLogicTvInputService extends TvInputService implements TvContro
     }
 
     @Override
-    public void onSigChange(tvin_info_t signal_info) {
-        TvControlManager.tvin_sig_status_t status = signal_info.status;
+    public void onSigChange(TVInSignalInfo signal_info) {
+        TVInSignalInfo.SignalStatus status = signal_info.sigStatus;
 
         if (DEBUG)
             Log.d(TAG, "onSigChange" + status.ordinal() + status.toString());
 
-        if (status == TvControlManager.tvin_sig_status_t.TVIN_SIG_STATUS_NOSIG
-                || status == TvControlManager.tvin_sig_status_t.TVIN_SIG_STATUS_NULL
-                || status == TvControlManager.tvin_sig_status_t.TVIN_SIG_STATUS_NOTSUP) {
+        if (status == TVInSignalInfo.SignalStatus.TVIN_SIG_STATUS_NOSIG
+                || status == TVInSignalInfo.SignalStatus.TVIN_SIG_STATUS_NULL
+                || status == TVInSignalInfo.SignalStatus.TVIN_SIG_STATUS_NOTSUP) {
             mSession.notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN);
-        }else if (status == TvControlManager.tvin_sig_status_t.TVIN_SIG_STATUS_STABLE) {
+        }else if (status == TVInSignalInfo.SignalStatus.TVIN_SIG_STATUS_STABLE) {
             mSession.notifyVideoAvailable();
             int device_id = mSession.getDeviceId();
             String[] strings;
@@ -180,19 +179,19 @@ public class DroidLogicTvInputService extends TvInputService implements TvContro
             case DroidLogicTvUtils.DEVICE_ID_HDMI2:
             case DroidLogicTvUtils.DEVICE_ID_HDMI3:
                 if (DEBUG)
-                    Log.d(TAG, "signal_info.fmt.toString() for hdmi=" + signal_info.fmt.toString());
+                    Log.d(TAG, "signal_info.fmt.toString() for hdmi=" + signal_info.sigFmt.toString());
 
-                strings = signal_info.fmt.toString().split("_");
-                tvin_sig_fmt_e fmt = signal_info.fmt;
-                if (fmt == tvin_sig_fmt_e.TVIN_SIG_FMT_HDMI_1440X480I_60HZ
-                        || fmt == tvin_sig_fmt_e.TVIN_SIG_FMT_HDMI_1440X480I_120HZ
-                        || fmt == tvin_sig_fmt_e.TVIN_SIG_FMT_HDMI_1440X480I_240HZ
-                        || fmt == tvin_sig_fmt_e.TVIN_SIG_FMT_HDMI_2880X480I_60HZ
-                        || fmt == tvin_sig_fmt_e.TVIN_SIG_FMT_HDMI_2880X480I_60HZ) {
+                strings = signal_info.sigFmt.toString().split("_");
+                TVInSignalInfo.SignalFmt fmt = signal_info.sigFmt;
+                if (fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_1440X480I_60HZ
+                        || fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_1440X480I_120HZ
+                        || fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_1440X480I_240HZ
+                        || fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_2880X480I_60HZ
+                        || fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_2880X480I_60HZ) {
                     strings[4] = "480I";
-                } else if (fmt == tvin_sig_fmt_e.TVIN_SIG_FMT_HDMI_1440X576I_50HZ
-                        || fmt == tvin_sig_fmt_e.TVIN_SIG_FMT_HDMI_1440X576I_100HZ
-                        || fmt == tvin_sig_fmt_e.TVIN_SIG_FMT_HDMI_1440X576I_200HZ) {
+                } else if (fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_1440X576I_50HZ
+                        || fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_1440X576I_100HZ
+                        || fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_1440X576I_200HZ) {
                     strings[4] = "576I";
                 }
 
@@ -208,9 +207,9 @@ public class DroidLogicTvInputService extends TvInputService implements TvContro
             case DroidLogicTvUtils.DEVICE_ID_AV1:
             case DroidLogicTvUtils.DEVICE_ID_AV2:
                 if (DEBUG)
-                    Log.d(TAG, "tmpInfo.fmt.toString() for av=" + signal_info.fmt.toString());
+                    Log.d(TAG, "tmpInfo.fmt.toString() for av=" + signal_info.sigFmt.toString());
 
-                strings = signal_info.fmt.toString().split("_");
+                strings = signal_info.sigFmt.toString().split("_");
                 bundle.putInt(DroidLogicTvUtils.SIG_INFO_TYPE, DroidLogicTvUtils.SIG_INFO_TYPE_AV);
                 bundle.putString(DroidLogicTvUtils.SIG_INFO_LABEL, getInfoLabel());
                 if (strings != null && strings.length <= 4)
@@ -221,13 +220,13 @@ public class DroidLogicTvInputService extends TvInputService implements TvContro
                 break;
             case DroidLogicTvUtils.DEVICE_ID_ATV:
                 if (DEBUG)
-                    Log.d(TAG, "tmpInfo.fmt.toString() for atv=" + signal_info.fmt.toString());
+                    Log.d(TAG, "tmpInfo.fmt.toString() for atv=" + signal_info.sigFmt.toString());
 
                 mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_EVENT, null);
                 break;
             case DroidLogicTvUtils.DEVICE_ID_DTV:
                 if (DEBUG)
-                    Log.d(TAG, "tmpInfo.fmt.toString() for dtv=" + signal_info.fmt.toString());
+                    Log.d(TAG, "tmpInfo.fmt.toString() for dtv=" + signal_info.sigFmt.toString());
 
                 mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_EVENT, null);
                 break;

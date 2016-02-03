@@ -2,9 +2,6 @@ package com.droidlogic.app.tv;
 
 import java.lang.UnsupportedOperationException;
 
-import com.droidlogic.app.tv.TvControlManager.CC_ATV_AUDIO_STANDARD;
-import com.droidlogic.app.tv.TvControlManager.CC_ATV_VIDEO_STANDARD;
-
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.database.Cursor;
@@ -433,60 +430,51 @@ public class TVChannelParams  implements Parcelable {
 
         return tp;
     }
-    public static CC_ATV_AUDIO_STANDARD AudioStd2Enum(int data){
-        CC_ATV_AUDIO_STANDARD std = null;
+
+    public static int AudioStd2Enum(int data){
+        int std = TvControlManager.ATV_AUDIO_STD_DK;
         if (((data & STD_PAL_DK) == STD_PAL_DK) ||
                 ((data & STD_SECAM_DK) == STD_SECAM_DK))
-            std =  CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK;
-        else
-            if ((data & STD_PAL_I) == STD_PAL_I)
-                return CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I;
-
-            else
-                if (((data & STD_PAL_BG) == STD_PAL_BG) ||
-                        ((data & STD_SECAM_B) == STD_SECAM_B)||
-                        ((data & STD_SECAM_G) == STD_SECAM_G ))
-                    std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG;
-                else
-                    if ( ((data & STD_PAL_M) == STD_PAL_M) ||
-                            ((data & STD_NTSC_M) == STD_NTSC_M))
-                        std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M;
-                    else
-                        if ( (data & STD_SECAM_L) == STD_SECAM_L)
-                            std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_L;
-        return  std ;
+            std = TvControlManager.ATV_AUDIO_STD_DK;
+        else if ((data & STD_PAL_I) == STD_PAL_I)
+                return TvControlManager.ATV_AUDIO_STD_I;
+        else if (((data & STD_PAL_BG) == STD_PAL_BG) ||
+                ((data & STD_SECAM_B) == STD_SECAM_B)||
+                ((data & STD_SECAM_G) == STD_SECAM_G ))
+            std = TvControlManager.ATV_AUDIO_STD_BG;
+        else if ( ((data & STD_PAL_M) == STD_PAL_M) ||
+                ((data & STD_NTSC_M) == STD_NTSC_M))
+            std = TvControlManager.ATV_AUDIO_STD_M;
+        else if ( (data & STD_SECAM_L) == STD_SECAM_L)
+            std = TvControlManager.ATV_AUDIO_STD_L;
+        return std;
     }
 
-    public static CC_ATV_VIDEO_STANDARD VideoStd2Enum(int data){
+    public static int VideoStd2Enum(int data) {
+        int videostd = 0;
         if ((data & COLOR_PAL) == COLOR_PAL) {
-            return CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_PAL;
-        } else
-            if ((data & COLOR_NTSC) == COLOR_NTSC) {
-                return CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_NTSC;
-            } else
-                if ((data & COLOR_SECAM) == COLOR_SECAM) {
-                    return CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_SECAM;
-                } else
-                    if ((data & COLOR_AUTO) == COLOR_AUTO) {
-                        return CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO;
-                    }
-        return null;
+            videostd = TvControlManager.ATV_VIDEO_STD_PAL;
+        } else if ((data & COLOR_NTSC) == COLOR_NTSC) {
+            videostd = TvControlManager.ATV_VIDEO_STD_NTSC;
+        } else if ((data & COLOR_SECAM) == COLOR_SECAM) {
+            videostd = TvControlManager.ATV_VIDEO_STD_SECAM;
+        } else if ((data & COLOR_AUTO) == COLOR_AUTO) {
+            videostd = TvControlManager.ATV_VIDEO_STD_AUTO;
+        }
 
+        return videostd;
     }
 
     public static int Change2VideoStd(int data){
         int videostd = 0;
-        if (data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal()) {
+        if (data == TvControlManager.ATV_VIDEO_STD_AUTO)
             videostd = COLOR_AUTO;
-        }else
-            if (data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_PAL.ordinal())
-                videostd = COLOR_PAL;
-            else
-                if (data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_NTSC.ordinal())
-                    videostd = COLOR_NTSC;
-                else
-                    if (data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_SECAM.ordinal())
-                        videostd = COLOR_SECAM;
+        else if (data == TvControlManager.ATV_VIDEO_STD_PAL)
+            videostd = COLOR_PAL;
+        else if (data == TvControlManager.ATV_VIDEO_STD_NTSC)
+            videostd = COLOR_NTSC;
+        else if (data == TvControlManager.ATV_VIDEO_STD_SECAM)
+            videostd = COLOR_SECAM;
         return videostd;
     }
 
@@ -494,55 +482,55 @@ public class TVChannelParams  implements Parcelable {
         int tmpTunerStd = 0;
 
         if (audio_std >= 0) {
-            if (audio_std < CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal()
-                    || audio_std >CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_AUTO.ordinal() ) {
+            if (audio_std < TvControlManager.ATV_AUDIO_STD_DK
+                    || audio_std > TvControlManager.ATV_AUDIO_STD_AUTO) {
                 //audio_std = ATVHandleAudioStdCfg();
             }
         }
-        if (video_std == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal()) {
+        if (video_std == TvControlManager.ATV_VIDEO_STD_AUTO) {
             //tmpTunerStd |= CC_ATV_ADUIO_STANDARD.TUNER_COLOR_PAL;
-            if (audio_std ==CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal()) {
+            if (audio_std == TvControlManager.ATV_AUDIO_STD_DK) {
                 tmpTunerStd |= STD_PAL_DK;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I.ordinal()) {
+            } else if (audio_std == TvControlManager.ATV_AUDIO_STD_I) {
                 tmpTunerStd |= STD_PAL_I;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG.ordinal()) {
+            } else if (audio_std == TvControlManager.ATV_AUDIO_STD_BG) {
                 tmpTunerStd |= STD_PAL_BG;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M.ordinal()) {
+            } else if (audio_std == TvControlManager.ATV_AUDIO_STD_M) {
                 tmpTunerStd |= STD_NTSC_M;
             }
-        } else if (video_std == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_PAL.ordinal()) {
+        } else if (video_std == TvControlManager.ATV_VIDEO_STD_PAL) {
             // tmpTunerStd |= CC_ATV_ADUIO_STANDARDCOLOR_PAL;
-            if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal()) {
+            if (audio_std == TvControlManager.ATV_AUDIO_STD_DK) {
                 tmpTunerStd |= STD_PAL_DK;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I.ordinal()) {
+            } else if (audio_std == TvControlManager.ATV_AUDIO_STD_I) {
                 tmpTunerStd |= STD_PAL_I;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG.ordinal()) {
+            } else if (audio_std == TvControlManager.ATV_AUDIO_STD_BG) {
                 tmpTunerStd |= STD_PAL_BG;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M.ordinal()) {
+            } else if (audio_std == TvControlManager.ATV_AUDIO_STD_M) {
                 tmpTunerStd |= STD_PAL_M;
             }
-        } else if (video_std == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_NTSC.ordinal()) {
+        } else if (video_std == TvControlManager.ATV_VIDEO_STD_NTSC) {
             // tmpTunerStd |= CC_ATV_ADUIO_STANDARD.COLOR_NTSC;
-            if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal()) {
+            if (audio_std == TvControlManager.ATV_AUDIO_STD_DK) {
                 tmpTunerStd |= STD_PAL_DK;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I.ordinal()) {
+            } else if (audio_std == TvControlManager.ATV_AUDIO_STD_I) {
                 tmpTunerStd |= STD_PAL_I;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG.ordinal()) {
+            } else if (audio_std == TvControlManager.ATV_AUDIO_STD_BG) {
                 tmpTunerStd |= STD_PAL_BG;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M.ordinal()) {
+            } else if (audio_std == TvControlManager.ATV_AUDIO_STD_M) {
                 tmpTunerStd |= STD_NTSC_M;
             }
-        } else if (video_std == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_SECAM.ordinal()) {
+        } else if (video_std == TvControlManager.ATV_VIDEO_STD_SECAM) {
             // tmpTunerStd |= TUNER_COLOR_SECAM;
-            if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal()) {
+            if (audio_std == TvControlManager.ATV_AUDIO_STD_DK) {
                 tmpTunerStd |= STD_SECAM_DK;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I.ordinal()) {
+            } else if (audio_std == TvControlManager.ATV_AUDIO_STD_I) {
                 tmpTunerStd |= STD_PAL_I;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG.ordinal()) {
+            } else if (audio_std == TvControlManager.ATV_AUDIO_STD_BG) {
                 tmpTunerStd |= (STD_SECAM_B | STD_SECAM_G);
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M.ordinal()) {
+            } else if (audio_std == TvControlManager.ATV_AUDIO_STD_M) {
                 tmpTunerStd |= STD_NTSC_M;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_L.ordinal()) {
+            } else if (audio_std == TvControlManager.ATV_AUDIO_STD_L) {
                 tmpTunerStd |= STD_SECAM_L;
             }
         }
@@ -555,21 +543,21 @@ public class TVChannelParams  implements Parcelable {
         return (vdata|adata);
     }
 
-    static CC_ATV_AUDIO_STANDARD ATVHandleAudioStdCfg(String key) {
+    static int ATVHandleAudioStdCfg(String key) {
         if (key.equals( "DK") ) {
-            return CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK;
+            return TvControlManager.ATV_AUDIO_STD_DK;
         } else if (key.equals( "I")) {
-            return CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I;
+            return TvControlManager.ATV_AUDIO_STD_I;
         } else if (key.equals( "BG") ) {
-            return CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG;
+            return TvControlManager.ATV_AUDIO_STD_BG;
         } else if (key.equals( "M") ) {
-            return CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M;
+            return TvControlManager.ATV_AUDIO_STD_M;
         } else if ( key.equals("L") ) {
-            return CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_L;
+            return TvControlManager.ATV_AUDIO_STD_L;
         } else if (key.equals( "AUTO") ) {
-            return CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_AUTO;
+            return TvControlManager.ATV_AUDIO_STD_AUTO;
         }
-        return null;
+        return TvControlManager.ATV_AUDIO_STD_AUTO;
     }
 
     /**
@@ -589,11 +577,9 @@ public class TVChannelParams  implements Parcelable {
      *@param fmt 视频制式
      *@return true 表示已经修改制式,false表示制式已经设置无需修改
      */
-    public boolean setATVVideoFormat(TvControlManager.CC_ATV_VIDEO_STANDARD fmt){
-        int std, afmt;
-
-        afmt = AudioStd2Enum(standard).ordinal();
-        std  = getTunerStd(fmt.ordinal(), afmt);
+    public boolean setATVVideoFormat(int fmt){
+        int afmt = AudioStd2Enum(standard);
+        int std = getTunerStd(fmt, afmt);
 
         if (std == standard)
             return false;
@@ -607,11 +593,9 @@ public class TVChannelParams  implements Parcelable {
      *@param fmt 音频制式
      *@return true 表示已经修改制式,false表示制式已经设置无需修改
      */
-    public boolean setATVAudioFormat(TvControlManager.CC_ATV_AUDIO_STANDARD fmt){
-        int std, vfmt;
-
-        vfmt = VideoStd2Enum(standard).ordinal();
-        std  = getTunerStd(vfmt, fmt.ordinal());
+    public boolean setATVAudioFormat(int fmt){
+        int vfmt = VideoStd2Enum(standard);
+        int std = getTunerStd(vfmt, fmt);
 
         if (std == standard)
             return false;
