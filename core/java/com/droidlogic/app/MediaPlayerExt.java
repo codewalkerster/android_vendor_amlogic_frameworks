@@ -25,6 +25,7 @@ import android.net.Uri;
 import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
 import android.os.Parcel;
 import android.os.RemoteException;
@@ -43,8 +44,8 @@ import java.io.FileNotFoundException;
 /**
  * Created by wangjian on 2014/4/17.
  */
-public class MediaPlayerDroidlogic extends MediaPlayer {
-    private static final String TAG = "MediaPlayerDroidlogic";
+public class MediaPlayerExt extends MediaPlayer {
+    private static final String TAG = "MediaPlayerExt";
     private static final boolean DEBUG = false;
     private static final int FF_PLAY_TIME = 5000;
     private static final int FB_PLAY_TIME = 5000;
@@ -58,13 +59,13 @@ public class MediaPlayerDroidlogic extends MediaPlayer {
     private OnCompletionListener mOnCompletionListener = null;
     private OnSeekCompleteListener mOnSeekCompleteListener = null;
     private OnErrorListener mOnErrorListener = null;
+    private OnBlurayListener mOnBlurayInfoListener = null;
+
+    private EventHandler mEventHandler;
 
     //must sync with IMediaPlayer.cpp (av\media\libmedia)
     private IBinder mIBinder = null; //IMediaPlayer
-    private IBinder mIBinderService = null; //IMediaPlayerService
     private static final String SYS_TOKEN                   = "android.media.IMediaPlayer";
-    private static final String SYS_TOKEN_SERVICE           = "android.media.IMediaPlayerService";
-    private static final int CREATE                         = IBinder.FIRST_CALL_TRANSACTION;
     private static final int DISCONNECT                     = IBinder.FIRST_CALL_TRANSACTION;
     private static final int SET_DATA_SOURCE_URL            = IBinder.FIRST_CALL_TRANSACTION + 1;
     private static final int SET_DATA_SOURCE_FD             = IBinder.FIRST_CALL_TRANSACTION + 2;
@@ -98,6 +99,12 @@ public class MediaPlayerDroidlogic extends MediaPlayer {
     private static final int GET_RETRANSMIT_ENDPOINT        = IBinder.FIRST_CALL_TRANSACTION + 30;
     private static final int SET_NEXT_PLAYER                = IBinder.FIRST_CALL_TRANSACTION + 31;
 
+    //must sync with IMediaPlayerService.cpp (av\media\libmedia)
+    private IBinder mIBinderService = null; //IMediaPlayerService
+    private static final String SYS_TOKEN_SERVICE           = "android.media.IMediaPlayerService";
+    private static final int CREATE                         = IBinder.FIRST_CALL_TRANSACTION;
+    private static final int SET_MEDIA_PLAYER_CLIENT        = IBinder.FIRST_CALL_TRANSACTION + 11;
+
     //must sync with Mediaplayer.h (av\include\media)
     public static final int KEY_PARAMETER_AML_VIDEO_POSITION_INFO           = 2000;
     public static final int KEY_PARAMETER_AML_PLAYER_TYPE_STR               = 2001;
@@ -122,8 +129,44 @@ public class MediaPlayerDroidlogic extends MediaPlayer {
     public static final int KEY_PARAMETER_AML_PLAYER_USE_SOFT_DEMUX         = 8006;             //play use soft demux
     public static final int KEY_PARAMETER_AML_PLAYER_PR_CUSTOM_DATA         = 9001;             //string, playready, set only
 
-    public MediaPlayerDroidlogic() {
+    public MediaPlayerExt() {
+        Looper looper;
+        if ((looper = Looper.myLooper()) != null) {
+            mEventHandler = new EventHandler(this, looper);
+        } else if ((looper = Looper.getMainLooper()) != null) {
+            mEventHandler = new EventHandler(this, looper);
+        } else {
+            mEventHandler = null;
+        }
 
+        setMediaPlayerClient(MediaPlayerClient.create(this));
+    }
+
+    private void setMediaPlayerClient(IBinder clientBinder) {
+        if (mIBinderService == null) {
+            try {
+                Object object = Class.forName("android.os.ServiceManager")
+                    .getMethod("getService", new Class[] { String.class })
+                    .invoke(null, new Object[] { "media.player" });
+                mIBinderService = (IBinder)object;
+                if (DEBUG) Log.i(TAG,"[MediaPlayerExt]mIBinderService:" + mIBinderService);
+            }
+            catch (Exception ex) {
+                Log.e(TAG, "get IMediaPlayerService:" + ex);
+            }
+        }
+
+        try {
+            Parcel data = Parcel.obtain();
+            Parcel reply = Parcel.obtain();
+            data.writeInterfaceToken(SYS_TOKEN_SERVICE);
+            data.writeStrongBinder(clientBinder);
+            mIBinderService.transact(SET_MEDIA_PLAYER_CLIENT, data, reply, 0);
+            data.recycle();
+            reply.recycle();
+        } catch (RemoteException ex) {
+            Log.e(TAG, "setMediaPlayerClient:" + ex);
+        }
     }
 
     /**
@@ -132,30 +175,30 @@ public class MediaPlayerDroidlogic extends MediaPlayer {
      * Otherwise will throw "unknow error"
      */
     private void prepareIBinder() {
-        try {
-            Object object = Class.forName("android.os.ServiceManager")
-                .getMethod("getService", new Class[] { String.class })
-                .invoke(null, new Object[] { "media.player" });
-            mIBinderService = (IBinder)object;
-            if (DEBUG) Log.i(TAG,"[MediaPlayerDroidlogic]mIBinderService:" + mIBinderService);
-        }
-        catch (Exception ex) {
-            Log.e(TAG, "get IMediaPlayerService:" + ex);
+        if (mIBinderService == null) {
+            try {
+                Object object = Class.forName("android.os.ServiceManager")
+                    .getMethod("getService", new Class[] { String.class })
+                    .invoke(null, new Object[] { "media.player" });
+                mIBinderService = (IBinder)object;
+                if (DEBUG) Log.i(TAG,"[MediaPlayerExt]mIBinderService:" + mIBinderService);
+            }
+            catch (Exception ex) {
+                Log.e(TAG, "get IMediaPlayerService:" + ex);
+            }
         }
 
         try {
-            if (null != mIBinderService) {
-                Parcel data = Parcel.obtain();
-                Parcel reply = Parcel.obtain();
-                data.writeInterfaceToken(SYS_TOKEN_SERVICE);
-                data.writeStrongBinder(null);
-                data.writeInt(0);
-                mIBinderService.transact(CREATE, data, reply, 0);
-                mIBinder = reply.readStrongBinder();
-                reply.recycle();
-                data.recycle();
-                if (DEBUG) Log.i(TAG,"[MediaPlayerDroidlogic]mIBinder:" + mIBinder);
-            }
+            Parcel data = Parcel.obtain();
+            Parcel reply = Parcel.obtain();
+            data.writeInterfaceToken(SYS_TOKEN_SERVICE);
+            data.writeStrongBinder(null);
+            data.writeInt(0);
+            mIBinderService.transact(CREATE, data, reply, 0);
+            mIBinder = reply.readStrongBinder();
+            reply.recycle();
+            data.recycle();
+            if (DEBUG) Log.i(TAG,"[MediaPlayerExt]mIBinder:" + mIBinder);
         } catch (RemoteException ex) {
             Log.e(TAG, "get IMediaPlayer :" + ex);
         }
@@ -252,6 +295,108 @@ public class MediaPlayerDroidlogic extends MediaPlayer {
         boolean ret = setParameter(key, p);
         p.recycle();
         return ret;
+    }
+
+    public void fastForward (int step) {
+        if (DEBUG) Log.i (TAG, "fastForward:" + step);
+        synchronized (this) {
+            String playerTypeStr = getStringParameter(KEY_PARAMETER_AML_PLAYER_TYPE_STR);
+            if ( (playerTypeStr != null) && (playerTypeStr.equals ("AMLOGIC_PLAYER"))) {
+                String str = Integer.toString (step);
+                StringBuilder builder = new StringBuilder();
+                builder.append ("forward:" + str);
+                if (DEBUG) Log.i (TAG, "[HW]" + builder.toString());
+                setParameter(KEY_PARAMETER_AML_PLAYER_TRICKPLAY_FORWARD,builder.toString());
+                return;
+            }
+            mStep = step;
+            mIsFF = true;
+            mStopFast = false;
+            if (mThread == null) {
+                mThread = new Thread (runnable);
+                mThread.start();
+            }
+            else {
+                if (mThread.getState() == State.TERMINATED) {
+                    mThread = new Thread (runnable);
+                    mThread.start();
+                }
+            }
+        }
+    }
+
+    public void fastBackward (int step) {
+        if (DEBUG) Log.i (TAG, "fastBackward:" + step);
+        synchronized (this) {
+            String playerTypeStr = getStringParameter(KEY_PARAMETER_AML_PLAYER_TYPE_STR);
+            if ( (playerTypeStr != null) && (playerTypeStr.equals ("AMLOGIC_PLAYER"))) {
+                String str = Integer.toString (step);
+                StringBuilder builder = new StringBuilder();
+                builder.append ("backward:" + str);
+                if (DEBUG) Log.i (TAG, "[HW]" + builder.toString());
+                setParameter(KEY_PARAMETER_AML_PLAYER_TRICKPLAY_BACKWARD,builder.toString());
+                return;
+            }
+            mStep = step;
+            mIsFF = false;
+            mStopFast = false;
+            if (mThread == null) {
+                mThread = new Thread (runnable);
+                mThread.start();
+            }
+            else {
+                if (mThread.getState() == State.TERMINATED) {
+                    mThread = new Thread (runnable);
+                    mThread.start();
+                }
+            }
+        }
+    }
+
+    public boolean isPlaying() {
+        if (!mStopFast) {
+            return true;
+        }
+        return super.isPlaying();
+    }
+
+    public void reset() {
+        mIBinder = null;
+        mStopFast = true;
+        super.reset();
+
+        if (mEventHandler != null) {
+            mEventHandler.removeCallbacksAndMessages(null);
+        }
+    }
+
+    public void start() {
+        mStopFast = true;
+        super.start();
+    }
+
+    public void pause() {
+        mStopFast = true;
+        super.pause();
+    }
+
+    public void stop() {
+        mStopFast = true;
+        super.stop();
+    }
+
+    public void release() {
+        mStopFast = true;
+        mOnBlurayInfoListener = null;
+        super.release();
+    }
+
+    private void superPause() {
+        super.pause();
+    }
+
+    private void superStart() {
+        super.start();
     }
 
     public class VideoInfo{
@@ -363,90 +508,6 @@ public class MediaPlayerDroidlogic extends MediaPlayer {
         return mediaInfo;
     }
 
-    public void fastForward (int step) {
-        if (DEBUG) Log.i (TAG, "fastForward:" + step);
-        synchronized (this) {
-            String playerTypeStr = getStringParameter(KEY_PARAMETER_AML_PLAYER_TYPE_STR);
-            if ( (playerTypeStr != null) && (playerTypeStr.equals ("AMLOGIC_PLAYER"))) {
-                String str = Integer.toString (step);
-                StringBuilder builder = new StringBuilder();
-                builder.append ("forward:" + str);
-                if (DEBUG) Log.i (TAG, "[HW]" + builder.toString());
-                setParameter(KEY_PARAMETER_AML_PLAYER_TRICKPLAY_FORWARD,builder.toString());
-                return;
-            }
-            mStep = step;
-            mIsFF = true;
-            mStopFast = false;
-            if (mThread == null) {
-                mThread = new Thread (runnable);
-                mThread.start();
-            }
-            else {
-                if (mThread.getState() == State.TERMINATED) {
-                    mThread = new Thread (runnable);
-                    mThread.start();
-                }
-            }
-        }
-    }
-
-    public void fastBackward (int step) {
-        if (DEBUG) Log.i (TAG, "fastBackward:" + step);
-        synchronized (this) {
-            String playerTypeStr = getStringParameter(KEY_PARAMETER_AML_PLAYER_TYPE_STR);
-            if ( (playerTypeStr != null) && (playerTypeStr.equals ("AMLOGIC_PLAYER"))) {
-                String str = Integer.toString (step);
-                StringBuilder builder = new StringBuilder();
-                builder.append ("backward:" + str);
-                if (DEBUG) Log.i (TAG, "[HW]" + builder.toString());
-                setParameter(KEY_PARAMETER_AML_PLAYER_TRICKPLAY_BACKWARD,builder.toString());
-                return;
-            }
-            mStep = step;
-            mIsFF = false;
-            mStopFast = false;
-            if (mThread == null) {
-                mThread = new Thread (runnable);
-                mThread.start();
-            }
-            else {
-                if (mThread.getState() == State.TERMINATED) {
-                    mThread = new Thread (runnable);
-                    mThread.start();
-                }
-            }
-        }
-    }
-
-    public boolean isPlaying() {
-        if (!mStopFast) {
-            return true;
-        }
-        return super.isPlaying();
-    }
-
-    public void reset() {
-        mIBinder = null;
-        mStopFast = true;
-        super.reset();
-    }
-
-    public void start() {
-        mStopFast = true;
-        super.start();
-    }
-
-    public void pause() {
-        mStopFast = true;
-        super.pause();
-    }
-
-    public void stop() {
-        mStopFast = true;
-        super.stop();
-    }
-
     public void setOnSeekCompleteListener (OnSeekCompleteListener listener) {
         mOnSeekCompleteListener = listener;
         super.setOnSeekCompleteListener (mMediaPlayerSeekCompleteListener);
@@ -462,12 +523,64 @@ public class MediaPlayerDroidlogic extends MediaPlayer {
         super.setOnErrorListener (mMediaPlayerErrorListener);
     }
 
-    private void superPause() {
-        super.pause();
+    /**
+     * Interface definition of a callback to be invoked when a
+     * bluray infomation is available for update.
+     */
+    public interface OnBlurayListener {
+        /**
+         * Called to indicate an avaliable bluray info
+         *
+         * @param mp             the MediaPlayer associated with this callback
+         * @param ext1           the bluray info message arg1
+         * @param ext2           the bluray info message arg2
+         * @param obj            the bluray info message obj
+         */
+        public void onBlurayInfo(MediaPlayer mp, int ext1, int ext2, Object obj);
     }
 
-    private void superStart() {
-        super.start();
+    /**
+     * Register a callback to be invoked when a bluray info is available
+     * for update.
+     *
+     * @param listener the callback that will be run
+     */
+    public void setOnBlurayInfoListener(OnBlurayListener listener) {
+        mOnBlurayInfoListener = listener;
+    }
+
+    //must different with message value defined in MediaPlayer.java
+    private static final int MEDIA_BLURAY_INFO = 202;
+    private class EventHandler extends Handler {
+        private MediaPlayer mMediaPlayer;
+
+        public EventHandler(MediaPlayer mp, Looper looper) {
+            super(looper);
+            mMediaPlayer = mp;
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            if (DEBUG) Log.i(TAG, "[handleMessage]msg: " + msg);
+            switch (msg.what) {
+                case MEDIA_BLURAY_INFO:
+                    if (mOnBlurayInfoListener == null)
+                        return;
+                    mOnBlurayInfoListener.onBlurayInfo(mMediaPlayer, msg.arg1, msg.arg2, msg.obj);
+                    return;
+                default:
+                    Log.e(TAG, "Unknown message: " + msg.what);
+                    break;
+            }
+        }
+    }
+
+    public void postEvent(int msg, int ext1, int ext2, Object obj) {
+        if (DEBUG) Log.i(TAG, "[postEvent]msg: " + msg);
+        if (mEventHandler != null) {
+            Message m = mEventHandler.obtainMessage(msg, ext1, ext2, obj);
+            mEventHandler.sendMessage(m);
+        }
     }
 
     private void OnFFCompletion() {
