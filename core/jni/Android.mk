@@ -131,3 +131,5 @@ LOCAL_STATIC_LIBRARIES := \
   libgif
 
 include $(BUILD_SHARED_LIBRARY)
+
+include $(LOCAL_PATH)/tv/Android.mk
