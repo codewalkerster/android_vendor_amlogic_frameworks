@@ -29,6 +29,10 @@
 #define ERROR(x...)     SYS_LOGE(x)
 #define NOTICE(x...)    SYS_LOGV(x)
 #define INFO(x...)      SYS_LOGI(x)
+#ifdef ODROIDC2
+#define ENV_BLK_START   0xB4000
+#endif
+
 static mutex_t  env_lock = MUTEX_INITIALIZER;
 
 char BootenvPartitionName[32]={0};
@@ -135,6 +139,14 @@ int read_bootenv() {
         return -1;
     }
 
+#ifdef ODROIDC2
+    if (lseek(fd, ENV_BLK_START, SEEK_SET) == -1) {
+        ERROR("[ubootenv] seek error: %s\n", strerror(errno));
+        close(fd);
+        return -1;
+    }
+#endif
+
     addr = malloc(ENV_PARTITIONS_SIZE);
     if (addr == NULL) {
         ERROR("[ubootenv] Not enough memory for environment (%u bytes)\n",ENV_PARTITIONS_SIZE);
@@ -230,6 +242,14 @@ int save_bootenv() {
         ERROR("[ubootenv] open devices error\n");
         return -1;
     }
+
+#ifdef ODROIDC2
+    if (lseek(fd, ENV_BLK_START, SEEK_SET) == -1) {
+        ERROR("[ubootenv] seek error: %s\n", strerror(errno));
+        close(fd);
+        return -1;
+    }
+#endif
 
     if (strstr (BootenvPartitionName, "mtd")) {
         memset(&info, 0, sizeof(info));
@@ -416,6 +436,27 @@ int bootenv_init(void) {
         ENV_PARTITIONS_SIZE = info.size;//0x8000;
         ENV_SIZE = ENV_PARTITIONS_SIZE - sizeof(long);
     }
+#ifdef ODROIDC2
+    else if (!stat("/dev/block/mmcblk0", &st)) { /* For ODROID-C2 */
+        sprintf(BootenvPartitionName, "/dev/block/mmcblk0");
+        if ((fd = open(BootenvPartitionName, O_RDWR)) < 0) {
+            ERROR("[ubootenv] open device(%s) error\n",BootenvPartitionName );
+            return -2;
+        }
+
+        memset(&info, 0, sizeof(info));
+        err = ioctl(fd, MEMGETINFO, &info);
+        if (err < 0) {
+            fprintf (stderr,"get MTD info error\n");
+            close(fd);
+            return -3;
+        }
+
+        ENV_PARTITIONS_SIZE = 0x8000;
+        ENV_SIZE = ENV_PARTITIONS_SIZE - sizeof(uint32_t);
+        close(fd);
+    }
+#endif
 
     while (i < MAX_UBOOT_RWRETRY && ret < 0) {
         i ++;
