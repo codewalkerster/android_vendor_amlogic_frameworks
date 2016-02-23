@@ -50,6 +50,10 @@ LOCAL_SRC_FILES:= \
   HDCPKey/HdcpRx22Key.cpp \
   HDCPKey/HdcpKeyDecrypt.cpp
 
+ifeq ($(TARGET_PRODUCT), odroidc2)
+LOCAL_CFLAGS += -DODROIDC2
+endif
+
 LOCAL_SHARED_LIBRARIES := \
   libsystemcontrolservice \
   libcutils \
@@ -96,6 +100,10 @@ LOCAL_SRC_FILES:= \
   DisplayMode.cpp \
   SysTokenizer.cpp
 
+ifeq ($(TARGET_PRODUCT), odroidc2)
+LOCAL_CFLAGS += -DODROIDC2
+endif
+
 LOCAL_STATIC_LIBRARIES := \
   libcutils \
   liblog \
@@ -136,6 +144,10 @@ LOCAL_SRC_FILES:= \
   SysWrite.cpp \
   DisplayMode.cpp \
   SysTokenizer.cpp
+
+ifeq ($(TARGET_PRODUCT), odroidc2)
+LOCAL_CFLAGS += -DODROIDC2
+endif
 
 LOCAL_STATIC_LIBRARIES := \
   libcutils \
