@@ -34,15 +34,11 @@ LOCAL_SRC_FILES:= \
   SysWrite.cpp \
   SystemControl.cpp \
   DisplayMode.cpp \
-  SysTokenizer.cpp
+  SysTokenizer.cpp \
+  ubootenv.c
 
 ifeq ($(TARGET_PRODUCT), odroidc2)
 LOCAL_CFLAGS += -DODROIDC2
-LOCAL_SRC_FILES+= \
-  ubootenv-odroid.c
-else
-LOCAL_SRC_FILES+= \
-  ubootenv.c
 endif
 
 LOCAL_SHARED_LIBRARIES := \
@@ -83,15 +79,11 @@ LOCAL_SRC_FILES:= \
 	main_recovery.cpp \
 	SysWrite.cpp \
 	DisplayMode.cpp \
-	SysTokenizer.cpp
+	SysTokenizer.cpp \
+	ubootenv.c
 
 ifeq ($(TARGET_PRODUCT), odroidc2)
 LOCAL_CFLAGS += -DODROIDC2
-LOCAL_SRC_FILES+= \
-  ubootenv-odroid.c
-else
-LOCAL_SRC_FILES+= \
-  ubootenv.c
 endif
 
 LOCAL_STATIC_LIBRARIES := \
@@ -130,6 +122,10 @@ LOCAL_SRC_FILES:= \
 	SysWrite.cpp \
 	DisplayMode.cpp \
 	SysTokenizer.cpp
+
+ifeq ($(TARGET_PRODUCT), odroidc2)
+LOCAL_CFLAGS += -DODROIDC2
+endif
 
 LOCAL_STATIC_LIBRARIES := \
 	libcutils \
