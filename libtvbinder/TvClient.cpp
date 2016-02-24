@@ -21,7 +21,7 @@ const sp<ITvService> &TvClient::getTvService()
         sp<IServiceManager> sm = defaultServiceManager();
         sp<IBinder> binder;
         do {
-            binder = sm->getService(String16("aml.tvserver"));
+            binder = sm->getService(String16("tvservice"));
             if (binder != 0)
                 break;
             ALOGW("TvService not published, waiting...");
