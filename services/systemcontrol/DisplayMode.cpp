@@ -1285,15 +1285,21 @@ bool DisplayMode::hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
     if ((strlen(hdcpRxVer) == 0) || !(strcmp(hdcpRxVer, "00")))
         return false;
 
-    char cap[MAX_STR_LEN] = {0};
-    pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, cap);
-    if ((_strstr(cap, (char *)"2160p") != NULL) && (_strstr(hdcpRxVer, (char *)"22") != NULL) &&
+    //stop HDCP 2.2
+    SYS_LOGI("HDCP init, first stop hdcp_tx22 and hdcp 1.4\n");
+    pSysWrite->setProperty("ctl.stop", "hdcp_tx22");
+    //stop HDCP 1.4
+    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_CONF, DISPLAY_HDMI_HDCP_STOP);
+
+    //char cap[MAX_STR_LEN] = {0};
+    //pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, cap);
+    if (/*(_strstr(cap, (char *)"2160p") != NULL) && */(_strstr(hdcpRxVer, (char *)"22") != NULL) &&
         (_strstr(hdcpTxKey, (char *)"22") != NULL)) {
         useHdcp22 = true;
         pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, DISPLAY_HDMI_HDCP_22);
 
-        SYS_LOGI("HDCP 2.2, stop hdcp_tx22, init will kill hdcp_tx22\n");
-        pSysWrite->setProperty("ctl.stop", "hdcp_tx22");
+        //SYS_LOGI("HDCP 2.2, stop hdcp_tx22, init will kill hdcp_tx22\n");
+        //pSysWrite->setProperty("ctl.stop", "hdcp_tx22");
         usleep(50*1000);
         SYS_LOGI("HDCP 2.2, start hdcp_tx22\n");
         pSysWrite->setProperty("ctl.start", "hdcp_tx22");
