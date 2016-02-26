@@ -120,6 +120,7 @@ public class MediaPlayerExt extends MediaPlayer {
     public static final int KEY_PARAMETER_AML_PLAYER_SET_DISPLAY_MODE       = 2011;             //set display mode
     public static final int KEY_PARAMETER_AML_PLAYER_GET_DTS_ASSET_TOTAL    = 2012;             //get dts asset total number
     public static final int KEY_PARAMETER_AML_PLAYER_SET_DTS_ASSET          = 2013;             //set dts asset
+    public static final int KEY_PARAMETER_AML_PLAYER_SWITCH_VIDEO_TRACK     = 2015;             //string,refer to video track index,set only
     public static final int KEY_PARAMETER_AML_PLAYER_HWBUFFER_STATE         = 3001;             //refer to stream buffer info, hardware decoder buffer infos,get only
     public static final int KEY_PARAMETER_AML_PLAYER_RESET_BUFFER           = 8000;             //top level seek..player need to reset & clearbuffers
     public static final int KEY_PARAMETER_AML_PLAYER_FREERUN_MODE           = 8002;             //play ASAP...
@@ -422,6 +423,11 @@ public class MediaPlayerExt extends MediaPlayer {
         public String sub_language;
     }
 
+    public class TsProgrameInfo{
+        public int v_pid;
+        public String title;
+    }
+
     public class MediaInfo{
         public String filename;
         public int duration;
@@ -441,6 +447,9 @@ public class MediaPlayerExt extends MediaPlayer {
 
         public int total_sub_num;
         public SubtitleInfo[] subtitleInfo;
+
+        public int total_ts_num;
+        public TsProgrameInfo[] tsprogrameInfo;
     }
 
     public MediaInfo getMediaInfo() {
@@ -503,6 +512,25 @@ public class MediaPlayerExt extends MediaPlayer {
             if (DEBUG) Log.i(TAG,"[getMediaInfo]subtitleInfo k:"+k+",index:"+mediaInfo.subtitleInfo[k].index+",id:"+mediaInfo.subtitleInfo[k].id+",sub_type:"+mediaInfo.subtitleInfo[k].sub_type);
             if (DEBUG) Log.i(TAG,"[getMediaInfo]subtitleInfo k:"+k+",sub_language:"+mediaInfo.subtitleInfo[k].sub_language);
         }
+
+        //----ts programe info----
+        mediaInfo.total_ts_num = p.readInt();
+        if (DEBUG) Log.i(TAG,"[getMediaInfo]mediaInfo.total_ts_num:"+mediaInfo.total_ts_num);
+        mediaInfo.tsprogrameInfo = new TsProgrameInfo[mediaInfo.total_ts_num];
+        for (int l=0;l<mediaInfo.total_ts_num;l++) {
+            mediaInfo.tsprogrameInfo[l] = new TsProgrameInfo();
+            mediaInfo.tsprogrameInfo[l].v_pid = p.readInt();
+            mediaInfo.tsprogrameInfo[l].title = p.readString();
+            if (DEBUG) {
+                Log.i(TAG,"[getMediaInfo]tsprogrameInfo l:"+l+",v_pid:"+mediaInfo.tsprogrameInfo[l].v_pid+",title:"+mediaInfo.tsprogrameInfo[l].title);
+                byte[] data = (mediaInfo.tsprogrameInfo[l].title).getBytes();
+                for (int m = 0; m < data.length; m++) {
+                    Log.i(TAG,"[getMediaInfo]data["+m+"]:"+data[m] + "("+(String.format("0x%x", (0xff & data[m]))) + ")");
+                }
+                Log.i(TAG,"[getMediaInfo]=======================================");
+            }
+        }
+
         p.recycle();
 
         return mediaInfo;
