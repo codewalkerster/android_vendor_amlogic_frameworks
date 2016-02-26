@@ -74,12 +74,16 @@ public class DroidLogicTvUtils {
 
     public static final String ACTION_CHANNEL_CHANGED = "android.intent.action.tv_channel_changed";
 
+    public static final String ACTION_PROGRAM_APPOINTED = "android.intent.action.tv_appointed_program";
+
     /**
      * Other extra names for {@link TvInputInfo.createSetupIntent#intent} except for input id.
      */
     public static final String EXTRA_CHANNEL_ID = "tv_channel_id";
 
     public static final String EXTRA_CHANNEL_DEVICE_ID = "channel_device_id";
+
+    public static final String EXTRA_PROGRAM_ID = "tv_program_id";
 
     public static final String EXTRA_KEY_CODE = "key_code";
 
@@ -99,6 +103,11 @@ public class DroidLogicTvUtils {
     public static final String TV_START_UP_APP_NAME = "tv_start_up_app_name";
     public static final String TV_KEY_DEFAULT_LANGUAGE = "default_language";
     public static final String TV_KEY_SUBTITLE_SWITCH = "sub_switch";
+
+    public static final String TV_CURRENT_DEVICE_ID = "tv_current_device_id";
+    public static final String TV_ATV_CHANNEL_INDEX = "tv_atv_channel_index";
+    public static final String TV_DTV_CHANNEL_INDEX  = "tv_dtv_channel_index";
+    public static final String TV_CURRENT_CHANNEL_IS_RADIO = "tv_current_channel_is_radio";
 
     /**
      * message for {@link TvInputBaseSession#handleMessage(android.os.Message)}

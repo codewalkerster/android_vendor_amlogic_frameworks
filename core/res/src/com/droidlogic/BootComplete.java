@@ -10,7 +10,9 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.IWindowManager;
 
+import com.droidlogic.app.HdrManager;
 import com.droidlogic.app.PlayBackManager;
+import com.droidlogic.app.SystemControlManager;
 import com.droidlogic.app.UsbCameraManager;
 import com.droidlogic.HdmiCecExtend;
 
@@ -22,6 +24,8 @@ public class BootComplete extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
         Log.i(TAG, "action: " + action);
+
+        SystemControlManager sm = new SystemControlManager(context);
 
         if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
             //set default show_ime_with_hard_keyboard 1, then first boot can show the ime.
@@ -42,7 +46,9 @@ public class BootComplete extends BroadcastReceiver {
 
             new PlayBackManager(context).initHdmiSelfadaption();
 
-            new HdmiCecExtend(context);
+            if (sm.getPropertyBoolean("ro.platform.has.tvuimode", false)) {
+                new HdrManager(context).initHdrMode();
+            }
 
             //start optimization service
             context.startService(new Intent(context, Optimization.class));

@@ -600,6 +600,10 @@ public class TvDataBaseManager {
     }
 
     public ArrayList<ChannelInfo> getChannelList(String curInputId, String srvType) {
+        return getChannelList(curInputId, srvType, false);
+    }
+
+    public ArrayList<ChannelInfo> getChannelList(String curInputId, String srvType, boolean need_browserable) {
         ArrayList<ChannelInfo> channelList = new ArrayList<ChannelInfo>();
         Uri channelsUri = TvContract.buildChannelsUriForInput(curInputId);
 
@@ -609,7 +613,14 @@ public class TvDataBaseManager {
             while (cursor != null && cursor.moveToNext()) {
                 int index = cursor.getColumnIndex(Channels.COLUMN_SERVICE_TYPE);
                 if (srvType.equals(cursor.getString(index))) {
-                    channelList.add(ChannelInfo.fromCommonCursor(cursor));
+                    if (!need_browserable) {
+                        channelList.add(ChannelInfo.fromCommonCursor(cursor));
+                    } else {
+                        boolean browserable = cursor.getInt(cursor.getColumnIndex(Channels.COLUMN_BROWSABLE)) == 1 ? true : false;
+                        if (browserable) {
+                            channelList.add(ChannelInfo.fromCommonCursor(cursor));
+                        }
+                    }
                 }
             }
         } catch (Exception e) {
