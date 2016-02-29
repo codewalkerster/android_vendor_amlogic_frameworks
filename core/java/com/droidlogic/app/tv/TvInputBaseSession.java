@@ -100,7 +100,8 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
                 doSurfaceChanged((Uri)msg.obj);
                 break;
             case DroidLogicTvUtils.SESSION_DO_TUNE:
-                doTune((Uri)msg.obj);
+                if (!isTuneNotReady)
+                    doTune((Uri)msg.obj);
                 break;
             case DroidLogicTvUtils.SESSION_DO_APP_PRIVATE:
                 doAppPrivateCmd((String)msg.obj, msg.getData());
@@ -155,6 +156,9 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
 
     public int stopTvPlay() {
         if (mHardware != null) {
+            if (mSessionHandler != null) {
+                mSessionHandler.removeMessages(DroidLogicTvUtils.SESSION_DO_TUNE);
+            }
             mHardware.setSurface(null, null);
             return ACTION_SUCCESS;
         }
@@ -173,10 +177,12 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         if (DEBUG)
             Log.d(TAG, "onSetSurface "+ surface);
         if (mSurface != null && surface == null) {//TvView destroyed, or session need release
+            isTuneNotReady = true;
             stopTvPlay();
         } else if (mSurface == null && surface == null) {
             Log.d(TAG, "surface has been released.");
         } else {
+            isTuneNotReady = false;
             if (!surface.isValid()) {
                 Log.d(TAG, "onSetSurface get invalid surface");
             }
