@@ -46,6 +46,8 @@ public class BootComplete extends BroadcastReceiver {
 
             new PlayBackManager(context).initHdmiSelfadaption();
 
+            new HdmiCecExtend(context);
+
             if (sm.getPropertyBoolean("ro.platform.has.tvuimode", false)) {
                 new HdrManager(context).initHdrMode();
             }
