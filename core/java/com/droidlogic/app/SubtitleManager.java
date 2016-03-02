@@ -327,6 +327,22 @@ public class SubtitleManager {
             return ret;
         }
 
+        public String getSubTypeStr() {
+            LOGI("[getSubTypeStr]mService:" + mService);
+            String type = null;
+
+            try {
+                if (mService != null) {
+                    type = mService.getSubTypeStr();
+                }
+            } catch (RemoteException e) {
+                throw new RuntimeException (e);
+            }
+
+            LOGI("[getSubTypeStr]type:" + type);
+            return type;
+        }
+
         public String getSubName (int idx) {
             LOGI("[getSubName]mService:" + mService);
             String name = null;

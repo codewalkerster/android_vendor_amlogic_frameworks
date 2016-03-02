@@ -2,12 +2,13 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES:= \
-	ISystemControlService.cpp
+  ISystemControlService.cpp \
+  ISystemControlNotify.cpp
 
 LOCAL_SHARED_LIBRARIES := \
-	libutils \
-	libcutils \
-	libbinder
+  libutils \
+  libcutils \
+  libbinder
 
 LOCAL_MODULE:= libsystemcontrolservice
 
@@ -24,6 +25,10 @@ endif
 
 ifeq ($(TARGET_BOARD_PLATFORM), gxbaby)
 LOCAL_CFLAGS += -DGXBABY_ENVSIZE
+endif
+
+ifeq ($(TARGET_BOARD_PLATFORM), gxtvbb)
+LOCAL_CFLAGS += -DGXTVBB_ENVSIZE
 endif
 
 LOCAL_CFLAGS += -DHDCP_AUTHENTICATION
@@ -43,6 +48,7 @@ LOCAL_SHARED_LIBRARIES := \
   libutils \
   liblog \
   libbinder \
+  libgui \
   libm
 
 LOCAL_C_INCLUDES := \
@@ -52,7 +58,7 @@ LOCAL_C_INCLUDES := \
 LOCAL_MODULE:= systemcontrol
 
 LOCAL_STATIC_LIBRARIES := \
-	libz
+  libz
 
 include $(BUILD_EXECUTABLE)
 
@@ -69,25 +75,29 @@ ifeq ($(TARGET_BOARD_PLATFORM), gxbaby)
 LOCAL_CFLAGS += -DGXBABY_ENVSIZE
 endif
 
+ifeq ($(TARGET_BOARD_PLATFORM), gxtvbb)
+LOCAL_CFLAGS += -DGXTVBB_ENVSIZE
+endif
+
 LOCAL_CFLAGS += -DRECOVERY_MODE
 
 LOCAL_SRC_FILES:= \
-	main_recovery.cpp \
-	ubootenv.c \
-	SysWrite.cpp \
-	DisplayMode.cpp \
-	SysTokenizer.cpp
+  main_recovery.cpp \
+  ubootenv.c \
+  SysWrite.cpp \
+  DisplayMode.cpp \
+  SysTokenizer.cpp
 
 LOCAL_STATIC_LIBRARIES := \
-	libcutils \
-	liblog \
-	libz \
-	libc \
-	libm
+  libcutils \
+  liblog \
+  libz \
+  libc \
+  libm
 
 LOCAL_C_INCLUDES := \
-    external/zlib \
-    external/libcxx/include
+  external/zlib \
+  external/libcxx/include
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 LOCAL_MODULE_PATH := $(PRODUCT_OUT)/utilities
@@ -106,25 +116,29 @@ ifeq ($(TARGET_BOARD_PLATFORM), gxbaby)
 LOCAL_CFLAGS += -DGXBABY_ENVSIZE
 endif
 
+ifeq ($(TARGET_BOARD_PLATFORM), gxtvbb)
+LOCAL_CFLAGS += -DGXTVBB_ENVSIZE
+endif
+
 LOCAL_CFLAGS += -DRECOVERY_MODE
 
 LOCAL_SRC_FILES:= \
-	main_recovery.cpp \
-	ubootenv.c \
-	SysWrite.cpp \
-	DisplayMode.cpp \
-	SysTokenizer.cpp
+  main_recovery.cpp \
+  ubootenv.c \
+  SysWrite.cpp \
+  DisplayMode.cpp \
+  SysTokenizer.cpp
 
 LOCAL_STATIC_LIBRARIES := \
-	libcutils \
-	liblog \
-	libz \
-	libc \
-	libm
+  libcutils \
+  liblog \
+  libz \
+  libc \
+  libm
 
 LOCAL_C_INCLUDES := \
-    external/zlib \
-    external/libcxx/include
+  external/zlib \
+  external/libcxx/include
 
 LOCAL_MODULE:= libsystemcontrol_static
 

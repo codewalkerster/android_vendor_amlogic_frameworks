@@ -266,6 +266,33 @@ public:
         }
     }
 
+    virtual int32_t set3DMode(const String16& mode3d)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeString16(mode3d);
+
+        if (remote()->transact(SET_3D_MODE, data, &reply) != NO_ERROR) {
+            ALOGE("set 3d mode could not contact remote\n");
+            return -1;
+        }
+
+        return reply.readInt32();
+    }
+
+    virtual void setDigitalMode(const String16& mode)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeString16(mode);
+        ALOGV("set digital mode:%s\n", String8(mode).string());
+
+        if (remote()->transact(SET_DIGITAL_MODE, data, &reply) != NO_ERROR) {
+            ALOGE("set digital mode could not contact remote\n");
+            return;
+        }
+    }
+
     virtual void setOsdMouseMode(const String16& mode)
     {
         Parcel data, reply;
@@ -374,6 +401,17 @@ public:
 
         if (remote()->transact(SET_VIDEO_PLAYING, data, &reply) != NO_ERROR) {
             ALOGE("setVideoPlayingAxis could not contact remote\n");
+            return;
+        }
+    }
+
+    virtual void setListener(const sp<ISystemControlNotify>& listener)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeStrongBinder(IInterface::asBinder(listener));
+        if (remote()->transact(SET_LISTENER, data, &reply) != NO_ERROR) {
+            ALOGE("set listener could not contact remote\n");
             return;
         }
     }
@@ -503,6 +541,19 @@ status_t BnISystemControlService::onTransact(
             setMboxOutputMode(mode);
             return NO_ERROR;
         }
+        case SET_3D_MODE: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode3d = data.readString16();
+            int result = set3DMode(mode3d);
+            reply->writeInt32(result);
+            return NO_ERROR;
+        }
+        case SET_DIGITAL_MODE: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            setDigitalMode(mode);
+            return NO_ERROR;
+        }
         case OSD_MOUSE_MODE: {
             CHECK_INTERFACE(ISystemControlService, data, reply);
             String16 mode = data.readString16();
@@ -560,6 +611,12 @@ status_t BnISystemControlService::onTransact(
         case SET_VIDEO_PLAYING:{
             CHECK_INTERFACE(ISystemControlService, data, reply);
             setVideoPlayingAxis();
+            return NO_ERROR;
+        }
+        case SET_LISTENER: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            sp<ISystemControlNotify> listener = interface_cast<ISystemControlNotify>(data.readStrongBinder());
+            setListener(listener);
             return NO_ERROR;
         }
 

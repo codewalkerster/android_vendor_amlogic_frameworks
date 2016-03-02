@@ -35,19 +35,17 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <linux/netlink.h>
-
-#ifndef RECOVERY_MODE
-#include <binder/IBinder.h>
-#include <binder/IServiceManager.h>
-#include <binder/Parcel.h>
-#endif
-
 #include <cutils/properties.h>
 #include "ubootenv.h"
 #include "DisplayMode.h"
 #include "SysTokenizer.h"
 
 #ifndef RECOVERY_MODE
+#include <binder/IBinder.h>
+#include <binder/IServiceManager.h>
+#include <binder/Parcel.h>
+#include <gui/SurfaceComposerClient.h> //for video 3d mode set
+
 using namespace android;
 #endif
 
@@ -73,6 +71,12 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_4K2K60HZ,
     MODE_4K2K60HZ420,
     MODE_4K2KSMPTE
+};
+
+static const char* VIDEO_3D_MODE_LIST[VIDEO_3D_MODE_TOTAL] = {
+    VIDEO_3D_OFF,
+    VIDEO_3D_SIDE_BY_SIDE,
+    VIDEO_3D_TOP_BOTTOM
 };
 
 /**
@@ -307,6 +311,7 @@ DisplayMode::DisplayMode(const char *path)
     mDisplayWidth(FULL_WIDTH_1080),
     mDisplayHeight(FULL_HEIGHT_1080),
     mLogLevel(LOG_LEVEL_DEFAULT),
+    m3dModeSet(false),
     pthreadIdHdcp(0) {
 
     if (NULL == path) {
@@ -318,6 +323,7 @@ DisplayMode::DisplayMode(const char *path)
 
     SYS_LOGI("display mode config path: %s", pConfigPath);
 
+    strcpy(mMode3d, VIDEO_3D_OFF);
     pSysWrite = new SysWrite();
 }
 
@@ -351,10 +357,27 @@ void DisplayMode::init() {
     }
     else if (DISPLAY_TYPE_TV == mDisplayType) {
         setTVDisplay(true);
+
+        pthread_t id;
+        int ret = pthread_create(&id, NULL, hdcpRxThreadLoop, this);
+        if (ret != 0) {
+            SYS_LOGE("Create hdcpRxThreadLoop error!\n");
+        }
     }
 }
 
 void DisplayMode::reInit() {
+    char boot_type[MODE_LEN] = {0};
+    /*
+     * boot_type would be "normal", "fast", "snapshotted", or "instabooting"
+     * "normal": normal boot, the boot_type can not be it here;
+     * "fast": fast boot;
+     * "snapshotted": this boot contains instaboot image making;
+     * "instabooting": doing the instabooting operation, the boot_type can not be it here;
+     * for fast boot, need to reinit the display, but for snapshotted, reInit display would make a screen flicker
+     */
+    pSysWrite->readSysfs(SYSFS_BOOT_TYPE, boot_type);
+    if (strcmp(boot_type, "snapshotted")) {
     SYS_LOGI("display mode reinit type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s, default UI:%s",
         mDisplayType, mSocType, mDefaultUI);
     if (DISPLAY_TYPE_TABLET == mDisplayType) {
@@ -366,6 +389,11 @@ void DisplayMode::reInit() {
     else if (DISPLAY_TYPE_TV == mDisplayType) {
         setTVDisplay(false);
     }
+}
+
+    SYS_LOGI("open osd0 and disable video\n");
+    pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, "2");
+    pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
 }
 
 void DisplayMode:: getDisplayInfo(int &type, char* socType, char* defaultUI) {
@@ -516,6 +544,86 @@ void DisplayMode::setTabletDisplay() {
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
 }
 
+int DisplayMode::set3DMode(const char* mode3d) {
+    char is3DSupport[8] = {0}; //"1" means tv support 3d
+
+    pSysWrite->readSysfs(AV_HDMI_3D_SUPPORT, is3DSupport);
+    if (strcmp(is3DSupport, "1")) {
+        SYS_LOGI("[set3DMode]3d is not support.\n");
+        return -1;
+    }
+
+    if (m3dModeSet) {
+        SYS_LOGI("[set3DMode]3d mode is setting, m3dModeSet:true\n");
+        return -2;
+    }
+
+    if (!strcmp(mMode3d, mode3d)) {
+        SYS_LOGI("[set3DMode]mMode3d equals to mode3d:%s\n", mode3d);
+        return 0;
+    }
+
+    m3dModeSet = true;
+    strcpy(mMode3d, mode3d);
+    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
+    usleep(100 * 1000);
+
+    if (0 != pthreadIdHdcp) {
+        hdcpThreadExit(pthreadIdHdcp);
+        pthreadIdHdcp = 0;
+    }
+    hdcpThreadStart();
+    return 0;
+}
+
+int DisplayMode::modeToIndex3D(const char *mode3d) {
+    int index = VIDEO_3D_MODE_OFF;
+    for (int i = 0; i < VIDEO_3D_MODE_TOTAL; i++) {
+        if (!strcmp(mode3d, VIDEO_3D_MODE_LIST[i])) {
+            index = i;
+            break;
+        }
+    }
+
+    //SYS_LOGI("modeToIndex3D mode:%s index:%d", mode, index);
+    return index;
+}
+
+void DisplayMode::mode3DImpl() {
+    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, "-1"); // "-1" means stop hdcp 14/22
+    usleep(100 * 1000);
+    pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); // Turn off TMDS PHY
+
+    int format = SURFACE_3D_OFF;
+    int index = modeToIndex3D(mMode3d);
+    switch (index) {
+        case VIDEO_3D_MODE_OFF:
+            format = SURFACE_3D_OFF;
+            break;
+        case VIDEO_3D_MODE_SIDE_BY_SIDE:
+            format = SURFACE_3D_SIDE_BY_SIDE;
+            break;
+        case VIDEO_3D_MODE_TOP_BOTTOM:
+            format = SURFACE_3D_TOP_BOTTOM;
+            break;
+        default:
+            break;
+    }
+    pSysWrite->writeSysfs(AV_HDMI_CONFIG, mMode3d);
+
+#ifndef RECOVERY_MODE
+    SurfaceComposerClient::setDisplay2Stereoscopic(0, format);
+    SurfaceComposerClient::openGlobalTransaction();
+    SurfaceComposerClient::closeGlobalTransaction();
+#endif
+
+    usleep(100 * 1000);
+    pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); // Turn on TMDS PHY
+    usleep(100 * 1000);
+    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
+
+    m3dModeSet = false; //3d mode set finish
+}
 void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
     hdmi_data_t data;
     char outputmode[MODE_LEN] = {0};
@@ -678,25 +786,34 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
         setOsdMouse(outputmode);
     }
 
+#ifndef RECOVERY_MODE
+    notifyEvent(EVENT_OUTPUT_MODE_CHANGE);
+#endif
+
     //audio
     getBootEnv(UBOOTENV_DIGITAUDIO, value);
-    char audiovalue[5];
-    if (!strcmp(value,"SPDIF passthrough")) {
-        strcpy(audiovalue, "1");
-    }
-    else if (!strcmp(value, "HDMI passthrough")) {
-        strcpy(audiovalue, "2");
-    }
-    else {
-        strcpy(audiovalue, "0");
-    }
-    pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, audiovalue);
+    setDigitalMode(value);
 
     if (OUPUT_MODE_STATE_INIT != state) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
     }
 
     SYS_LOGI("set output mode:%s done\n", outputmode);
+}
+
+void DisplayMode::setDigitalMode(const char* mode) {
+    if (mode == NULL) return;
+
+    if (!strcmp("PCM", mode)) {
+        pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, "0");
+        pSysWrite->writeSysfs(AV_HDMI_CONFIG, "audio_on");
+    } else if (!strcmp("SPDIF passthrough", mode))  {
+        pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, "1");
+        pSysWrite->writeSysfs(AV_HDMI_CONFIG, "audio_off");
+    } else if (!strcmp("HDMI passthrough", mode)) {
+        pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, "2");
+        pSysWrite->writeSysfs(AV_HDMI_CONFIG, "audio_on");
+    }
 }
 
 void DisplayMode::setNativeWindowRect(int x, int y, int w, int h) {
@@ -757,6 +874,83 @@ void DisplayMode::getBestHdmiMode(char* mode, hdmi_data_t* data) {
     if (strlen(mode) == 0) {
         pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, mode, DEFAULT_OUTPUT_MODE);
     }
+
+  /*
+    char* arrayMode[MAX_STR_LEN] = {0};
+    char* tmp;
+
+    int len = strlen(data->edid);
+    tmp = data->edid;
+    int i = 0;
+
+    do {
+        if (strlen(tmp) == 0)
+            break;
+        char* pos = strchr(tmp, 0x0a);
+        *pos = 0;
+
+        arrayMode[i] = tmp;
+        tmp = pos + 1;
+        i++;
+    } while (tmp <= data->edid + len -1);
+
+    for (int j = 0; j < i; j++) {
+        char* pos = strchr(arrayMode[j], '*');
+        if (pos != NULL) {
+            *pos = 0;
+            strcpy(mode, arrayMode[j]);
+            break;
+        }
+    }*/
+}
+
+//get the highest hdmi mode by edid
+void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
+    const char* KEY = "hz";
+    int intmode, higmode = 0;
+    int keylen = strlen(KEY);
+    char value[MODE_LEN] = {0};
+    char* type;
+    char* start;
+    char* pos = data->edid;
+    do {
+        pos = strstr(pos, KEY);
+        if (pos == NULL) break;
+        start = pos;
+        while (*start != '\n' && start >= data->edid) {
+            start--;
+        }
+        start++;
+        int len = pos - start;
+        strncpy(value, start, len);
+
+        if ((type = strchr(value, 'p')) != NULL) {
+            if (type - value < 3) {
+                strcpy(mode, MODE_4K2KSMPTE);
+                return;
+            } else {
+                value[type - value] = '1';
+            }
+        } else if ((type = strchr(value, 'i')) != NULL) {
+            value[type - value] = '0';
+        } else {
+            pos += keylen;
+            continue;
+        }
+        value[len] = '\0';
+
+        if ((intmode = atoi(value)) > higmode) {
+            higmode = intmode;
+            strncpy(mode, start, (len + keylen));
+        }
+        pos += keylen;
+    } while (strlen(pos) > 0);
+
+    if (higmode == 0) {
+        pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, mode, DEFAULT_OUTPUT_MODE);
+    }
+
+    SYS_LOGI("set HDMI to highest edid mode: %s\n", mode);
 }
 
 //check if the edid support current hdmi mode
@@ -780,7 +974,11 @@ void DisplayMode::filterHdmiMode(char* mode, hdmi_data_t* data) {
     }
 
     //old mode is not support in this TV, so switch to best mode.
+#ifdef USE_BEST_MODE
     getBestHdmiMode(mode, data);
+#else
+    getHighestHdmiMode(mode, data);
+#endif
 }
 
 void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
@@ -789,16 +987,15 @@ void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
         return;
     }
 
-    bool edidChange = isEdidChange();
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
         if (isBestOutputmode()) {
+        #ifdef USE_BEST_MODE
             getBestHdmiMode(mode, data);
+        #else
+            getHighestHdmiMode(mode, data);
+        #endif
         } else {
-            if (!edidChange && strlen(data->ubootenv_hdmimode) > 0) {
-                strcpy(mode, data->ubootenv_hdmimode);
-            } else {
-                filterHdmiMode(mode, data);
-            }
+            filterHdmiMode(mode, data);
         }
     }
     SYS_LOGI("set HDMI mode to %s\n", mode);
@@ -1266,6 +1463,75 @@ int DisplayMode::modeToIndex(const char *mode) {
     return index;
 }
 
+void* DisplayMode::hdcpRxThreadLoop(void* data) {
+    DisplayMode *pThiz = (DisplayMode*)data;
+
+#if 0 //using uevent
+    //use uevent instead of usleep, because it's has some delay
+    uevent_data_t u_data;
+    memset(&u_data, 0, sizeof(uevent_data_t));
+    int fd = uevent_init();
+    while (fd >= 0) {
+        u_data.len = uevent_next_event(fd, u_data.buf, sizeof(u_data.buf) - 1);
+        if (u_data.len <= 0)
+            continue;
+
+        u_data.buf[u_data.len] = '\0';
+
+    #if 1
+        //change@/devices/virtual/switch/hdmi ACTION=change DEVPATH=/devices/virtual/switch/hdmi
+        //SUBSYSTEM=switch SWITCH_NAME=hdmi SWITCH_STATE=0 SEQNUM=2791
+        char printBuf[1024] = {0};
+        memcpy(printBuf, u_data.buf, u_data.len);
+        for (int i = 0; i < u_data.len; i++) {
+            if (printBuf[i] == 0x0)
+                printBuf[i] = ' ';
+        }
+        SYS_LOGI("Received uevent message: %s", printBuf);
+    #endif
+
+        if (isMatch(&u_data, HDMI_RX_PLUG_UEVENT)) {
+            SYS_LOGI("HDMI rx switch_state: %s switch_name: %s\n", u_data.state, u_data.name);
+            if (!strcmp(u_data.name, "hdmi")) {
+                pThiz->hdcpRxAuthenticate(!strcmp(u_data.state, HDMI_RX_PLUG_IN));
+            }
+        }
+    }
+#else //using polling
+
+#ifndef RECOVERY_MODE
+    char isPlugin = 'N';
+    while (true) {
+        char valueStr[10] = {0};
+        pThiz->pSysWrite->readSysfs(HDMI_RX_HPD_STATE, valueStr);
+
+        //SYS_LOGD("hdcpRxThreadLoop hpd_to_esm:%s\n", valueStr);
+        //int val = atoi(valueStr);
+        if (valueStr[0] != isPlugin) {
+            isPlugin = valueStr[0];
+            pThiz->hdcpRxAuthenticate((valueStr[0]=='Y')?true:false);
+        }
+        //if (_strstr(valueStr, (char *)"1"))
+
+        usleep(200*1000);//sleep 200ms
+    }
+#endif
+#endif
+
+    return NULL;
+}
+
+void DisplayMode::hdcpRxAuthenticate(bool plugIn) {
+    SYS_LOGI("HDCP rx 2.2 authenticate plugin:%d, stop hdcp_rx22\n", plugIn);
+    pSysWrite->setProperty("ctl.stop", "hdcp_rx22");
+
+    if (plugIn) {
+        usleep(50*1000);
+        SYS_LOGI("HDCP 2.2, start hdcp_rx22\n");
+        pSysWrite->setProperty("ctl.start", "hdcp_rx22");
+    }
+}
+
 bool DisplayMode::hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
     bool useHdcp22 = false;
     bool useHdcp14 = false;
@@ -1382,6 +1648,11 @@ void* DisplayMode::hdcpThreadLoop(void* data) {
         sysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
         sysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
     }
+    else {
+        if (pThiz->m3dModeSet) {
+            pThiz->mode3DImpl();
+        }
+    }
     return NULL;
 }
 
@@ -1443,6 +1714,18 @@ void DisplayMode::hdcpSwitch() {
     }
     hdcpThreadStart();
 }
+
+#ifndef RECOVERY_MODE
+void DisplayMode::notifyEvent(int event) {
+    if (mNotifyListener != NULL) {
+        mNotifyListener->onEvent(event);
+    }
+}
+
+void DisplayMode::setListener(const sp<ISystemControlNotify>& listener) {
+    mNotifyListener = listener;
+}
+#endif
 
 int DisplayMode::dump(char *result) {
     if (NULL == result)

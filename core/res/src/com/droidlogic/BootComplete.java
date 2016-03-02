@@ -12,6 +12,7 @@ import android.view.IWindowManager;
 
 import com.droidlogic.app.HdrManager;
 import com.droidlogic.app.PlayBackManager;
+import com.droidlogic.app.SystemControlEvent;
 import com.droidlogic.app.SystemControlManager;
 import com.droidlogic.app.UsbCameraManager;
 import com.droidlogic.HdmiCecExtend;
@@ -25,9 +26,11 @@ public class BootComplete extends BroadcastReceiver {
         String action = intent.getAction();
         Log.i(TAG, "action: " + action);
 
-        SystemControlManager sm = new SystemControlManager(context);
-
         if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
+            SystemControlManager sm = new SystemControlManager(context);
+            //register system control callback
+            sm.setListener(new SystemControlEvent(context));
+
             //set default show_ime_with_hard_keyboard 1, then first boot can show the ime.
             if (SettingsPref.getFirstRun(context)) {
                 Log.i(TAG, "first running: " + context.getPackageName());

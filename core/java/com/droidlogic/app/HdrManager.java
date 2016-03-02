@@ -5,10 +5,10 @@ import android.provider.Settings;
 import android.util.Log;
 
 public class HdrManager {
-    private static final String TAG             = "HdrManager";
+    private static final String TAG                 = "HdrManager";
 
-    private static final String KEY_HDR_MODE = "key_hdr_mode";
-    private static final String SYSF_HDR_MODE = "/sys/module/am_vecm/parameters/hdr_mode";
+    private static final String KEY_HDR_MODE        = "key_hdr_mode";
+    private static final String SYSF_HDR_MODE       = "/sys/module/am_vecm/parameters/hdr_mode";
 
     public static final int MODE_OFF = 0;
     public static final int MODE_ON = 1;

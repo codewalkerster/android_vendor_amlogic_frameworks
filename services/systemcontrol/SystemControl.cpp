@@ -176,8 +176,17 @@ void SystemControl::loopMountUnmount(int &isMount, String16& path) {
         traceValue(String16("loopMountUnmount"),
             (isMount==1)?String16("mount"):String16("unmount"), path);
 
-        const char *cmd[4] = {"vdc", "loop", (isMount==1)?"mount":"unmount", String8(path).string()};
-        vdc_loop((isMount==1)?4:3, (char **)cmd);
+        if (isMount == 1) {
+            char mountPath[MAX_STR_LEN] = {0};
+            const char *pathStr = String8(path).string();
+            strncpy(mountPath, pathStr, strlen(pathStr));
+
+            const char *cmd[4] = {"vdc", "loop", "mount", mountPath};
+            vdc_loop(4, (char **)cmd);
+        } else {
+            const char *cmd[3] = {"vdc", "loop", "unmount"};
+            vdc_loop(3, (char **)cmd);
+        }
     }
 }
 
@@ -187,6 +196,26 @@ void SystemControl::setMboxOutputMode(const String16& mode) {
     }
 
     pDisplayMode->setMboxOutputMode(String8(mode).string());
+}
+
+int32_t SystemControl::set3DMode(const String16& mode3d) {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("set 3d mode :%s", String8(mode3d).string());
+    }
+
+    return pDisplayMode->set3DMode(String8(mode3d).string());
+}
+
+void SystemControl::setDigitalMode(const String16& mode) {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("set Digital mode :%s", String8(mode).string());
+    }
+
+    pDisplayMode->setDigitalMode(String8(mode).string());
+}
+
+void SystemControl::setListener(const sp<ISystemControlNotify>& listener) {
+    pDisplayMode->setListener(listener);
 }
 
 void SystemControl::setOsdMouseMode(const String16& mode) {
