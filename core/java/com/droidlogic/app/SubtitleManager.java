@@ -34,6 +34,7 @@ public class SubtitleManager {
         private boolean mThreadStop = false;
         private String mPath = null;
         private Thread mThread = null;
+        private int RETRY_MAX = 10;
 
         public SubtitleManager (MediaPlayer mp) {
             mMediaPlayer = mp;
@@ -376,9 +377,21 @@ public class SubtitleManager {
         }
 
         private void getService() {
-            IBinder b = ServiceManager.getService ("subtitle_service"/*Context.SUBTITLE_SERVICE*/);
-            mService = ISubTitleService.Stub.asInterface (b);
-            LOGI("[getService] mService:" + mService);
+            int retry = RETRY_MAX;
+            try {
+                synchronized (this) {
+                    while (true) {
+                        IBinder b = ServiceManager.getService ("subtitle_service"/*Context.SUBTITLE_SERVICE*/);
+                        mService = ISubTitleService.Stub.asInterface (b);
+                        LOGI("[getService] mService:" + mService + ", retry:" + retry);
+                        if (null != mService || retry <= 0) {
+                            break;
+                        }
+                        retry --;
+                        this.sleep(500);
+                    }
+                }
+            }catch(InterruptedException e){}
         }
 
         public void release() {
