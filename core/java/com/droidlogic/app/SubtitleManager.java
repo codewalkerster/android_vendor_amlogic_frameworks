@@ -388,7 +388,7 @@ public class SubtitleManager {
                             break;
                         }
                         retry --;
-                        this.sleep(500);
+                        Thread.sleep(500);
                     }
                 }
             }catch(InterruptedException e){}
