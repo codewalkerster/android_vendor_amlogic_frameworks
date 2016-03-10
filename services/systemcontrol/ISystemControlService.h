@@ -26,6 +26,7 @@
 #include <binder/IInterface.h>
 #include <utils/String8.h>
 #include <utils/String16.h>
+#include "ISystemControlNotify.h"
 
 namespace android {
 
@@ -60,6 +61,9 @@ enum {
 
     SET_POWER_MODE          = IBinder::FIRST_CALL_TRANSACTION + 20,
     INSTABOOT_RESET_DISPLAY = IBinder::FIRST_CALL_TRANSACTION + 21,
+    SET_DIGITAL_MODE        = IBinder::FIRST_CALL_TRANSACTION + 22,
+    SET_3D_MODE             = IBinder::FIRST_CALL_TRANSACTION + 23,
+    SET_LISTENER            = IBinder::FIRST_CALL_TRANSACTION + 24,
 };
 
 // ----------------------------------------------------------------------------
@@ -90,6 +94,9 @@ public:
     virtual void loopMountUnmount(int &isMount, String16& path) = 0;
 
     virtual void setMboxOutputMode(const String16& mode) = 0;
+    virtual int32_t set3DMode(const String16& mode3d) = 0;
+    virtual void setDigitalMode(const String16& mode) = 0;
+    virtual void setListener(const sp<ISystemControlNotify>& listener) = 0;
     virtual void setOsdMouseMode(const String16& mode) = 0;
     virtual void setOsdMousePara(int x, int y, int w, int h) = 0;
     virtual void setPosition(int left, int top, int width, int height) = 0;

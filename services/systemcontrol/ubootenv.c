@@ -383,7 +383,7 @@ int bootenv_init(void) {
     } else */if (!stat("/dev/nand_env", &st)) {
         sprintf (BootenvPartitionName, "/dev/nand_env");
         ENV_PARTITIONS_SIZE = 0x8000;
-#if defined(MESON8_ENVSIZE) || defined(GXBABY_ENVSIZE)
+#if defined(MESON8_ENVSIZE) || defined(GXBABY_ENVSIZE) || defined(GXTVBB_ENVSIZE)
         ENV_PARTITIONS_SIZE = 0x10000;
 #endif
         ENV_SIZE = ENV_PARTITIONS_SIZE - sizeof(uint32_t);
@@ -392,7 +392,7 @@ int bootenv_init(void) {
         INFO("[ubootenv] stat /dev/block/env OK\n");
         sprintf (BootenvPartitionName, "/dev/block/env");
         ENV_PARTITIONS_SIZE = 0x8000;
-#if defined(MESON8_ENVSIZE) || defined(GXBABY_ENVSIZE)
+#if defined(MESON8_ENVSIZE) || defined(GXBABY_ENVSIZE) || defined(GXTVBB_ENVSIZE)
         ENV_PARTITIONS_SIZE = 0x10000;
 #endif
         ENV_SIZE = ENV_PARTITIONS_SIZE - sizeof(uint32_t);

@@ -10,6 +10,7 @@ public class SystemControlManager {
     private static final String TAG                 = "SysControlManager";
 
     //must sync with DisplayMode.h
+    public static final boolean USE_BEST_MODE       = false;
     public static final int DISPLAY_TYPE_NONE       = 0;
     public static final int DISPLAY_TYPE_TABLET     = 1;
     public static final int DISPLAY_TYPE_MBOX       = 2;
@@ -39,6 +40,13 @@ public class SystemControlManager {
     private static final int GET_POSITION           = IBinder.FIRST_CALL_TRANSACTION + 16;
 
     private static final int REINIT                 = IBinder.FIRST_CALL_TRANSACTION + 17;
+    private static final int SET_NATIVE_WIN_RECT     = IBinder.FIRST_CALL_TRANSACTION + 18;
+    private static final int SET_VIDEO_PLAYING       = IBinder.FIRST_CALL_TRANSACTION + 19;
+    private static final int SET_POWER_MODE          = IBinder.FIRST_CALL_TRANSACTION + 20;
+    private static final int INSTABOOT_RESET_DISPLAY = IBinder.FIRST_CALL_TRANSACTION + 21;
+    private static final int SET_DIGITAL_MODE        = IBinder.FIRST_CALL_TRANSACTION + 22;
+    private static final int SET_3D_MODE             = IBinder.FIRST_CALL_TRANSACTION + 23;
+    private static final int SET_LISTENER            = IBinder.FIRST_CALL_TRANSACTION + 24;
 
     private Context mContext;
     private IBinder mIBinder = null;
@@ -325,6 +333,43 @@ public class SystemControlManager {
         }
     }
 
+    public int set3DMode(String mode3d) {
+        int ret = -1;
+        Log.e(TAG, "[set3DMode]mode3d:" + mode3d);
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode3d);
+                mIBinder.transact(SET_3D_MODE, data, reply, 0);
+                ret = reply.readInt();
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set 3d mode:" + ex);
+        }
+
+        return ret;
+    }
+
+    public void setDigitalMode(String mode) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode);
+                mIBinder.transact(SET_DIGITAL_MODE, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set digital mode:" + ex);
+        }
+    }
+
     public void setOsdMouseMode(String mode) {
         try {
             if (null != mIBinder) {
@@ -399,6 +444,22 @@ public class SystemControlManager {
             Log.e(TAG, "get position:" + ex);
         }
         return curPosition;
+    }
+
+    public void setListener(ISystemControlNotify listener) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeStrongInterface(listener);
+                mIBinder.transact(SET_LISTENER, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set callback:" + ex);
+        }
     }
 
     public static class DisplayInfo{

@@ -133,7 +133,11 @@ public class OutputModeManager {
         if (mode == null) {
             if (!isBestOutputmode()) {
                 mSystenControl.setBootenv(ENV_IS_BEST_MODE, "true");
-                setOutputMode(getBestMatchResolution());
+                if (SystemControlManager.USE_BEST_MODE) {
+                    setOutputMode(getBestMatchResolution());
+                } else {
+                    setOutputMode(getHighestMatchResolution());
+                }
             } else {
                 mSystenControl.setBootenv(ENV_IS_BEST_MODE, "false");
             }
@@ -213,6 +217,48 @@ public class OutputModeManager {
         return list;
     }
 
+    public String getHighestMatchResolution() {
+        final String KEY = "hz";
+        final String FORMAT_P = "p";
+        final String FORMAT_I = "i";
+
+        String[] supportList = null;
+        String value = readSupportList(HDMI_SUPPORT_LIST);
+        if (value.indexOf(HDMI_480) >= 0 || value.indexOf(HDMI_576) >= 0
+            || value.indexOf(HDMI_720) >= 0 || value.indexOf(HDMI_1080) >= 0
+            || value.indexOf(HDMI_4K2K) >= 0 || value.indexOf(HDMI_SMPTE) >= 0) {
+            supportList = (value.substring(0, value.length()-1)).split(",");
+        }
+
+        int type = -1;
+        int intMode = -1;
+        int higMode = 0;
+        String outputMode = null;
+        if (supportList != null) {
+            for (int i = 0; i < supportList.length; i++) {
+                String[] pref = supportList[i].split(KEY);
+                if (pref != null) {
+                    if ((type = supportList[i].indexOf(FORMAT_P)) >= 3) {          //p
+                        intMode = Integer.parseInt(pref[0].replace(FORMAT_P, "1"));
+                    } else if (type > 0) {                                          //smpte
+                        outputMode = "smpte24hz";
+                        break;
+                    } else if ((type = supportList[i].indexOf(FORMAT_I)) > 0) {    //i
+                        intMode = Integer.parseInt(pref[0].replace(FORMAT_I, "0"));
+                    } else {                                                        //other
+                        continue;
+                    }
+                    if (intMode > higMode) {
+                        higMode = intMode;
+                        outputMode = pref[0] + KEY;
+                    }
+                }
+            }
+        }
+        if (outputMode != null) return outputMode;
+        return getPropertyString(PROP_BEST_OUTPUT_MODE, DEFAULT_OUTPUT_MODE);
+    }
+
     public String getBestMatchResolution() {
         if (DEBUG)
             Log.d(TAG, "get best mode, if support mode contains *, that is best mode, otherwise use:" + PROP_BEST_OUTPUT_MODE);
@@ -261,7 +307,10 @@ public class OutputModeManager {
             }
         }
 
-        return getBestMatchResolution();
+        if (SystemControlManager.USE_BEST_MODE) {
+            return getBestMatchResolution();
+        }
+        return getHighestMatchResolution();
     }
 
     private String readSupportList(String path) {
@@ -313,7 +362,11 @@ public class OutputModeManager {
         if (REAL_OUTPUT_SOC.contains(mDisplayInfo.socType)) {
             if (getPropertyBoolean(PROP_HDMI_ONLY, true)) {
                 if (isAutoMode) {
-                    setOutputMode(getBestMatchResolution());
+                    if (SystemControlManager.USE_BEST_MODE) {
+                        setOutputMode(getBestMatchResolution());
+                    } else {
+                        setOutputMode(getHighestMatchResolution());
+                    }
                 } else {
                     String mode = getSupportedResolution();
                     setOutputMode(mode);
@@ -358,76 +411,31 @@ public class OutputModeManager {
     }
 
     private void switchHdmiPassthough() {
-        String value = getBootenv(ENV_DIGIT_AUDIO, PCM);
-
-        if (value.contains(":auto")) {
-            autoSwitchHdmiPassthough();
-        } else {
-            setDigitalVoiceValue(value);
-        }
+        setDigitalMode(getBootenv(ENV_DIGIT_AUDIO, PCM));
     }
 
-    public int getDigitalVoiceMode(){
-        int ret = 0;
-
-        String value = getBootenv(ENV_DIGIT_AUDIO, PCM);
-        if (value.contains(":auto")) {
-            ret = ret | IS_AUTO;
-        }
-        if (value.contains(PCM)) {
-            ret = ret | IS_PCM;
-        }else if (value.contains(HDMI)) {
-            ret = ret | IS_HDMI;
-        }else if (value.contains(SPDIF)) {
-            ret = ret | IS_SPDIF;
-        }
-        return ret;
+    public String getDigitalVoiceMode(){
+        return getBootenv(ENV_DIGIT_AUDIO, PCM);
     }
 
     public int autoSwitchHdmiPassthough () {
         String mAudioCapInfo = readSysfsTotal(SYS_AUDIO_CAP);
         if (mAudioCapInfo.contains("Dobly_Digital+")) {
-            writeSysfs(SYS_DIGITAL_RAW, "2");
-            writeSysfs(SYS_AUIDO_SPDIF, "spdif_mute");
-            writeSysfs(SYS_AUIDO_HDMI, "audio_on");
-            setBootenv(ENV_DIGIT_AUDIO, "HDMI passthrough:auto");
+            setDigitalMode(HDMI_RAW);
             return 2;
         } else if (mAudioCapInfo.contains("AC-3")) {
-            writeSysfs(SYS_DIGITAL_RAW, "1");
-            writeSysfs(SYS_AUIDO_HDMI, "audio_on");
-            writeSysfs(SYS_AUIDO_SPDIF, "spdif_unmute");
-            setBootenv(ENV_DIGIT_AUDIO, "SPDIF passthrough:auto");
+            setDigitalMode(SPDIF_RAW);
             return 1;
         } else {
-            writeSysfs(SYS_DIGITAL_RAW, "0");
-            writeSysfs(SYS_AUIDO_SPDIF, "spdif_mute");
-            writeSysfs(SYS_AUIDO_HDMI, "audio_on");
-            setBootenv(ENV_DIGIT_AUDIO, "PCM:auto");
+            setDigitalMode(PCM);
             return 0;
         }
     }
 
-    public void setDigitalVoiceValue(String value) {
+    public void setDigitalMode(String mode) {
         // value : "PCM" ,"RAW","SPDIF passthrough","HDMI passthrough"
-        setBootenv(ENV_DIGIT_AUDIO, value);
-
-        if (PCM.equals(value)) {
-            writeSysfs(SYS_DIGITAL_RAW, "0");
-            writeSysfs(SYS_AUIDO_SPDIF, "spdif_mute");
-            writeSysfs(SYS_AUIDO_HDMI, "audio_on");
-        } else if (RAW.equals(value)) {
-            writeSysfs(SYS_DIGITAL_RAW, "1");
-            writeSysfs(SYS_AUIDO_HDMI, "audio_off");
-            writeSysfs(SYS_AUIDO_SPDIF, "spdif_unmute");
-        } else if (SPDIF_RAW.equals(value)) {
-            writeSysfs(SYS_DIGITAL_RAW, "1");
-            writeSysfs(SYS_AUIDO_HDMI, "audio_off");
-            writeSysfs(SYS_AUIDO_SPDIF, "spdif_unmute");
-        } else if (HDMI_RAW.equals(value)) {
-            writeSysfs(SYS_DIGITAL_RAW, "2");
-            writeSysfs(SYS_AUIDO_SPDIF, "spdif_mute");
-            writeSysfs(SYS_AUIDO_HDMI, "audio_on");
-        }
+        setBootenv(ENV_DIGIT_AUDIO, mode);
+        mSystenControl.setDigitalMode(mode);
     }
 
     public void enableDobly_DRC (boolean enable) {

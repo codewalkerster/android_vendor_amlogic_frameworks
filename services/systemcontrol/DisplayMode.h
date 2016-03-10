@@ -22,7 +22,6 @@
 #ifndef ANDROID_DISPLAY_MODE_H
 #define ANDROID_DISPLAY_MODE_H
 
-#include <linux/fb.h>
 #include "SysWrite.h"
 #include "common.h"
 
@@ -30,7 +29,16 @@
 #include <cmath>
 #include <string>
 #include <pthread.h>
+#include <linux/fb.h>
 #include <semaphore.h>
+
+#ifndef RECOVERY_MODE
+#include "ISystemControlNotify.h"
+
+using namespace android;
+#endif
+
+//#define USE_BEST_MODE
 
 #define DEVICE_STR_MID                  "MID"
 #define DEVICE_STR_MBOX                 "MBOX"
@@ -51,10 +59,12 @@
 //when open freescale, will enable window axis, scale framebuffer output
 #define SYSFS_DISPLAY_AXIS              "/sys/class/display/axis"
 #define SYSFS_VIDEO_AXIS                "/sys/class/video/axis"
+#define SYSFS_BOOT_TYPE                 "/sys/power/boot_type"
 #define SYSFS_VIDEO_LAYER_STATE         "/sys/class/video/video_layer1_state"
 #define DISPLAY_FB0_BLANK               "/sys/class/graphics/fb0/blank"
 #define DISPLAY_FB1_BLANK               "/sys/class/graphics/fb1/blank"
 #define DISPLAY_LOGO_INDEX              "/sys/module/fb/parameters/osd_logo_index"
+#define SYS_DISABLE_VIDEO               "/sys/class/video/disable_video"
 
 #define DISPLAY_FB0_FREESCALE           "/sys/class/graphics/fb0/free_scale"
 #define DISPLAY_FB1_FREESCALE           "/sys/class/graphics/fb1/free_scale"
@@ -83,9 +93,19 @@
 #define DISPLAY_HDMI_PHY                "/sys/class/amhdmitx/amhdmitx0/phy"
 
 #define AUDIO_DSP_DIGITAL_RAW           "/sys/class/audiodsp/digital_raw"
+#define AV_HDMI_CONFIG                  "/sys/class/amhdmitx/amhdmitx0/config"
+#define AV_HDMI_3D_SUPPORT              "/sys/class/amhdmitx/amhdmitx0/support_3d"
 
 #define HDMI_UEVENT                     "DEVPATH=/devices/virtual/switch/hdmi"
 #define HDMI_POWER_UEVENT               "DEVPATH=/devices/virtual/switch/hdmi_power"
+
+//HDCP RX
+#define HDMI_RX_PLUG_IN                 "2"
+#define HDMI_RX_PLUG_OUT                "0"
+//if state = 2 means ok, if state = 0 plug out
+#define HDMI_RX_PLUG_UEVENT             "DEVPATH=/devices/virtual/switch/hdmirx/state"
+//1:plugin 0:plug out
+#define HDMI_RX_HPD_STATE               "/sys/module/tvin_hdmirx/parameters/hpd_to_esm"
 
 #define VIDEO_LAYER1_UEVENT             "DEVPATH=/devices/virtual/switch/video_layer1"
 
@@ -173,6 +193,27 @@
 #define FULL_HEIGHT_4K2K                2160
 #define FULL_WIDTH_4K2KSMPTE            4096
 #define FULL_HEIGHT_4K2KSMPTE           2160
+
+//should sync with SurfaceFlinger.h
+#define SURFACE_3D_OFF                  0
+#define SURFACE_3D_SIDE_BY_SIDE         8
+#define SURFACE_3D_TOP_BOTTOM           16
+
+#define VIDEO_3D_OFF                    "3doff"
+#define VIDEO_3D_SIDE_BY_SIDE           "3dlr"
+#define VIDEO_3D_TOP_BOTTOM             "3dtb"
+
+enum {
+    VIDEO_3D_MODE_OFF                   = 0,
+    VIDEO_3D_MODE_SIDE_BY_SIDE          = 1,
+    VIDEO_3D_MODE_TOP_BOTTOM            = 2,
+    VIDEO_3D_MODE_TOTAL                 = 3
+};
+
+enum {
+    EVENT_OUTPUT_MODE_CHANGE            = 0,
+    EVENT_DIGITAL_MODE_CHANGE           = 1,
+};
 
 enum {
     DISPLAY_TYPE_NONE                   = 0,
@@ -274,6 +315,8 @@ public:
     void setLogLevel(int level);
     int dump(char *result);
     void setMboxOutputMode(const char* outputmode);
+    int set3DMode(const char* mode3d);
+    void setDigitalMode(const char* mode);
     void setOsdMouse(const char* curMode);
     void setOsdMouse(int x, int y, int w, int h);
     void setPosition(int left, int top, int width, int height);
@@ -286,6 +329,11 @@ public:
     void setVideoPlayingAxis();
 
     void hdcpSwitch();
+
+#ifndef RECOVERY_MODE
+    void notifyEvent(int event);
+    void setListener(const sp<ISystemControlNotify>& listener);
+#endif
 private:
 
     bool getBootEnv(const char* key, char* value);
@@ -294,6 +342,7 @@ private:
     int parseConfigFile();
     void setTabletDisplay();
     void getBestHdmiMode(char * mode, hdmi_data_t* data);
+    void getHighestHdmiMode(char* mode, hdmi_data_t* data);
     void filterHdmiMode(char * mode, hdmi_data_t* data);
     void getHdmiOutputMode(char *mode, hdmi_data_t* data);
     bool isEdidChange();
@@ -311,8 +360,13 @@ private:
     static bool hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14);
     static void hdcpAuthenticate(DisplayMode *disMode, SysWrite *pSysWrite, bool useHdcp22, bool useHdcp14);
     static void* hdcpThreadLoop(void* data);
+    static void* hdcpRxThreadLoop(void* data);
     int hdcpThreadStart();
     int hdcpThreadExit(pthread_t thread_id);
+    void hdcpRxAuthenticate(bool plugIn);
+
+    int modeToIndex3D(const char *mode3d);
+    void mode3DImpl();
 
     const char* pConfigPath;
     int mDisplayType;
@@ -338,11 +392,17 @@ private:
     char mDefaultUI[MAX_STR_LEN];//this used for mbox
     int mLogLevel;
     SysWrite *pSysWrite = NULL;
+    char mMode3d[32];//this used for video 3d set
+    bool m3dModeSet;
 
     pthread_mutex_t pthreadMutex;
     sem_t pthreadSem;
     pthread_t pthreadIdHdcp;
     bool mExitHdcpThread;
+
+#ifndef RECOVERY_MODE
+    sp<ISystemControlNotify> mNotifyListener;
+#endif
 };
 
 #endif // ANDROID_DISPLAY_MODE_H
