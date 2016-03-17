@@ -70,6 +70,11 @@ public class ChannelInfo {
     public static final String KEY_SUBT_LANGS = "subt_langs";
     public static final String KEY_SUBT_TRACK_INDEX = "subt_track_index";
 
+    public static final String KEY_MULTI_NAME = "multi_name";
+
+    public static final String KEY_FREE_CA = "free_ca";
+    public static final String KEY_SCRAMBLED = "scrambled";
+
     public static final String KEY_FREQUENCY = "frequency";
     public static final String KEY_BAND_WIDTH = "band_width";
     public static final String KEY_FINE_TUNE = "fine_tune";
@@ -131,6 +136,11 @@ public class ChannelInfo {
     private boolean mIsFavourite;
     private boolean mLocked;
     private boolean mIsPassthrough;
+
+    private String mDisplayNameMulti;//multi-language
+
+    private int mFreeCa;
+    private int mScrambled;
 
     private ChannelInfo() {}
 
@@ -268,11 +278,20 @@ public class ChannelInfo {
 
             if (parsedMap.get(KEY_SUBT_TRACK_INDEX) != null)
                 builder.setSubtitleTrackIndex(Integer.parseInt(parsedMap.get(KEY_SUBT_TRACK_INDEX)));
+
+            if (parsedMap.get(KEY_MULTI_NAME) != null)
+                builder.setDisplayNameMulti(parsedMap.get(KEY_MULTI_NAME));
+
+            if (parsedMap.get(KEY_FREE_CA) != null)
+                builder.setFreeCa(Integer.parseInt(parsedMap.get(KEY_FREE_CA)));
+            if (parsedMap.get(KEY_SCRAMBLED) != null)
+                builder.setScrambled(Integer.parseInt(parsedMap.get(KEY_SCRAMBLED)));
         }
 
         index = cursor.getColumnIndex(Channels.COLUMN_BROWSABLE);
         if (index >= 0)
             builder.setBrowsable(cursor.getInt(index)==1 ? true : false);
+
         return builder.build();
     }
 
@@ -420,6 +439,26 @@ public class ChannelInfo {
         return mSubtitleTrackIndex;
     }
 
+    public String getDisplayNameMulti() {
+        return mDisplayNameMulti;
+    }
+
+    public String getDisplayNameLocal() {
+        return TVMultilingualText.getText(getDisplayNameMulti());
+    }
+
+    public String getDisplayName(String local) {
+        return TVMultilingualText.getText(getDisplayNameMulti(), local);
+    }
+
+    public int getFreeCa() {
+        return mFreeCa;
+    }
+
+    public int getScrambled() {
+        return mScrambled;
+    }
+
     public boolean isBrowsable() {
         return this.mBrowsable;
     }
@@ -495,6 +534,15 @@ public class ChannelInfo {
         mFineTune = finetune;
     }
 
+    public void setFreeCa(int free_ca) {
+        mFreeCa = free_ca;
+    }
+
+    public void setScrambled(int scrambled) {
+        mScrambled = scrambled;
+    }
+
+
     public void copyFrom(ChannelInfo channel) {
         if (this == channel)
             return;
@@ -560,6 +608,9 @@ public class ChannelInfo {
             mChannel.mSubtitleId1s = null;
             mChannel.mSubtitleId2s = null;
             mChannel.mSubtitleTrackIndex = -1;
+
+            mChannel.mFreeCa = 0;
+            mChannel.mScrambled = 0;
         }
 
         public Builder setId(long id) {
@@ -758,6 +809,21 @@ public class ChannelInfo {
             return this;
         }
 
+        public Builder setDisplayNameMulti(String name) {
+            mChannel.mDisplayNameMulti = name;
+            return this;
+        }
+
+        public Builder setFreeCa(int free_ca) {
+            mChannel.mFreeCa = free_ca;
+            return this;
+        }
+
+        public Builder setScrambled(int scrambled) {
+            mChannel.mScrambled = scrambled;
+            return this;
+        }
+
         public ChannelInfo build() {
             return mChannel;
         }
@@ -871,7 +937,9 @@ public class ChannelInfo {
                 "\n SubtitleId1s = " + Arrays.toString(mSubtitleId1s) +
                 "\n SubtitleId2s = " + Arrays.toString(mSubtitleId2s) +
                 "\n SubtitleLangs = " + Arrays.toString(mSubtitleLangs) +
-                "\n SubtitleTrackIndex = " + mSubtitleTrackIndex
+                "\n SubtitleTrackIndex = " + mSubtitleTrackIndex +
+                "\n FreeCa = " + mFreeCa +
+                "\n Scrambled = " + mScrambled
                );
     }
 }

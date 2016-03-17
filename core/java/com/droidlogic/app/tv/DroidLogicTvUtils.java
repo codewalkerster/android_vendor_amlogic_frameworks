@@ -8,7 +8,8 @@ import android.provider.Settings;
 import android.util.SparseArray;
 
 
-public class DroidLogicTvUtils {
+public class DroidLogicTvUtils
+{
 
     /**
      * final parameters for {@link TvInpuptService.Session.notifySessionEvent}
@@ -18,6 +19,60 @@ public class DroidLogicTvUtils {
     public static final String SIG_INFO_LABEL  = "sig_info_label";
     public static final String SIG_INFO_ARGS  = "sig_info_args";
     public static final String AV_SIG_SCRAMBLED  = "av_sig_scambled";
+
+    public static final String SIG_INFO_C_DISPLAYNUM_EVENT = "sig_info_c_displaynum_event";
+    public static final String SIG_INFO_C_DISPLAYNUM = "sig_info_c_displaynum";
+
+    public static final String SIG_INFO_C_PROCESS_EVENT = "sig_info_c_process_event";
+    public static final String SIG_INFO_C_STORE_BEGIN_EVENT = "sig_info_c_store_begin_event";
+    public static final String SIG_INFO_C_STORE_END_EVENT = "sig_info_c_store_end_event";
+    public static final String SIG_INFO_C_SCAN_BEGIN_EVENT = "sig_info_c_scan_begin_event";
+    public static final String SIG_INFO_C_SCAN_END_EVENT = "sig_info_c_scan_end_event";
+    public static final String SIG_INFO_C_SCAN_EXIT_EVENT = "sig_info_c_scan_exit_event";
+
+    public static final String SIG_INFO_C_TYPE = "type";
+    public static final String SIG_INFO_C_PRECENT = "precent";
+    public static final String SIG_INFO_C_TOTALCOUNT = "totalcount";
+    public static final String SIG_INFO_C_LOCK = "lock";
+    public static final String SIG_INFO_C_CNUM = "cnum";
+    public static final String SIG_INFO_C_FREQ = "freq";
+    public static final String SIG_INFO_C_PROGRAMNAME = "programName";
+    public static final String SIG_INFO_C_SRVTYPE = "srvType";
+    public static final String SIG_INFO_C_MSG = "msg";
+    public static final String SIG_INFO_C_STRENGTH = "strength";
+    public static final String SIG_INFO_C_QUALITY = "quality";
+    //ATV
+    public static final String SIG_INFO_C_VIDEOSTD = "videoStd";
+    public static final String SIG_INFO_C_AUDIOSTD = "audioStd";
+    public static final String SIG_INFO_C_ISAUTOSTD = "isAutoStd";
+    public static final String SIG_INFO_C_FINETUNE = "fineTune";
+
+    //DTV
+    public static final String SIG_INFO_C_MODE = "mode";
+    public static final String SIG_INFO_C_SR = "sr";
+    public static final String SIG_INFO_C_MOD = "mod";
+    public static final String SIG_INFO_C_BANDWIDTH = "bandwidth";
+    public static final String SIG_INFO_C_OFM_MODE = "ofdm_mode";
+    public static final String SIG_INFO_C_TS_ID = "ts_id";
+    public static final String SIG_INFO_C_ORIG_NET_ID = "orig_net_id";
+
+    public static final String SIG_INFO_C_SERVICEiD = "serviceID";
+    public static final String SIG_INFO_C_VID = "vid";
+    public static final String SIG_INFO_C_VFMT = "vfmt";
+    public static final String SIG_INFO_C_AIDS = "aids";
+    public static final String SIG_INFO_C_AFMTS = "afmts";
+    public static final String SIG_INFO_C_ALANGS = "alangs";
+    public static final String SIG_INFO_C_ATYPES = "atypes";
+    public static final String SIG_INFO_C_PCR = "pcr";
+
+    public static final String SIG_INFO_C_STYPES = "stypes";
+    public static final String SIG_INFO_C_SIDS = "sids";
+    public static final String SIG_INFO_C_SSTYPES = "sstypes";
+    public static final String SIG_INFO_C_SID1S = "sid1s";
+    public static final String SIG_INFO_C_SID2S = "sid2s";
+    public static final String SIG_INFO_C_SLANGS = "slangs";
+
+
 
     public static final int SIG_INFO_TYPE_ATV    = 0;
     public static final int SIG_INFO_TYPE_DTV    = 1;
@@ -76,6 +131,12 @@ public class DroidLogicTvUtils {
 
     public static final String ACTION_PROGRAM_APPOINTED = "android.intent.action.tv_appointed_program";
 
+    public static final String ACTION_ATV_AUTO_SCAN = "atv_auto_scan";
+    public static final String ACTION_DTV_AUTO_SCAN = "dtv_auto_scan";
+    public static final String ACTION_DTV_MANUAL_SCAN = "dtv_manual_scan";
+    public static final String ACTION_STOP_SCAN = "stop_scan";
+    public static final String PARA_MANUAL_SCAN = "scan_freq";
+
     /**
      * Other extra names for {@link TvInputInfo.createSetupIntent#intent} except for input id.
      */
@@ -128,7 +189,8 @@ public class DroidLogicTvUtils {
     public static final int MATCH_PROGRAM_ID = 6;
     public static final int MATCH_WATCHED_PROGRAM = 7;
     public static final int MATCH_WATCHED_PROGRAM_ID = 8;
-    static {
+    static
+    {
         sUriMatcher = new UriMatcher(NO_MATCH);
         sUriMatcher.addURI(TvContract.AUTHORITY, "channel", MATCH_CHANNEL);
         sUriMatcher.addURI(TvContract.AUTHORITY, "channel/#", MATCH_CHANNEL_ID);
@@ -140,11 +202,13 @@ public class DroidLogicTvUtils {
         sUriMatcher.addURI(TvContract.AUTHORITY, "watched_program/#", MATCH_WATCHED_PROGRAM_ID);
     }
 
-    public static int matchsWhich(Uri uri) {
+    public static int matchsWhich(Uri uri)
+    {
         return sUriMatcher.match(uri);
     }
 
-    public static int getChannelId(Uri uri) {
+    public static int getChannelId(Uri uri)
+    {
         if (sUriMatcher.match(uri) == MATCH_CHANNEL_ID)
             return Integer.parseInt(uri.getLastPathSegment());
         return -1;

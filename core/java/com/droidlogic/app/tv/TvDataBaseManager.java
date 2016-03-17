@@ -308,6 +308,9 @@ public class TvDataBaseManager {
         map.put(ChannelInfo.KEY_SUBT_ID2S, Arrays.toString(channel.getSubtitleId2s()));
         map.put(ChannelInfo.KEY_SUBT_LANGS, Arrays.toString(channel.getSubtitleLangs()));
         map.put(ChannelInfo.KEY_SUBT_TRACK_INDEX, String.valueOf(channel.getSubtitleTrackIndex()));
+        map.put(ChannelInfo.KEY_MULTI_NAME, channel.getDisplayNameMulti());
+        map.put(ChannelInfo.KEY_FREE_CA, String.valueOf(channel.getFreeCa()));
+        map.put(ChannelInfo.KEY_SCRAMBLED, String.valueOf(channel.getScrambled()));
         String output = ChannelInfo.mapToString(map);
         values.put(TvContract.Channels.COLUMN_INTERNAL_PROVIDER_DATA, output);
 

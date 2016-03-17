@@ -103,12 +103,14 @@ public class TvControlManager {
     private UpgradeFBCListener mUpgradeFBCListener  = null;
     private SubtitleUpdateListener mSubtitleListener = null;
     private ScannerEventListener mScannerListener = null;
+    private StorDBEventListener mStorDBListener = null;
     private VframBMPEventListener mVframBMPListener = null;
     private EpgEventListener mEpgListener = null;
     private AVPlaybackListener mAVPlaybackListener = null;
     private VchipLockStatusListener mLockStatusListener = null;
 
     private static TvControlManager mInstance;
+    private ScannerEvent scan_ev = null;
 
     private native final void native_setup(Object tv_this);
     private native final void native_release();
@@ -204,6 +206,75 @@ public class TvControlManager {
             msgPdu = new int[1200];
         }
 
+        private void readScanEvent(ScannerEvent scan_ev, Parcel p) {
+            int i;
+            scan_ev.type = p.readInt();
+            scan_ev.precent = p.readInt();
+            scan_ev.totalcount = p.readInt();
+            scan_ev.lock = p.readInt();
+            scan_ev.cnum = p.readInt();
+            scan_ev.freq = p.readInt();
+            scan_ev.programName = p.readString();
+            scan_ev.srvType = p.readInt();
+            scan_ev.msg = p.readString();
+            scan_ev.strength = p.readInt();
+            scan_ev.quality = p.readInt();
+            scan_ev.videoStd = p.readInt();
+            scan_ev.audioStd = p.readInt();
+            scan_ev.isAutoStd = p.readInt();
+
+            scan_ev.mode = p.readInt();
+            scan_ev.sr = p.readInt();
+            scan_ev.mod = p.readInt();
+            scan_ev.bandwidth = p.readInt();
+            scan_ev.ofdm_mode = p.readInt();
+            scan_ev.ts_id = p.readInt();
+            scan_ev.orig_net_id = p.readInt();
+            scan_ev.serviceID = p.readInt();
+            scan_ev.vid = p.readInt();
+            scan_ev.vfmt = p.readInt();
+            int acnt = p.readInt();
+            if (acnt != 0) {
+                scan_ev.aids = new int[acnt];
+                for (i=0;i<acnt;i++)
+                    scan_ev.aids[i] = p.readInt();
+                scan_ev.afmts = new int[acnt];
+                for (i=0;i<acnt;i++)
+                    scan_ev.afmts[i] = p.readInt();
+                scan_ev.alangs = new String[acnt];
+                for (i=0;i<acnt;i++)
+                    scan_ev.alangs[i] = p.readString();
+                scan_ev.atypes = new int[acnt];
+                for (i=0;i<acnt;i++)
+                    scan_ev.atypes[i] = p.readInt();
+            }
+            scan_ev.pcr = p.readInt();
+            int scnt = p.readInt();
+            if (scnt != 0) {
+                scan_ev.stypes = new int[scnt];
+                for (i=0;i<scnt;i++)
+                    scan_ev.stypes[i] = p.readInt();
+                scan_ev.sids = new int[scnt];
+                for (i=0;i<scnt;i++)
+                    scan_ev.sids[i] = p.readInt();
+                scan_ev.sstypes = new int[scnt];
+                for (i=0;i<scnt;i++)
+                    scan_ev.sstypes[i] = p.readInt();
+                scan_ev.sid1s = new int[scnt];
+                for (i=0;i<scnt;i++)
+                    scan_ev.sid1s[i] = p.readInt();
+                scan_ev.sid2s = new int[scnt];
+                for (i=0;i<scnt;i++)
+                    scan_ev.sid2s[i] = p.readInt();
+                scan_ev.slangs = new String[scnt];
+                for (i=0;i<scnt;i++)
+                    scan_ev.slangs[i] = p.readString();
+            }
+            scan_ev.free_ca = p.readInt();
+            scan_ev.scrambled = p.readInt();
+            scan_ev.scan_mode = p.readInt();
+        }
+
         @Override
         public void handleMessage(Message msg) {
             int i = 0, loop_count = 0, tmp_val = 0;
@@ -229,71 +300,14 @@ public class TvControlManager {
                 case SCAN_EVENT_CALLBACK:
                     p = ((Parcel) (msg.obj));
                     if (mScannerListener != null) {
-                        ScannerEvent ev = new ScannerEvent();
-                        ev.type = p.readInt();
-                        ev.precent = p.readInt();
-                        ev.totalcount = p.readInt();
-                        ev.lock = p.readInt();
-                        ev.cnum = p.readInt();
-                        ev.freq = p.readInt();
-                        ev.programName = p.readString();
-                        ev.srvType = p.readInt();
-                        ev.msg = p.readString();
-                        ev.strength = p.readInt();
-                        ev.quality = p.readInt();
-                        ev.videoStd = p.readInt();
-                        ev.audioStd = p.readInt();
-                        ev.isAutoStd = p.readInt();
-
-                        ev.mode = p.readInt();
-                        ev.sr = p.readInt();
-                        ev.mod = p.readInt();
-                        ev.bandwidth = p.readInt();
-                        ev.ofdm_mode = p.readInt();
-                        ev.ts_id = p.readInt();
-                        ev.orig_net_id = p.readInt();
-                        ev.serviceID = p.readInt();
-                        ev.vid = p.readInt();
-                        ev.vfmt = p.readInt();
-                        int acnt = p.readInt();
-                        if (acnt != 0) {
-                            ev.aids = new int[acnt];
-                            for (i=0;i<acnt;i++)
-                                ev.aids[i] = p.readInt();
-                            ev.afmts = new int[acnt];
-                            for (i=0;i<acnt;i++)
-                                ev.afmts[i] = p.readInt();
-                            ev.alangs = new String[acnt];
-                            for (i=0;i<acnt;i++)
-                                ev.alangs[i] = p.readString();
-                            ev.atypes = new int[acnt];
-                            for (i=0;i<acnt;i++)
-                                ev.atypes[i] = p.readInt();
+                        readScanEvent(scan_ev, p);
+                        mScannerListener.onEvent(scan_ev);
+                        if (mStorDBListener != null) {
+                            mStorDBListener.StorDBonEvent(scan_ev);
                         }
-                        ev.pcr = p.readInt();
-                        int scnt = p.readInt();
-                        if (scnt != 0) {
-                            ev.stypes = new int[scnt];
-                            for (i=0;i<scnt;i++)
-                                ev.stypes[i] = p.readInt();
-                            ev.sids = new int[scnt];
-                            for (i=0;i<scnt;i++)
-                                ev.sids[i] = p.readInt();
-                            ev.sstypes = new int[scnt];
-                            for (i=0;i<scnt;i++)
-                                ev.sstypes[i] = p.readInt();
-                            ev.sid1s = new int[scnt];
-                            for (i=0;i<scnt;i++)
-                                ev.sid1s[i] = p.readInt();
-                            ev.sid2s = new int[scnt];
-                            for (i=0;i<scnt;i++)
-                                ev.sid2s[i] = p.readInt();
-                            ev.slangs = new String[scnt];
-                            for (i=0;i<scnt;i++)
-                                ev.slangs[i] = p.readString();
-                        }
-
-                        mScannerListener.onEvent(ev);
+                    }else if (mStorDBListener != null) {
+                        readScanEvent(scan_ev, p);
+                        mStorDBListener.StorDBonEvent(scan_ev);
                     }
                     break;
                 case VCHIP_CALLBACK:
@@ -457,6 +471,7 @@ public class TvControlManager {
         } else {
             mEventHandler = null;
         }
+        scan_ev = new ScannerEvent();
         native_setup(new WeakReference<TvControlManager>(this));
         String LogFlg = TvMiscConfigGet(OPEN_TV_LOG_FLG,null);
         if ("log_open".equals(TvMiscConfigGet(OPEN_TV_LOG_FLG,null)))
@@ -3998,11 +4013,15 @@ public class TvControlManager {
     }
 
     public int AtvAutoScan(int videoStd, int audioStd) {
-        return AtvAutoScan(videoStd, audioStd, 0);
+        return AtvAutoScan(videoStd, audioStd, 0, 0);
     }
 
     public int AtvAutoScan(int videoStd, int audioStd, int storeType) {
-        int val[] = new int[]{videoStd, audioStd, storeType};
+        return AtvAutoScan(videoStd, audioStd, storeType, 0);
+    }
+
+    public int AtvAutoScan(int videoStd, int audioStd, int storeType, int procMode) {
+        int val[] = new int[]{videoStd, audioStd, storeType, procMode};
         return sendCmdIntArray(ATV_SCAN_AUTO, val);
     }
 
@@ -4035,6 +4054,14 @@ public class TvControlManager {
             int audioStd) {
         int val[] = new int[]{startFreq, endFreq, videoStd, audioStd};
         return sendCmdIntArray(ATV_SCAN_MANUAL, val);
+    }
+
+    public int AtvDtvPauseScan() {
+        return sendCmd(ATV_DTV_SCAN_PAUSE);
+    }
+
+    public int AtvDtvResumeScan() {
+        return sendCmd(ATV_DTV_SCAN_RESUME);
     }
 
     /**
@@ -4409,6 +4436,11 @@ public class TvControlManager {
         mScannerListener = l;
     }
 
+    public void setStorDBListener(StorDBEventListener l) {
+        libtv_log_open();
+        mStorDBListener = l;
+    }
+
     public Bitmap CreateVideoFrameBitmap(int inputSourceMode) {
         libtv_log_open();
         Bitmap videoFrame = Bitmap.createBitmap(1280, 720, Bitmap.Config.ARGB_8888);
@@ -4426,6 +4458,7 @@ public class TvControlManager {
     public final static int EVENT_ATV_PROG_DATA             = 7;
     public final static int EVENT_DTV_PROG_DATA             = 8;
     public final static int EVENT_SCAN_EXIT                 = 9;
+    public final static int EVENT_SCAN_BEGIN                = 10;
 
     public class ScannerEvent {
         public int type;
@@ -4470,10 +4503,19 @@ public class TvControlManager {
         public int[] sid1s;
         public int[] sid2s;
         public String[] slangs;
+
+        public int free_ca;
+        public int scrambled;
+
+        public int scan_mode;
     }
 
     public interface ScannerEventListener {
         void onEvent(ScannerEvent ev);
+    }
+
+    public interface StorDBEventListener {
+        void StorDBonEvent(ScannerEvent ev);
     }
 
     //epg

@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.Surface;
 
 import com.droidlogic.app.tv.DroidLogicTvUtils;
+import com.droidlogic.app.tv.TvControlManager;
 
 public abstract class TvInputBaseSession extends TvInputService.Session implements Handler.Callback {
     private static final boolean DEBUG = true;
@@ -31,6 +32,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     private Uri mChannelUri;
     private HandlerThread mHandlerThread;
     private Handler mSessionHandler;
+    private TvControlManager mTvControlManager;
 
     protected int ACTION_FAILED = -1;
     protected int ACTION_SUCCESS = 1;
@@ -59,6 +61,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         mTvInputManager = (TvInputManager)context.getSystemService(Context.TV_INPUT_SERVICE);
         mHardware = mTvInputManager.acquireTvInputHardware(deviceId,
                 mHardwareCallback, mTvInputManager.getTvInputInfo(inputId));
+        mTvControlManager = TvControlManager.getInstance();
         initThread(mInputId);
     }
 
@@ -138,6 +141,17 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
 
     public void doAppPrivateCmd(String action, Bundle bundle) {
         //do something
+        if (DroidLogicTvUtils.ACTION_ATV_AUTO_SCAN.equals(action)) {
+            mTvControlManager.AtvAutoScan(TvControlManager.ATV_VIDEO_STD_PAL, TvControlManager.ATV_AUDIO_STD_I, 0);
+        } else if (DroidLogicTvUtils.ACTION_DTV_AUTO_SCAN.equals(action)) {
+            mTvControlManager.DtvAutoScan();
+        } else if (DroidLogicTvUtils.ACTION_DTV_MANUAL_SCAN.equals(action)) {
+            if (bundle != null) {
+                mTvControlManager.DtvManualScan(bundle.getInt(DroidLogicTvUtils.PARA_MANUAL_SCAN));
+            }
+        } else if (DroidLogicTvUtils.ACTION_STOP_SCAN.equals(action)) {
+            mTvControlManager.DtvStopScan();
+        }
     }
 
     public int doSurfaceChanged(Uri uri) {
