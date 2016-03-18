@@ -311,6 +311,7 @@ public class TvDataBaseManager {
         map.put(ChannelInfo.KEY_MULTI_NAME, channel.getDisplayNameMulti());
         map.put(ChannelInfo.KEY_FREE_CA, String.valueOf(channel.getFreeCa()));
         map.put(ChannelInfo.KEY_SCRAMBLED, String.valueOf(channel.getScrambled()));
+        map.put(ChannelInfo.KEY_SDT_VERSION, String.valueOf(channel.getSdtVersion()));
         String output = ChannelInfo.mapToString(map);
         values.put(TvContract.Channels.COLUMN_INTERNAL_PROVIDER_DATA, output);
 

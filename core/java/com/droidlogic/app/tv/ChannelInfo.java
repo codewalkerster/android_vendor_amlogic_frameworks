@@ -75,6 +75,8 @@ public class ChannelInfo {
     public static final String KEY_FREE_CA = "free_ca";
     public static final String KEY_SCRAMBLED = "scrambled";
 
+    public static final String KEY_SDT_VERSION = "sdt_version";
+
     public static final String KEY_FREQUENCY = "frequency";
     public static final String KEY_BAND_WIDTH = "band_width";
     public static final String KEY_FINE_TUNE = "fine_tune";
@@ -141,6 +143,8 @@ public class ChannelInfo {
 
     private int mFreeCa;
     private int mScrambled;
+
+    private int mSdtVersion;
 
     private ChannelInfo() {}
 
@@ -286,6 +290,8 @@ public class ChannelInfo {
                 builder.setFreeCa(Integer.parseInt(parsedMap.get(KEY_FREE_CA)));
             if (parsedMap.get(KEY_SCRAMBLED) != null)
                 builder.setScrambled(Integer.parseInt(parsedMap.get(KEY_SCRAMBLED)));
+            if (parsedMap.get(KEY_SDT_VERSION) != null)
+                builder.setSdtVersion(Integer.parseInt(parsedMap.get(KEY_SDT_VERSION)));
         }
 
         index = cursor.getColumnIndex(Channels.COLUMN_BROWSABLE);
@@ -459,6 +465,10 @@ public class ChannelInfo {
         return mScrambled;
     }
 
+    public int getSdtVersion() {
+        return mSdtVersion;
+    }
+
     public boolean isBrowsable() {
         return this.mBrowsable;
     }
@@ -498,8 +508,28 @@ public class ChannelInfo {
         mVideoStd = std;
     }
 
+    public void setVideoPid(int pid) {
+        mVideoPid = pid;
+    }
+
+    public void setVfmt(int vfmt) {
+        mVfmt = vfmt;
+    }
+
     public void setVideoFormat(String format) {
         mVideoFormat = format;
+    }
+
+    public void setAudioPids(int[] pids) {
+        mAudioPids = pids;
+    }
+
+    public void setAudioFormats(int[] formats) {
+        mAudioFormats = formats;
+    }
+
+    public void setAudioLangs(String[] langs) {
+        mAudioLangs = langs;
     }
 
     public void setAudioStd(int std) {
@@ -516,6 +546,10 @@ public class ChannelInfo {
 
     public void setAudioChannel(int channel) {
         mAudioChannel = channel;
+    }
+
+    public void setPcrPid(int pid) {
+        mPcrPid = pid;
     }
 
     public void setBrowsable(boolean enable) {
@@ -542,6 +576,13 @@ public class ChannelInfo {
         mScrambled = scrambled;
     }
 
+    public void setSdtVersion(int version) {
+        mSdtVersion = version;
+    }
+
+    public void setOriginalNetworkId(int id) {
+        mOriginalNetworkId = id;
+    }
 
     public void copyFrom(ChannelInfo channel) {
         if (this == channel)
@@ -611,6 +652,8 @@ public class ChannelInfo {
 
             mChannel.mFreeCa = 0;
             mChannel.mScrambled = 0;
+
+            mChannel.mSdtVersion = 0xff;
         }
 
         public Builder setId(long id) {
@@ -824,6 +867,11 @@ public class ChannelInfo {
             return this;
         }
 
+        public Builder setSdtVersion(int version) {
+            mChannel.mSdtVersion = version;
+            return this;
+        }
+
         public ChannelInfo build() {
             return mChannel;
         }
@@ -939,7 +987,8 @@ public class ChannelInfo {
                 "\n SubtitleLangs = " + Arrays.toString(mSubtitleLangs) +
                 "\n SubtitleTrackIndex = " + mSubtitleTrackIndex +
                 "\n FreeCa = " + mFreeCa +
-                "\n Scrambled = " + mScrambled
+                "\n Scrambled = " + mScrambled +
+                "\n SdtVersion = " + mSdtVersion
                );
     }
 }

@@ -273,6 +273,7 @@ public class TvControlManager {
             scan_ev.free_ca = p.readInt();
             scan_ev.scrambled = p.readInt();
             scan_ev.scan_mode = p.readInt();
+            scan_ev.sdtVersion = p.readInt();
         }
 
         @Override
@@ -4508,6 +4509,8 @@ public class TvControlManager {
         public int scrambled;
 
         public int scan_mode;
+
+        public int sdtVersion;
     }
 
     public interface ScannerEventListener {

@@ -423,6 +423,7 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
                .setDisplayNameMulti(event.programName)
                .setFreeCa(event.free_ca)
                .setScrambled(event.scrambled)
+               .setSdtVersion(event.sdtVersion)
                .build();
     }
 
