@@ -110,7 +110,6 @@ public class TvControlManager {
     private VchipLockStatusListener mLockStatusListener = null;
 
     private static TvControlManager mInstance;
-    private ScannerEvent scan_ev = null;
 
     private native final void native_setup(Object tv_this);
     private native final void native_release();
@@ -301,12 +300,14 @@ public class TvControlManager {
                 case SCAN_EVENT_CALLBACK:
                     p = ((Parcel) (msg.obj));
                     if (mScannerListener != null) {
+                        ScannerEvent scan_ev = new ScannerEvent();
                         readScanEvent(scan_ev, p);
                         mScannerListener.onEvent(scan_ev);
                         if (mStorDBListener != null) {
                             mStorDBListener.StorDBonEvent(scan_ev);
                         }
                     }else if (mStorDBListener != null) {
+                        ScannerEvent scan_ev = new ScannerEvent();
                         readScanEvent(scan_ev, p);
                         mStorDBListener.StorDBonEvent(scan_ev);
                     }
@@ -472,7 +473,6 @@ public class TvControlManager {
         } else {
             mEventHandler = null;
         }
-        scan_ev = new ScannerEvent();
         native_setup(new WeakReference<TvControlManager>(this));
         String LogFlg = TvMiscConfigGet(OPEN_TV_LOG_FLG,null);
         if ("log_open".equals(TvMiscConfigGet(OPEN_TV_LOG_FLG,null)))
