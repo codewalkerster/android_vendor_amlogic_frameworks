@@ -282,6 +282,7 @@ public interface TvControlCommand {
     int SCAN_EVENT_CALLBACK = 541;
     int EPG_EVENT_CALLBACK = 542;
     int VFRAME_BMP_EVENT_CALLBACK = 543;
+    int SCANNING_FRAME_STABLE_CALLBACK = 544;
     // CALLBACK END
 
     // SSM

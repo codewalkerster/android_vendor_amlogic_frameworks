@@ -104,6 +104,7 @@ public class TvControlManager {
     private SubtitleUpdateListener mSubtitleListener = null;
     private ScannerEventListener mScannerListener = null;
     private StorDBEventListener mStorDBListener = null;
+    private ScanningFrameStableListener mScanningFrameStableListener = null;
     private VframBMPEventListener mVframBMPListener = null;
     private EpgEventListener mEpgListener = null;
     private AVPlaybackListener mAVPlaybackListener = null;
@@ -309,6 +310,14 @@ public class TvControlManager {
                     }else if (mStorDBListener != null) {
                         readScanEvent(scan_ev, p);
                         mStorDBListener.StorDBonEvent(scan_ev);
+                    }
+                    break;
+                case SCANNING_FRAME_STABLE_CALLBACK:
+                    p = ((Parcel) (msg.obj));
+                    if (mScanningFrameStableListener != null) {
+                        ScanningFrameStableEvent ev = new ScanningFrameStableEvent();
+                        ev.CurScanningFrq = p.readInt();
+                        mScanningFrameStableListener.onFrameStable(ev);
                     }
                     break;
                 case VCHIP_CALLBACK:
@@ -4442,6 +4451,11 @@ public class TvControlManager {
         mStorDBListener = l;
     }
 
+    public void setScanningFrameStableListener(ScanningFrameStableListener l) {
+        libtv_log_open();
+        mScanningFrameStableListener = l;
+    }
+
     public Bitmap CreateVideoFrameBitmap(int inputSourceMode) {
         libtv_log_open();
         Bitmap videoFrame = Bitmap.createBitmap(1280, 720, Bitmap.Config.ARGB_8888);
@@ -4520,6 +4534,17 @@ public class TvControlManager {
     public interface StorDBEventListener {
         void StorDBonEvent(ScannerEvent ev);
     }
+
+
+    // frame stable when scanning
+    public class ScanningFrameStableEvent {
+        public int CurScanningFrq;
+    }
+
+    public interface ScanningFrameStableListener {
+        void onFrameStable(ScanningFrameStableEvent ev);
+    }
+
 
     //epg
     public void setEpgListener(EpgEventListener l) {

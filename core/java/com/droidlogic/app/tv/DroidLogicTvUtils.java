@@ -29,6 +29,7 @@ public class DroidLogicTvUtils
     public static final String SIG_INFO_C_SCAN_BEGIN_EVENT = "sig_info_c_scan_begin_event";
     public static final String SIG_INFO_C_SCAN_END_EVENT = "sig_info_c_scan_end_event";
     public static final String SIG_INFO_C_SCAN_EXIT_EVENT = "sig_info_c_scan_exit_event";
+    public static final String SIG_INFO_C_SCANNING_FRAME_STABLE_EVENT = "sig_info_c_scanning_frame_stable_event";
 
     public static final String SIG_INFO_C_TYPE = "type";
     public static final String SIG_INFO_C_PRECENT = "precent";
@@ -134,6 +135,8 @@ public class DroidLogicTvUtils
     public static final String ACTION_ATV_AUTO_SCAN = "atv_auto_scan";
     public static final String ACTION_DTV_AUTO_SCAN = "dtv_auto_scan";
     public static final String ACTION_DTV_MANUAL_SCAN = "dtv_manual_scan";
+    public static final String ACTION_ATV_PAUSE_SCAN = "atv_pause_scan";
+    public static final String ACTION_ATV_RESUME_SCAN = "atv_resume_scan";
     public static final String ACTION_STOP_SCAN = "stop_scan";
     public static final String PARA_MANUAL_SCAN = "scan_freq";
 

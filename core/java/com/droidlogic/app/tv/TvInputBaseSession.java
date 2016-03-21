@@ -151,6 +151,10 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
             }
         } else if (DroidLogicTvUtils.ACTION_STOP_SCAN.equals(action)) {
             mTvControlManager.DtvStopScan();
+        } else if (DroidLogicTvUtils.ACTION_ATV_PAUSE_SCAN.equals(action)) {
+            mTvControlManager.AtvDtvPauseScan();
+        } else if (DroidLogicTvUtils.ACTION_ATV_RESUME_SCAN.equals(action)) {
+            mTvControlManager.AtvDtvResumeScan();
         }
     }
 

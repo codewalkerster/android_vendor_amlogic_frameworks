@@ -24,7 +24,7 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.media.tv.TvContract.Channels;
 
-public class DroidLogicTvInputService extends TvInputService implements TVInSignalInfo.SigInfoChangeListener , TvControlManager.StorDBEventListener
+public class DroidLogicTvInputService extends TvInputService implements TVInSignalInfo.SigInfoChangeListener, TvControlManager.StorDBEventListener, TvControlManager.ScanningFrameStableListener
 {
     private static final String TAG = DroidLogicTvInputService.class.getSimpleName();
     private static final boolean DEBUG = true;
@@ -58,6 +58,7 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         mTvControlManager = TvControlManager.getInstance();
         mTvControlManager.SetSigInfoChangeListener(this);
         mTvControlManager.setStorDBListener(this);
+        mTvControlManager.setScanningFrameStableListener(this);
         mTvDataBaseManager = new TvDataBaseManager(getApplicationContext());
     }
 
@@ -660,4 +661,14 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         need_delete_channel = false;
         mChannels = null;
     }
+
+    @Override
+    public void onFrameStable(TvControlManager.ScanningFrameStableEvent event)
+    {
+        Log.d(TAG, "scanning frame stable!");
+        Bundle bundle = new Bundle();
+        bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_FREQ, event.CurScanningFrq);
+        mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_SCANNING_FRAME_STABLE_EVENT, bundle);
+    }
+
 }
