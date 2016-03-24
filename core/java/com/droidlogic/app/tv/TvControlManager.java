@@ -819,6 +819,32 @@ public class TvControlManager {
     }
     // VGA END
 
+
+    // HDMI
+
+    /**
+     * @Function: SetHdmiEdidVersion
+     * @Description: set hdmi edid version to 1.4 or 2.0
+     * @Param: port_id is hdmi port id; ver is set version
+     * @Return: 0 success, -1 fail
+     */
+    public int SetHdmiEdidVersion(HdmiPortID port_id, HdmiEdidVer ver) {
+        int val[] = new int[]{port_id.toInt(), ver.toInt()};
+        return sendCmdIntArray(SET_HDMI_EDID_VER, val);
+    }
+
+   /**
+     * @Function: SetHdmiHdcpKeyEnable
+     * @Description: enable or disable hdmi hdcp kdy
+     * @Param: iSenable is enable or disable
+     * @Return: 0 success, -1 fail
+     */
+    public int SetHdmiHdcpKeyEnable(HdcpKeyIsEnable iSenable) {
+        int val[] = new int[]{iSenable.toInt()};
+        return sendCmdIntArray(SET_HDCP_KEY_ENABLE, val);
+    }
+    // HDMI END
+
     // PQ
 
     /**
@@ -3428,6 +3454,50 @@ public class TvControlManager {
         return sendCmd(SSM_READ_NOISE_GATE_THRESHOLD_STATUS);
     }
 
+    /**
+     * @Function: SSMSaveHdmiEdidVer
+     * @Description: save hdmi edid version
+     * @Param: port_id is hdmi port id
+                      ver is save version.
+     * @Return: 0 success, -1 fail
+     */
+    public int SSMSaveHdmiEdidVer(HdmiPortID port_id, HdmiEdidVer ver) {
+        int val[] = new int[]{port_id.toInt(), port_id.toInt()};
+        return sendCmdIntArray(SSM_SAVE_HDMI_EDID_VER, val);
+    }
+
+    /**
+     * @Function: SSMReadHdmiEdidVer
+     * @Description: Read hdmi edid version
+     * @Param: port_id is hdmi port id
+     * @Return: hdmi edid version
+     */
+    public int SSMReadHdmiEdidVer(HdmiPortID port_id) {
+        int val[] = new int[]{port_id.toInt()};
+        return sendCmdIntArray(SSM_READ_HDMI_EDID_VER, val);
+    }
+
+    /**
+     * @Function: SSMSaveHDCPKeyEnable
+     * @Description: save hdmi HDCP key enable or disable
+     * @Param: iSenable
+     * @Return: 0 success, -1 fail
+     */
+    public int SSMSaveHDCPKeyEnable(HdcpKeyIsEnable iSenable) {
+        int val[] = new int[]{iSenable.toInt()};
+        return sendCmdIntArray(SSM_SAVE_HDCP_KEY_ENABLE, val);
+    }
+
+        /**
+     * @Function: SSMReadHDCPKeyEnable
+     * @Description: Read hdmi HDCP key enable or disable
+     * @Param:
+     * @Return: enable or enable
+     */
+    public int SSMReadHDCPKeyEnable() {
+        return sendCmd(SSM_READ_HDCP_KEY_ENABLE);
+    }
+
     public enum CC_TV_TYPE {
         TV_TYPE_ATV(0),
         TV_TYPE_DVBC(1),
@@ -5339,147 +5409,6 @@ public class TvControlManager {
         return sendCmd(GET_DISPLAY_RESOLUTION_INFO);
     }
 
-    /**
-     * @Function: SendHDMIRxCECCustomMessage
-     * @Description: send hdmi rx cec custom message
-     * @Param: data_buf, value buffer of message.
-     * @Return: 0 success, -1 fail
-     */
-    public int SendHDMIRxCECCustomMessage(int data_buf[]) {
-        libtv_log_open();
-        int i = 0, tmp_buf_size = 0, ret = 0;
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        cmd.writeInt(HDMIRX_CEC_SEND_CUSTOM_MESSAGE);
-
-        tmp_buf_size = data_buf.length;
-        cmd.writeInt(tmp_buf_size);
-        for (i = 0; i < tmp_buf_size; i++) {
-            cmd.writeInt(data_buf[i]);
-        }
-
-        sendCmdToTv(cmd, r);
-        ret = r.readInt();
-        return ret;
-    }
-
-    /**
-     * @Function: SendHDMIRxCECCustomMessageAndWaitReply
-     * @Description: send hdmi rx cec custom message and wait reply message
-     * @Param: data_buf, value buffer of message.
-     *         reply_buf, value buffer of reply message.
-     *         WaitCmd, wait command.
-     *         timeout, wait timeout (ms).
-     * @Return: >= 0 reply data size, -1 command send fail
-     */
-    public int SendHDMIRxCECCustomMessageAndWaitReply(int data_buf[], int reply_buf[], int WaitCmd, int timeout) {
-        libtv_log_open();
-        int i = 0, tmp_buf_size = 0, ret = 0;
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        cmd.writeInt(HDMIRX_CEC_SEND_CUSTOM_WAIT_REPLY_MESSAGE);
-
-        tmp_buf_size = data_buf.length;
-        cmd.writeInt(tmp_buf_size);
-        for (i = 0; i < tmp_buf_size; i++) {
-            cmd.writeInt(data_buf[i]);
-        }
-
-        cmd.writeInt(WaitCmd);
-        cmd.writeInt(timeout);
-        sendCmdToTv(cmd, r);
-
-        tmp_buf_size = r.readInt();
-        for (i = 0; i < tmp_buf_size; i++) {
-            reply_buf[i] = r.readInt();
-        }
-
-        ret = r.readInt();
-        return ret;
-    }
-
-    /**
-     * @Function:SendHDMIRxCECBoradcastStandbyMessage
-     * @Description, send hdmi rx cec broadcase standby message.
-     * @Param: none
-     * @Return: 0 success, -1 fail
-     */
-    public int SendHDMIRxCECBoradcastStandbyMessage() {
-        return sendCmd(HDMIRX_CEC_SEND_BROADCAST_STANDBY_MESSAGE);
-    }
-
-    /**
-     * @Function: SendHDMIRxCECGiveCECVersionMessage
-     * @Description: send hdmi rx cec give cec version message
-     * @Param: data_buf, value buffer of reply message.
-     * @Return: >= 0 reply data size, -1 command send fail
-     */
-    public int SendHDMIRxCECGiveCECVersionMessage(SourceInput source_input, int data_buf[]) {
-        libtv_log_open();
-        int i = 0, tmp_buf_size = 0, ret = 0;
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        cmd.writeInt(HDMIRX_CEC_SEND_GIVE_CEC_VERSION_MESSAGE);
-        cmd.writeInt(source_input.toInt());
-        sendCmdToTv(cmd, r);
-
-        tmp_buf_size = r.readInt();
-        for (i = 0; i < tmp_buf_size; i++) {
-            data_buf[i] = r.readInt();
-        }
-
-        ret = r.readInt();
-        return ret;
-    }
-
-    /**
-     * @Function: SendHDMIRxCECGiveDeviceVendorIDMessage
-     * @Description: send hdmi rx cec give device vendor id message
-     * @Param: data_buf, value buffer of reply message.
-     * @Return: >= 0 reply data size, -1 command send fail
-     */
-    public int SendHDMIRxCECGiveDeviceVendorIDMessage(SourceInput source_input, int data_buf[]) {
-        libtv_log_open();
-        int i = 0, tmp_buf_size = 0, ret = 0;
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        cmd.writeInt(HDMIRX_CEC_SEND_GIVE_DEV_VENDOR_ID_MESSAGE);
-        cmd.writeInt(source_input.toInt());
-        sendCmdToTv(cmd, r);
-
-        tmp_buf_size = r.readInt();
-        for (i = 0; i < tmp_buf_size; i++) {
-            data_buf[i] = r.readInt();
-        }
-
-        ret = r.readInt();
-        return ret;
-    }
-
-    /**
-     * @Function: SendHDMIRxCECGiveOSDNameMessage
-     * @Description: send hdmi rx cec give osd name message
-     * @Param: data_buf, value buffer of reply message.
-     * @Return: >= 0 reply data size, -1 command send fail
-     */
-    public int SendHDMIRxCECGiveOSDNameMessage(SourceInput source_input, int data_buf[]) {
-        libtv_log_open();
-        int i = 0, tmp_buf_size = 0, ret = 0;
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        cmd.writeInt(HDMIRX_CEC_SEND_GIVE_OSD_NAME_MESSAGE);
-        cmd.writeInt(source_input.toInt());
-        sendCmdToTv(cmd, r);
-
-        tmp_buf_size = r.readInt();
-        for (i = 0; i < tmp_buf_size; i++) {
-            data_buf[i] = r.readInt();
-        }
-
-        ret = r.readInt();
-        return ret;
-    }
-
     public int GetHdmiHdcpKeyKsvInfo(int data_buf[]) {
         int ret = 0;
         Parcel cmd = Parcel.obtain();
@@ -6802,6 +6731,49 @@ public class TvControlManager {
 
         private int val;
         atsc_attenna_type_t(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    public enum HdmiPortID {
+        HDMI_PORT_1(1),
+        HDMI_PORT_2(2),
+        HDMI_PORT_3(3);
+        private int val;
+
+        HdmiPortID(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    public enum HdmiEdidVer {
+        HDMI_EDID_VER_14(0),
+        HDMI_EDID_VER_20(1);
+        private int val;
+
+        HdmiEdidVer(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    public enum HdcpKeyIsEnable {
+        hdcpkey_enable(0),
+        hdcpkey_disable(1);
+        private int val;
+
+        HdcpKeyIsEnable(int val) {
             this.val = val;
         }
 
