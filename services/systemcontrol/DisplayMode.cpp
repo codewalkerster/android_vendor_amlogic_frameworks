@@ -1158,21 +1158,21 @@ void DisplayMode::setTVDisplay(bool initState) {
     if (!strncmp(mDefaultUI, "720", 3)) {
         mDisplayWidth= FULL_WIDTH_720;
         mDisplayHeight = FULL_HEIGHT_720;
-        pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_720P);
-        pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
-        pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "720");
+        //pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_720P);
+        //pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
+        //pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "720");
     } else if (!strncmp(mDefaultUI, "1080", 4)) {
         mDisplayWidth = FULL_WIDTH_1080;
         mDisplayHeight = FULL_HEIGHT_1080;
-        pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
-        pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
-        pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
+        //pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+        //pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
+        //pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
     } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
         mDisplayWidth = FULL_WIDTH_1080;
         mDisplayHeight = FULL_HEIGHT_1080;
-        pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
-        pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
-        pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
+        //pSysWrite->setProperty(PROP_LCD_DENSITY, DESITY_1080P);
+        //pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
+        //pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
     }
     if (strcmp(current_mode, outputmode)) {
         //when change mode, need close uboot logo to avoid logo scaling wrong
