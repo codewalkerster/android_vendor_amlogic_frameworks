@@ -3,8 +3,10 @@ package com.droidlogic.app.tv;
 import android.content.UriMatcher;
 import android.media.tv.TvContract;
 import android.media.tv.TvContract.Channels;
+import android.media.tv.TvInputInfo;
 import android.net.Uri;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.SparseArray;
 
 
@@ -192,8 +194,7 @@ public class DroidLogicTvUtils
     public static final int MATCH_PROGRAM_ID = 6;
     public static final int MATCH_WATCHED_PROGRAM = 7;
     public static final int MATCH_WATCHED_PROGRAM_ID = 8;
-    static
-    {
+    static {
         sUriMatcher = new UriMatcher(NO_MATCH);
         sUriMatcher.addURI(TvContract.AUTHORITY, "channel", MATCH_CHANNEL);
         sUriMatcher.addURI(TvContract.AUTHORITY, "channel/#", MATCH_CHANNEL_ID);
@@ -205,16 +206,99 @@ public class DroidLogicTvUtils
         sUriMatcher.addURI(TvContract.AUTHORITY, "watched_program/#", MATCH_WATCHED_PROGRAM_ID);
     }
 
-    public static int matchsWhich(Uri uri)
-    {
+    public static int matchsWhich(Uri uri) {
         return sUriMatcher.match(uri);
     }
 
-    public static int getChannelId(Uri uri)
-    {
+    public static int getChannelId(Uri uri) {
         if (sUriMatcher.match(uri) == MATCH_CHANNEL_ID)
             return Integer.parseInt(uri.getLastPathSegment());
         return -1;
+    }
+
+    public static boolean isHardwareInput(TvInputInfo info) {
+        if (info == null)
+            return false;
+
+        String[] temp = info.getId().split("/");
+        return temp.length==3 ? true : false;
+    }
+
+    public static boolean isHardwareInput(String input_id) {
+        if (TextUtils.isEmpty(input_id))
+            return false;
+        String[] temp = input_id.split("/");
+        return temp.length==3 ? true : false;
+    }
+
+    public static int getHardwareDeviceId(TvInputInfo info) {
+        if (info == null)
+            return -1;
+
+        String[] temp = info.getId().split("/");
+        return temp.length==3 ? Integer.parseInt(temp[2].substring(2)) : -1;
+    }
+
+    public static int getHardwareDeviceId(String input_id) {
+        if (TextUtils.isEmpty(input_id))
+            return -1;
+        String[] temp = input_id.split("/");
+        return temp.length==3 ? Integer.parseInt(temp[2].substring(2)) : -1;
+    }
+
+    public static int getSourceType(int device_id) {
+        int ret = SOURCE_TYPE_OTHER;
+        switch (device_id) {
+            case DEVICE_ID_ATV:
+                ret = SOURCE_TYPE_ATV;
+                break;
+            case DEVICE_ID_DTV:
+                ret = SOURCE_TYPE_DTV;
+                break;
+            case DEVICE_ID_AV1:
+                ret = SOURCE_TYPE_AV1;
+                break;
+            case DEVICE_ID_AV2:
+                ret = SOURCE_TYPE_AV2;
+                break;
+            case DEVICE_ID_HDMI1:
+                ret = SOURCE_TYPE_HDMI1;
+                break;
+            case DEVICE_ID_HDMI2:
+                ret = SOURCE_TYPE_HDMI2;
+                break;
+            case DEVICE_ID_HDMI3:
+                ret = SOURCE_TYPE_HDMI3;
+                break;
+            default:
+                break;
+        }
+        return ret;
+    }
+
+    public static int getSigType(int source_type) {
+        int ret = 0;
+        switch (source_type) {
+            case SOURCE_TYPE_ATV:
+                ret = SIG_INFO_TYPE_ATV;
+                break;
+            case SOURCE_TYPE_DTV:
+                ret = SIG_INFO_TYPE_DTV;
+                break;
+            case SOURCE_TYPE_AV1:
+            case SOURCE_TYPE_AV2:
+                ret = SIG_INFO_TYPE_AV;
+                break;
+            case SOURCE_TYPE_HDMI1:
+            case SOURCE_TYPE_HDMI2:
+            case SOURCE_TYPE_HDMI3:
+                ret = SIG_INFO_TYPE_HDMI;
+                break;
+            default:
+                ret = SIG_INFO_TYPE_OTHER;
+                break;
+        }
+        return ret;
     }
 
 }

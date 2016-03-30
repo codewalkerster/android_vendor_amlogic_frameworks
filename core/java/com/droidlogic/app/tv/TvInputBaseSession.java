@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Surface;
 
@@ -90,6 +91,9 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
             mSessionHandler = null;
         }
     }
+    public Surface getSurface() {
+        return mSurface;
+    }
 
     @Override
     public boolean handleMessage(Message msg) {
@@ -141,7 +145,10 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
 
     public void doAppPrivateCmd(String action, Bundle bundle) {
         //do something
-        if (DroidLogicTvUtils.ACTION_ATV_AUTO_SCAN.equals(action)) {
+        if (TextUtils.equals(DroidLogicTvUtils.ACTION_STOP_TV, action)
+            || TextUtils.equals(DroidLogicTvUtils.ACTION_STOP_PLAY, action)) {
+            mChannelUri = null;
+        } else if (DroidLogicTvUtils.ACTION_ATV_AUTO_SCAN.equals(action)) {
             mTvControlManager.AtvAutoScan(TvControlManager.ATV_VIDEO_STD_PAL, TvControlManager.ATV_AUDIO_STD_I, 0);
         } else if (DroidLogicTvUtils.ACTION_DTV_AUTO_SCAN.equals(action)) {
             mTvControlManager.DtvAutoScan();
@@ -162,6 +169,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         if (mHardware != null) {
             if (mSurface != null && mSurface.isValid()) {
                 mHardware.setSurface(mSurface, mConfigs[0]);
+                mChannelUri = uri;
                 return ACTION_SUCCESS;
             } else {
                 Log.d(TAG, "SurfaceChanged to invalid native obj! Should we need to stop tv?");
@@ -171,6 +179,8 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     }
 
     public void doUnblockContent(TvContentRating rating) {}
+
+    public void doSetSurface(Surface surface){}
 
     public int stopTvPlay() {
         if (mHardware != null) {
@@ -207,6 +217,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         }
 
         mSurface = surface;
+        doSetSurface(surface);
         return false;
     }
 
@@ -244,6 +255,12 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     public boolean onTune(Uri channelUri) {
         if (DEBUG)
             Log.d(TAG, "onTune, channelUri=" + channelUri);
+
+        if (mChannelUri != null && channelUri.compareTo(mChannelUri) == 0) {
+            Log.d(TAG, "onTune, channelUri not changed, so return" + channelUri);
+            return false;
+        }
+
         mChannelUri = channelUri;
         if (mSurface != null && mSurface.isValid()) {//TvView is not ready
             if (mSessionHandler != null) {

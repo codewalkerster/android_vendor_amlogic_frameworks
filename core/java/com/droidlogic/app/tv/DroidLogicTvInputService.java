@@ -84,6 +84,10 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
             Log.d(TAG, "size of mInfoList is " + mInfoList.size());
     }
 
+    protected boolean hasInfoExisted(TvInputHardwareInfo hInfo) {
+        return mInfoList.get(hInfo.getDeviceId()) == null ? false : true;
+    }
+
     protected TvInputInfo getTvInputInfo(TvInputHardwareInfo hardwareInfo)
     {
         return mInfoList.get(hardwareInfo.getDeviceId());
