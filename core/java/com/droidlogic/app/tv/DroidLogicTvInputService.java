@@ -457,6 +457,10 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         {
             return (getATVMode() != 0x7) && (getDTVMode() == 0x7);
         }
+        public boolean isATVManualScan()
+        {
+            return (getATVMode() == 0x2) && (getDTVMode() == 0x7);
+        }
     }
 
     private ScanMode mScanMode = null;
@@ -501,7 +505,10 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
             break;
         case TvControlManager.EVENT_ATV_PROG_DATA:
             channel = createAtvChannelInfo(event);
-            mTvDataBaseManager.insertAtvChannel(channel, c_displayNum);
+            if (mScanMode.isATVManualScan())
+                onUpdateCurrentChannel(channel, true);
+            else
+                mTvDataBaseManager.insertAtvChannel(channel, c_displayNum);
             Log.d(TAG, "onEvent,displayNum:" + c_displayNum);
             channel.print();
             bundle = GetDisplayNumBunlde(c_displayNum);
@@ -669,6 +676,9 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         Bundle bundle = new Bundle();
         bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_FREQ, event.CurScanningFrq);
         mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_SCANNING_FRAME_STABLE_EVENT, bundle);
+    }
+
+    public void onUpdateCurrentChannel(ChannelInfo channel, boolean store) {
     }
 
 }
