@@ -21,27 +21,28 @@ public interface TvControlCommand {
     int GET_FIRST_START_SWITCH_TYPE = 17;
     int SET_PREVIEW_WINDOW = 18;
     int GET_SOURCE_CONNECT_STATUS = 19;
+    int GET_SOURCE_INPUT_LIST = 20;
     // Tv function END
 
     // VGA
-    int RUN_VGA_AUTO_ADJUST = 20;
-    int GET_VGA_AUTO_ADJUST_STATUS = 21;
-    int IS_VGA_AUTO_ADJUST_DONE = 22;
-    int SET_VGA_HPOS = 23;
-    int GET_VGA_HPOS = 24;
-    int SET_VGA_VPOS = 25;
-    int GET_VGA_VPOS = 26;
-    int SET_VGA_CLOCK = 27;
-    int GET_VGA_CLOCK = 28;
-    int SET_VGA_PHASE = 29;
-    int GET_VGA_PHASE = 30;
-    int SET_VGA_AJUST_PARA = 31;
-    int GET_VGA_AJUST_PARA = 32;
-    int SET_VGAPARAM_DEFAULT = 33;
+    int RUN_VGA_AUTO_ADJUST = 30;
+    int GET_VGA_AUTO_ADJUST_STATUS = 31;
+    int IS_VGA_AUTO_ADJUST_DONE = 32;
+    int SET_VGA_HPOS = 33;
+    int GET_VGA_HPOS = 34;
+    int SET_VGA_VPOS = 35;
+    int GET_VGA_VPOS = 36;
+    int SET_VGA_CLOCK = 37;
+    int GET_VGA_CLOCK = 38;
+    int SET_VGA_PHASE = 39;
+    int GET_VGA_PHASE = 40;
+    int SET_VGA_AJUST_PARA = 41;
+    int GET_VGA_AJUST_PARA = 42;
+    int SET_VGAPARAM_DEFAULT = 43;
 
     // HDMI
-    int SET_HDMI_EDID_VER = 34;
-    int SET_HDCP_KEY_ENABLE = 35;
+    int SET_HDMI_EDID_VER = 44;
+    int SET_HDCP_KEY_ENABLE = 45;
 
     // 3D
     int GET_3D_STATUS = 60;

@@ -685,6 +685,15 @@ public class TvControlManager {
         int val[] = new int[]{srcInput.toInt()};
         return sendCmdIntArray(GET_SOURCE_CONNECT_STATUS, val);
     }
+
+    public String GetSourceInputList() {
+        Parcel cmd = Parcel.obtain();
+        Parcel r = Parcel.obtain();
+        cmd.writeInt(GET_SOURCE_INPUT_LIST);
+        sendCmdToTv(cmd, r);
+        return r.readString();
+    }
+
     // Tv function END
 
     // VGA
