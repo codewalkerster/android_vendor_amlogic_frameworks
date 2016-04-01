@@ -80,6 +80,10 @@ public class TvControlManager {
     public static final int SCENE_MODE_USER             = 3;
     public static final int SCENE_MODE_MAX              = 4;
 
+    //capture type
+    public static final int CAPTURE_VIDEO               = 0;
+    public static final int CAPTURE_GRAPHICS            = 1;
+
     static {
         System.loadLibrary("tv_jni");
     }
@@ -121,6 +125,7 @@ public class TvControlManager {
     private native int processCmd(Parcel p, Parcel r);
     private native final void native_create_video_frame_bitmap(Object bmp);
     private native final void native_create_subtitle_bitmap(Object bmp);
+    private static native Bitmap native_GetFrameBitmap(int left, int top, int width, int height, int type);
 
     private static void postEventFromNative(Object tv_ref, int what, Parcel ext) {
         ext.setDataPosition(0);
@@ -4513,6 +4518,15 @@ public class TvControlManager {
         Bitmap subtitleFrame = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888);
         native_create_subtitle_bitmap(subtitleFrame);
         return subtitleFrame;
+    }
+    /*
+      * Using this func, you can capture a sub-buffer on the paticular layer
+      * type : determine which layer you will capture
+      * left & top & width & height : determine the sub-buffer's location on the choosen layer
+      * If you want get full screen, set all as -1 ; If you want to get a part, set them.
+      */
+    public Bitmap captureFrame(int left, int top, int width, int height, int type){
+        return native_GetFrameBitmap(left, top, width, height, type);
     }
 
     public void setSubtitleUpdateListener(SubtitleUpdateListener l) {
