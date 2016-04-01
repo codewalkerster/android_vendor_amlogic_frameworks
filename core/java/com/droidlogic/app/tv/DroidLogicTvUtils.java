@@ -179,6 +179,7 @@ public class DroidLogicTvUtils
      * message for {@link TvInputBaseSession#handleMessage(android.os.Message)}
      */
     public static final int SESSION_DO_RELEASE          = 1;
+    public static final int SESSION_DO_SET_SURFACE      = 3;
     public static final int SESSION_DO_SURFACE_CHANGED  = 4;
     public static final int SESSION_DO_TUNE             = 6;
     public static final int SESSION_DO_APP_PRIVATE      = 9;

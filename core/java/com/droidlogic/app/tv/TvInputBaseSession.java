@@ -103,6 +103,9 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
             case DroidLogicTvUtils.SESSION_DO_RELEASE:
                 doRelease();
                 break;
+            case DroidLogicTvUtils.SESSION_DO_SET_SURFACE:
+                doSetSurface((Surface)msg.obj);
+                break;
             case DroidLogicTvUtils.SESSION_DO_SURFACE_CHANGED:
                 doSurfaceChanged((Uri)msg.obj);
                 break;
@@ -180,7 +183,21 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
 
     public void doUnblockContent(TvContentRating rating) {}
 
-    public void doSetSurface(Surface surface){}
+    public void doSetSurface(Surface surface) {
+        Log.d(TAG, "doSetSurface, surface = " + surface);
+        if (mSurface != null && surface == null) {//TvView destroyed, or session need release
+            isTuneNotReady = true;
+            stopTvPlay();
+        } else if (mSurface == null && surface == null) {
+            Log.d(TAG, "surface has been released.");
+        } else {
+            isTuneNotReady = false;
+            if (!surface.isValid()) {
+                Log.d(TAG, "onSetSurface get invalid surface");
+            }
+        }
+        mSurface = surface;
+    }
 
     public int stopTvPlay() {
         if (mHardware != null) {
@@ -195,29 +212,14 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
 
     @Override
     public void onRelease() {
-        if (mSessionHandler == null)
-            return;
-        mSessionHandler.obtainMessage(DroidLogicTvUtils.SESSION_DO_RELEASE).sendToTarget();
+        if (mSessionHandler != null)
+            mSessionHandler.obtainMessage(DroidLogicTvUtils.SESSION_DO_RELEASE).sendToTarget();
     }
 
     @Override
     public boolean onSetSurface(Surface surface) {
-        if (DEBUG)
-            Log.d(TAG, "onSetSurface "+ surface);
-        if (mSurface != null && surface == null) {//TvView destroyed, or session need release
-            isTuneNotReady = true;
-            stopTvPlay();
-        } else if (mSurface == null && surface == null) {
-            Log.d(TAG, "surface has been released.");
-        } else {
-            isTuneNotReady = false;
-            if (!surface.isValid()) {
-                Log.d(TAG, "onSetSurface get invalid surface");
-            }
-        }
-
-        mSurface = surface;
-        doSetSurface(surface);
+        if (mSessionHandler != null)
+            mSessionHandler.obtainMessage(DroidLogicTvUtils.SESSION_DO_SET_SURFACE, surface).sendToTarget();
         return false;
     }
 
@@ -255,11 +257,6 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     public boolean onTune(Uri channelUri) {
         if (DEBUG)
             Log.d(TAG, "onTune, channelUri=" + channelUri);
-
-        if (mChannelUri != null && channelUri.compareTo(mChannelUri) == 0) {
-            Log.d(TAG, "onTune, channelUri not changed, so return" + channelUri);
-            return false;
-        }
 
         mChannelUri = channelUri;
         if (mSurface != null && mSurface.isValid()) {//TvView is not ready
