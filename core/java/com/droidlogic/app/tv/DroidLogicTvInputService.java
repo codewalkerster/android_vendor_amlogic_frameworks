@@ -24,8 +24,9 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.media.tv.TvContract.Channels;
 
-public class DroidLogicTvInputService extends TvInputService implements TVInSignalInfo.SigInfoChangeListener, TvControlManager.StorDBEventListener, TvControlManager.ScanningFrameStableListener
-{
+public class DroidLogicTvInputService extends TvInputService implements
+        TVInSignalInfo.SigInfoChangeListener, TvControlManager.StorDBEventListener,
+        TvControlManager.ScanningFrameStableListener {
     private static final String TAG = DroidLogicTvInputService.class.getSimpleName();
     private static final boolean DEBUG = true;
 
@@ -41,8 +42,7 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
      * inputId should get from subclass which must invoke {@link super#onCreateSession(String)}
      */
     @Override
-    public Session onCreateSession(String inputId)
-    {
+    public Session onCreateSession(String inputId) {
         mCurrentInputId = inputId;
         return null;
     }
@@ -51,8 +51,7 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
      * get session has been created by {@code onCreateSession}, and input id of session.
      * @param session {@link HdmiInputSession} or {@link AVInputSession}
      */
-    protected void registerInputSession(TvInputBaseSession session)
-    {
+    protected void registerInputSession(TvInputBaseSession session) {
         Log.d(TAG, "registerInputSession");
         mSession = session;
         mTvControlManager = TvControlManager.getInstance();
@@ -68,15 +67,11 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
      * @param info {@link TvInputInfo} will be added or removed.
      * @param isRemoved {@code true} if you want to remove info. {@code false} otherwise.
      */
-    protected void updateInfoListIfNeededLocked(TvInputHardwareInfo hInfo,
-            TvInputInfo info, boolean isRemoved)
-    {
-        if (isRemoved)
-        {
+    protected void updateInfoListIfNeededLocked(TvInputHardwareInfo hInfo, TvInputInfo info,
+            boolean isRemoved) {
+        if (isRemoved) {
             mInfoList.remove(hInfo.getDeviceId());
-        }
-        else
-        {
+        } else {
             mInfoList.put(hInfo.getDeviceId(), info);
         }
 
@@ -88,18 +83,14 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         return mInfoList.get(hInfo.getDeviceId()) == null ? false : true;
     }
 
-    protected TvInputInfo getTvInputInfo(TvInputHardwareInfo hardwareInfo)
-    {
+    protected TvInputInfo getTvInputInfo(TvInputHardwareInfo hardwareInfo) {
         return mInfoList.get(hardwareInfo.getDeviceId());
     }
 
-    protected int getHardwareDeviceId(String input_id)
-    {
+    protected int getHardwareDeviceId(String input_id) {
         int id = 0;
-        for (int i = 0; i < mInfoList.size(); i++)
-        {
-            if (input_id.equals(mInfoList.valueAt(i).getId()))
-            {
+        for (int i = 0; i < mInfoList.size(); i++) {
+            if (input_id.equals(mInfoList.valueAt(i).getId())) {
                 id = mInfoList.keyAt(i);
                 break;
             }
@@ -110,11 +101,9 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         return id;
     }
 
-    protected String getTvInputInfoLabel(int device_id)
-    {
+    protected String getTvInputInfoLabel(int device_id) {
         String label = null;
-        switch (device_id)
-        {
+        switch (device_id) {
         case DroidLogicTvUtils.DEVICE_ID_ATV:
             label = ChannelInfo.LABEL_ATV;
             break;
@@ -142,8 +131,7 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         return label;
     }
 
-    protected ResolveInfo getResolveInfo(String cls_name)
-    {
+    protected ResolveInfo getResolveInfo(String cls_name) {
         if (TextUtils.isEmpty(cls_name))
             return null;
         ResolveInfo ret_ri = null;
@@ -151,22 +139,19 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
 
         PackageManager pm = context.getPackageManager();
         List<ResolveInfo> services = pm.queryIntentServices(
-                                         new Intent(TvInputService.SERVICE_INTERFACE),
-                                         PackageManager.GET_SERVICES | PackageManager.GET_META_DATA);
+                new Intent(TvInputService.SERVICE_INTERFACE),
+                PackageManager.GET_SERVICES | PackageManager.GET_META_DATA);
 
-        for (ResolveInfo ri : services)
-        {
+        for (ResolveInfo ri : services) {
             ServiceInfo si = ri.serviceInfo;
-            if (!android.Manifest.permission.BIND_TV_INPUT.equals(si.permission))
-            {
+            if (!android.Manifest.permission.BIND_TV_INPUT.equals(si.permission)) {
                 continue;
             }
 
             if (DEBUG)
                 Log.d(TAG, "cls_name = " + cls_name + ", si.name = " + si.name);
 
-            if (cls_name.equals(si.name))
-            {
+            if (cls_name.equals(si.name)) {
                 ret_ri = ri;
                 break;
             }
@@ -174,26 +159,22 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         return ret_ri;
     }
 
-    protected void stopTv()
-    {
+    protected void stopTv() {
         Log.d(TAG, "stop tv, mCurrentInputId =" + mCurrentInputId);
         mTvControlManager.StopTv();
     }
 
-    protected void releasePlayer()
-    {
+    protected void releasePlayer() {
         mTvControlManager.StopPlayProgram();
     }
 
-    private String getInfoLabel()
-    {
+    private String getInfoLabel() {
         TvInputManager tim = (TvInputManager) getSystemService(Context.TV_INPUT_SERVICE);
         return tim.getTvInputInfo(mCurrentInputId).loadLabel(this).toString();
     }
 
     @Override
-    public void onSigChange(TVInSignalInfo signal_info)
-    {
+    public void onSigChange(TVInSignalInfo signal_info) {
         TVInSignalInfo.SignalStatus status = signal_info.sigStatus;
 
         if (DEBUG)
@@ -201,18 +182,14 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
 
         if (status == TVInSignalInfo.SignalStatus.TVIN_SIG_STATUS_NOSIG
                 || status == TVInSignalInfo.SignalStatus.TVIN_SIG_STATUS_NULL
-                || status == TVInSignalInfo.SignalStatus.TVIN_SIG_STATUS_NOTSUP)
-        {
+                || status == TVInSignalInfo.SignalStatus.TVIN_SIG_STATUS_NOTSUP) {
             mSession.notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN);
-        }
-        else if (status == TVInSignalInfo.SignalStatus.TVIN_SIG_STATUS_STABLE)
-        {
+        } else if (status == TVInSignalInfo.SignalStatus.TVIN_SIG_STATUS_STABLE) {
             mSession.notifyVideoAvailable();
             int device_id = mSession.getDeviceId();
             String[] strings;
             Bundle bundle = new Bundle();
-            switch (device_id)
-            {
+            switch (device_id) {
             case DroidLogicTvUtils.DEVICE_ID_HDMI1:
             case DroidLogicTvUtils.DEVICE_ID_HDMI2:
             case DroidLogicTvUtils.DEVICE_ID_HDMI3:
@@ -225,14 +202,11 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
                         || fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_1440X480I_120HZ
                         || fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_1440X480I_240HZ
                         || fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_2880X480I_60HZ
-                        || fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_2880X480I_60HZ)
-                {
+                        || fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_2880X480I_60HZ) {
                     strings[4] = "480I";
-                }
-                else if (fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_1440X576I_50HZ
-                         || fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_1440X576I_100HZ
-                         || fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_1440X576I_200HZ)
-                {
+                } else if (fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_1440X576I_50HZ
+                        || fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_1440X576I_100HZ
+                        || fmt == TVInSignalInfo.SignalFmt.TVIN_SIG_FMT_HDMI_1440X576I_200HZ) {
                     strings[4] = "576I";
                 }
 
@@ -241,8 +215,8 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
                 if (strings != null && strings.length <= 4)
                     bundle.putString(DroidLogicTvUtils.SIG_INFO_ARGS, "0_0HZ");
                 else
-                    bundle.putString(DroidLogicTvUtils.SIG_INFO_ARGS, strings[4]
-                                     + "_" + signal_info.reserved + "HZ");
+                    bundle.putString(DroidLogicTvUtils.SIG_INFO_ARGS, strings[4] + "_"
+                            + signal_info.reserved + "HZ");
                 mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_EVENT, bundle);
                 break;
             case DroidLogicTvUtils.DEVICE_ID_AV1:
@@ -277,11 +251,9 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         }
     }
 
-    public static String mode2type(int mode)
-    {
+    public static String mode2type(int mode) {
         String type = "";
-        switch (mode)
-        {
+        switch (mode) {
         case TVChannelParams.MODE_DTMB:
             type = Channels.TYPE_DTMB;
             break;
@@ -308,23 +280,21 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         }
         return type;
     }
-    private int getidxByDefLan(String[] strArray)
-    {
+
+    private int getidxByDefLan(String[] strArray) {
         if (strArray == null)
             return 0;
-        String[] defLanArray = {"chi", "zho", "ita", "spa", "ara"};
-        for (int i = 0; i < strArray.length; i++)
-        {
-            for (String lan : defLanArray)
-            {
+        String[] defLanArray = { "chi", "zho", "ita", "spa", "ara" };
+        for (int i = 0; i < strArray.length; i++) {
+            for (String lan : defLanArray) {
                 if (strArray[i].equals(lan))
                     return i;
             }
         }
         return 0;
     }
-    private ChannelInfo createAtvChannelInfo (TvControlManager.ScannerEvent event)
-    {
+
+    private ChannelInfo createAtvChannelInfo(TvControlManager.ScannerEvent event) {
         String ATVName = "ATV program";
         return new ChannelInfo.Builder()
                .setInputId(mCurrentInputId == null ? "NULL" : mCurrentInputId)
@@ -360,31 +330,22 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
                .build();
     }
 
-    private ChannelInfo createDtvChannelInfo (TvControlManager.ScannerEvent event)
-    {
+    private ChannelInfo createDtvChannelInfo(TvControlManager.ScannerEvent event) {
         String name = null;
         String serviceType;
 
-        try
-        {
+        try {
             name = TVMultilingualText.getText(event.programName);
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             e.printStackTrace();
             name = "????";
         }
 
-        if (event.srvType == 1)
-        {
+        if (event.srvType == 1) {
             serviceType = Channels.SERVICE_TYPE_AUDIO_VIDEO;
-        }
-        else if (event.srvType == 2)
-        {
+        } else if (event.srvType == 2) {
             serviceType = Channels.SERVICE_TYPE_AUDIO;
-        }
-        else
-        {
+        } else {
             serviceType = Channels.SERVICE_TYPE_OTHER;
         }
 
@@ -432,58 +393,52 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
                .build();
     }
 
-    public static class ScanMode
-    {
+    public static class ScanMode {
         private int scanMode;
 
-        ScanMode(int ScanMode)
-        {
+        ScanMode(int ScanMode) {
             scanMode = ScanMode;
         }
-        public int getMode()
-        {
+
+        public int getMode() {
             return (scanMode >> 24) & 0xf;
         }
-        public int getATVMode()
-        {
+
+        public int getATVMode() {
             return (scanMode >> 16) & 0xf;
         }
-        public int getDTVMode()
-        {
+
+        public int getDTVMode() {
             return (scanMode & 0xFFFF);
         }
 
-        public boolean isDTVManulScan()
-        {
+        public boolean isDTVManulScan() {
             return (getATVMode() == 0x7) && (getDTVMode() == 0x2);
         }
-        public boolean isATVScan()
-        {
+
+        public boolean isATVScan() {
             return (getATVMode() != 0x7) && (getDTVMode() == 0x7);
         }
-        public boolean isATVManualScan()
-        {
+
+        public boolean isATVManualScan() {
             return (getATVMode() == 0x2) && (getDTVMode() == 0x7);
         }
     }
 
     private ScanMode mScanMode = null;
 
-
     @Override
-    public void StorDBonEvent(TvControlManager.ScannerEvent event)
-    {
+    public void StorDBonEvent(TvControlManager.ScannerEvent event) {
         ChannelInfo channel = null;
         String name = null;
         Log.e(TAG, "onEvent:" + event.type + " :" + c_displayNum);
         Bundle bundle = null;
-        switch (event.type)
-        {
+        switch (event.type) {
         case TvControlManager.EVENT_SCAN_BEGIN:
             Log.d(TAG, "Scan begin");
             mScanMode = new ScanMode(event.scan_mode);
             c_displayNum = 0;
-            onTVChannelStoreBegin();//for ATV
+            onTVChannelStoreBegin();// for ATV
             bundle = getBundleByScanEvent(event);
             mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_SCAN_BEGIN_EVENT, bundle);
             break;
@@ -500,8 +455,7 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         case TvControlManager.EVENT_SCAN_PROGRESS:
             Log.d(TAG, event.precent + "%\tfreq[" + event.freq + "] lock[" + event.lock + "] strength[" + event.strength + "] quality[" + event.quality + "]");
             bundle = getBundleByScanEvent(event);
-            if ((event.mode == TVChannelParams.MODE_ANALOG) && (event.lock == 0x11))
-            {
+            if ((event.mode == TVChannelParams.MODE_ANALOG) && (event.lock == 0x11)) {
                 bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_DISPLAYNUM, c_displayNum);
                 c_displayNum++;
             }
@@ -552,8 +506,7 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         }
     }
 
-    private Bundle getBundleByScanEvent(TvControlManager.ScannerEvent mEvent)
-    {
+    private Bundle getBundleByScanEvent(TvControlManager.ScannerEvent mEvent) {
         Bundle bundle = new Bundle();
         bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_TYPE, mEvent.type);
         bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_PRECENT, mEvent.precent);
@@ -566,12 +519,12 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         bundle.putString(DroidLogicTvUtils.SIG_INFO_C_MSG, mEvent.msg);
         bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_STRENGTH, mEvent.strength);
         bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_QUALITY, mEvent.quality);
-        //ATV
+        // ATV
         bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_VIDEOSTD, mEvent.videoStd);
         bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_AUDIOSTD, mEvent.audioStd);
         bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_ISAUTOSTD, mEvent.isAutoStd);
         bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_FINETUNE, mEvent.fineTune);
-        //DTV
+        // DTV
         bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_MODE, mEvent.mode);
         bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_SR, mEvent.sr);
         bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_MOD, mEvent.mod);
@@ -600,8 +553,7 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         return bundle;
     }
 
-    private Bundle GetDisplayNumBunlde(int displayNum)
-    {
+    private Bundle GetDisplayNumBunlde(int displayNum) {
         Bundle bundle = new Bundle();
 
         bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_DISPLAYNUM, displayNum);
@@ -609,17 +561,14 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         return bundle;
     }
 
-
     private boolean need_delete_channel = false;
     private ArrayList<ChannelInfo> mChannels = null;
 
     private boolean on_dtv_channel_store_firsttime = true;
 
-    private void onTVChannelStoreBegin()
-    {
-        if (mScanMode == null
-                || (!mScanMode.isDTVManulScan() && !mScanMode.isATVScan()))
-            return ;
+    private void onTVChannelStoreBegin() {
+        if (mScanMode == null || (!mScanMode.isDTVManulScan() && !mScanMode.isATVScan()))
+            return;
 
         String InputId = mSession.getInputId();
         mChannels = mTvDataBaseManager.getChannelList(InputId, Channels.SERVICE_TYPE_AUDIO_VIDEO);
@@ -631,19 +580,16 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         Log.d(TAG, "Store> channels exist:" + c_displayNum);
     }
 
-    private void onDTVChannelStore(TvControlManager.ScannerEvent event, ChannelInfo channel)
-    {
+    private void onDTVChannelStore(TvControlManager.ScannerEvent event, ChannelInfo channel) {
         if (mScanMode == null || !mScanMode.isDTVManulScan())
-            return ;
+            return;
 
-        if (on_dtv_channel_store_firsttime)
-        {
+        if (on_dtv_channel_store_firsttime) {
 
             on_dtv_channel_store_firsttime = false;
 
             Iterator<ChannelInfo> iter = mChannels.iterator();
-            while (iter.hasNext())
-            {
+            while (iter.hasNext()) {
                 ChannelInfo c = iter.next();
                 if (c.getFrequency() != channel.getFrequency())
                     iter.remove();
@@ -654,14 +600,11 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
         Log.d(TAG, "insert [" + channel.getNumber() + "][" + channel.getFrequency() + "][" + channel.getServiceType() + "][" + channel.getDisplayName() + "]");
     }
 
-    private void onTVChannelStoreEnd()
-    {
-        if (mScanMode == null
-                || (!mScanMode.isDTVManulScan() && !mScanMode.isATVScan()))
-            return ;
+    private void onTVChannelStoreEnd() {
+        if (mScanMode == null || (!mScanMode.isDTVManulScan() && !mScanMode.isATVScan()))
+            return;
 
-        if (need_delete_channel)
-        {
+        if (need_delete_channel) {
             mTvDataBaseManager.deleteChannelsContinuous(mChannels);
 
             for (ChannelInfo c : mChannels)
@@ -674,8 +617,7 @@ public class DroidLogicTvInputService extends TvInputService implements TVInSign
     }
 
     @Override
-    public void onFrameStable(TvControlManager.ScanningFrameStableEvent event)
-    {
+    public void onFrameStable(TvControlManager.ScanningFrameStableEvent event) {
         Log.d(TAG, "scanning frame stable!");
         Bundle bundle = new Bundle();
         bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_FREQ, event.CurScanningFrq);

@@ -78,6 +78,29 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         return mHardware;
     }
 
+    private int startTvPlay() {
+        if (mHardware != null) {
+            if (mSurface != null && mSurface.isValid()) {
+                mHardware.setSurface(mSurface, mConfigs[0]);
+                return ACTION_SUCCESS;
+            } else {
+                Log.d(TAG, "startTvPlay fail with invalid surface "+ mSurface);
+            }
+        }
+        return ACTION_FAILED;
+    }
+
+    public int stopTvPlay() {
+        if (mHardware != null) {
+            if (mSessionHandler != null) {
+                mSessionHandler.removeMessages(DroidLogicTvUtils.SESSION_DO_TUNE);
+            }
+            mHardware.setSurface(null, null);
+            return ACTION_SUCCESS;
+        }
+        return ACTION_FAILED;
+    }
+
     private void initThread(String inputId) {
         mHandlerThread = new HandlerThread(inputId);
         mHandlerThread.start();
@@ -91,6 +114,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
             mSessionHandler = null;
         }
     }
+
     public Surface getSurface() {
         return mSurface;
     }
@@ -135,15 +159,8 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     }
 
     public int doTune(Uri uri) {
-        if (mHardware != null) {
-            if (mSurface != null && mSurface.isValid()) {
-                mHardware.setSurface(mSurface, mConfigs[0]);
-                return ACTION_SUCCESS;
-            } else {
-                Log.d(TAG, "doTune fail for invalid surface "+ mSurface);
-            }
-        }
-        return ACTION_FAILED;
+        Log.d(TAG, "doTune, uri = " + uri);
+        return startTvPlay();
     }
 
     public void doAppPrivateCmd(String action, Bundle bundle) {
@@ -169,16 +186,8 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     }
 
     public int doSurfaceChanged(Uri uri) {
-        if (mHardware != null) {
-            if (mSurface != null && mSurface.isValid()) {
-                mHardware.setSurface(mSurface, mConfigs[0]);
-                mChannelUri = uri;
-                return ACTION_SUCCESS;
-            } else {
-                Log.d(TAG, "SurfaceChanged to invalid native obj! Should we need to stop tv?");
-            }
-        }
-        return ACTION_FAILED;
+        Log.d(TAG, "doSurfaceChanged, uri = " + uri);
+        return startTvPlay();
     }
 
     public void doUnblockContent(TvContentRating rating) {}
@@ -197,17 +206,6 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
             }
         }
         mSurface = surface;
-    }
-
-    public int stopTvPlay() {
-        if (mHardware != null) {
-            if (mSessionHandler != null) {
-                mSessionHandler.removeMessages(DroidLogicTvUtils.SESSION_DO_TUNE);
-            }
-            mHardware.setSurface(null, null);
-            return ACTION_SUCCESS;
-        }
-        return ACTION_FAILED;
     }
 
     @Override
@@ -259,16 +257,10 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
             Log.d(TAG, "onTune, channelUri=" + channelUri);
 
         mChannelUri = channelUri;
-        if (mSurface != null && mSurface.isValid()) {//TvView is not ready
-            if (mSessionHandler != null) {
-                mSessionHandler.obtainMessage(
-                        DroidLogicTvUtils.SESSION_DO_TUNE, mChannelUri).sendToTarget();
-            }
-        } else {
-            if (DEBUG)
-                Log.d(TAG, "onTune  with invalid surface "+ mSurface);
+        if (mSessionHandler != null) {
+            mSessionHandler.obtainMessage(
+                    DroidLogicTvUtils.SESSION_DO_TUNE, channelUri).sendToTarget();
         }
-
         return false;
     }
 
