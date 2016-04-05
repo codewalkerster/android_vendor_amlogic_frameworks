@@ -14,7 +14,7 @@
  *  @note If you inherit anything from this class, you're doomed.
  */
 
-//#define LOG_NDEBUG 0
+#define LOG_NDEBUG 0
 #define LOG_TAG "ImagePlayerService"
 
 #include "utils/Log.h"
@@ -74,9 +74,10 @@ namespace android {
 class SkHttpStream : public SkStreamRewindable {
 public:
     SkHttpStream(const char url[] = NULL, const sp<IMediaHTTPService> &httpservice = NULL)
-        : fURL(strdup(url)), dataSource(NULL),
+        : fURL(strdup(url)), dataSource(NULL),totalSize(0),
         isConnect(false), haveRead(0), httpsService(httpservice) {
         connect();
+        getLength();
     }
 
     virtual ~SkHttpStream() {
@@ -129,6 +130,10 @@ public:
             return size;
         }
 
+        if ( totalSize <= 0 ) {
+            getLength();
+        }
+
         if (isConnect && (dataSource != NULL) && (buffer != NULL)) {
             ret = dataSource->readAt(haveRead, buffer, size);
             if ((ret <= 0) || (ret > (int)size)) {
@@ -145,19 +150,20 @@ public:
         off64_t size;
         if (isConnect && (dataSource != NULL)) {
             int ret = dataSource->getSize(&size);
+
             if (ERROR_UNSUPPORTED == ret) {
                 return 8192;
-            } else {
+            } else if ( size > 0 ) {
+                totalSize = size;
                 return (size_t)size;
             }
-        } else {
-            return 0;
         }
+        return 0;
     }
 
     //if read return 0, mean the stream is end
     virtual bool isAtEnd() const {
-        return false;
+        return ( haveRead > 0 ) && ( haveRead == totalSize );
     }
 
 private:
