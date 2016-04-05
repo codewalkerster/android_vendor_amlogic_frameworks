@@ -469,6 +469,12 @@ int TIFF2RGBA::tiffDecoder(const char *filePath, SkBitmap *pBitmap) {
 
     TIFFGetField(in, TIFFTAG_IMAGEWIDTH, &width);
     TIFFGetField(in, TIFFTAG_IMAGELENGTH, &height);
+
+    if (width > MAX_PIC_SIZE || height > MAX_PIC_SIZE) {
+        ALOGE("tiff decoder size too large, not support");
+        ret = -1;
+        goto exit;
+    }
     pixel_count = width * height;
 
     /* XXX: Check the integer overflow. */
