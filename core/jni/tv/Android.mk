@@ -13,7 +13,8 @@ LOCAL_SHARED_LIBRARIES := \
 	libnativehelper \
 	libandroid_runtime \
 	liblog \
-	libskia
+	libskia \
+	libhardware
 
 LOCAL_C_INCLUDES += \
     frameworks/base/core/jni \

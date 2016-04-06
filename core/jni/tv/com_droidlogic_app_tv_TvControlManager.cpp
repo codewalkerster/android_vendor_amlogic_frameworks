@@ -15,6 +15,17 @@
 #include <core/SkBitmap.h>
 #include "android_util_Binder.h"
 #include "android_os_Parcel.h"
+
+#include <linux/videodev2.h>
+#include <hardware/hardware.h>
+#include <hardware/aml_screen.h>
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <sched.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 using namespace android;
 
 struct fields_t {
@@ -52,6 +63,11 @@ private:
     bool mManualBufferMode;                 // Whether to use application managed buffers.
     bool mManualTvCallbackSet;              // Whether the callback has been set, used to reduce unnecessary calls to set the callback.
 };
+
+#define CAPTURE_VIDEO 0
+#define CAPTURE_GRAPHICS 1
+#define CAPTURE_BITMAP_W 640
+#define CAPTURE_BITMAP_H 480
 
 sp<TvClient> get_native_tv(JNIEnv *env, jobject thiz, JNITvContext **pContext)
 {
@@ -289,10 +305,11 @@ static void com_droidlogic_app_tv_TvControlManager_create_subtitle_bitmap(JNIEnv
     //get skbitmap
     jclass bmp_clazz;
     jfieldID skbmp_fid;
-    jint hbmp;
+    jlong hbmp;
     bmp_clazz = env->FindClass("android/graphics/Bitmap");
-    skbmp_fid  = env->GetFieldID(bmp_clazz, "mNativeBitmap", "I");
-    hbmp = env->GetIntField(bmpobj, skbmp_fid);
+    skbmp_fid  = env->GetFieldID(bmp_clazz, "mNativePtr", "J");
+    hbmp = env->GetLongField(bmpobj, skbmp_fid);
+
     context->pSubBmp = reinterpret_cast<SkBitmap *>(hbmp);
     env->DeleteLocalRef(bmp_clazz);
 
@@ -311,6 +328,87 @@ static void com_droidlogic_app_tv_TvControlManager_create_subtitle_bitmap(JNIEnv
     return;
 }
 
+
+static jobject com_droidlogic_app_tv_TvControlManager_nativeGetFrameBitmap(JNIEnv *env, jobject thiz, jint left, jint top, jint width, jint height, jint type) {
+    ALOGE("[%s %d]", __FUNCTION__, __LINE__);
+    if (type == CAPTURE_GRAPHICS) {
+        ALOGE("CAPTURE_GRAPHICS is not support now");
+        return NULL;
+    }
+
+    jobject ret1 = NULL;
+
+    //-----------------getVideoBuffer--------------//
+    aml_screen_module_t* screenModule = NULL;
+    aml_screen_device_t* screenDev = NULL;
+    if (!screenModule)
+        hw_get_module(AML_SCREEN_HARDWARE_MODULE_ID, (const hw_module_t **)&screenModule);
+
+    if (screenModule)
+        screenModule->common.methods->open((const hw_module_t *)screenModule, AML_SCREEN_SOURCE,
+                (struct hw_device_t **)&screenDev);
+
+    if (screenDev) {
+        /*int mCustomW = CAPTURE_BITMAP_W;
+                int mCustomH = CAPTURE_BITMAP_H;
+                int mBufferSize = width * height * 2; // V4L2_PIX_FMT_NV21:*3/2  ; V4L2_PIX_FMT_RGB24: *3
+            */
+        screenDev->ops.set_format(screenDev, CAPTURE_BITMAP_W, CAPTURE_BITMAP_H, V4L2_PIX_FMT_RGB565X); // V4L2_PIX_FMT_NV21 ,V4L2_PIX_FMT_RGB24
+        screenDev->ops.set_port_type(screenDev, (int)0x4000); //TVIN_PORT_HDMI0 = 0x4000
+        screenDev->ops.set_amlvideo2_crop(screenDev, left, top, width, height); //TVIN_PORT_HDMI0 = 0x4000
+        screenDev->ops.start_v4l2_device(screenDev);
+
+        aml_screen_buffer_info_t buff_info;
+        int ret = 0;
+        int dumpfd;
+        int framecount = 0;
+        long *src = NULL;
+        ALOGD("sleep 100ms");
+        usleep(100000);
+
+        while (framecount < 10) {
+            ret = screenDev->ops.aquire_buffer(screenDev, &buff_info);
+            ALOGD("ret = %d",ret);
+            if (ret != 0 || (buff_info.buffer_mem == 0)) {
+                ALOGD("Get V4l2 buffer failed");
+                framecount++;
+                ALOGD("retry,sleep 10ms");
+                usleep(10000);
+                continue;
+            } else {
+                ALOGE("get buffer finish!");
+                src = (long *)buff_info.buffer_mem;
+                break;
+            }
+        }
+
+        //------------------create bitmap-------------------//
+        SkBitmap result;
+        SkBitmap *createdBitmap = new SkBitmap();//createFrameBitmap();
+
+        if (createdBitmap != NULL) {
+            //-----------------setPinxels for bitmap--------------//
+            SkImageInfo info = SkImageInfo::Make(CAPTURE_BITMAP_W, CAPTURE_BITMAP_H,kRGB_565_SkColorType,kPremul_SkAlphaType); //  kRGBA_8888_SkColorType
+            createdBitmap->setInfo(info);
+            createdBitmap->setPixels(src);
+
+            JavaPixelAllocator  allocator(env);
+            if (createdBitmap->copyTo(&result, &allocator)) {
+                Bitmap* bitmap = allocator.getStorageObjAndReset();
+                if (bitmap != NULL)
+                    ret1 = GraphicsJNI::createBitmap(env, bitmap, false);
+            }
+        }
+
+        if (framecount < 10 && src != NULL )
+            screenDev->ops.release_buffer(screenDev,src);
+        screenDev->ops.stop_v4l2_device(screenDev);
+        delete screenDev;
+        screenDev->common.close((hw_device_t*)screenDev);
+    }
+    return ret1;
+}
+
 static void com_droidlogic_app_tv_TvControlManager_create_video_frame_bitmap(JNIEnv *env, jobject thiz, jobject bmpobj,  jint inputSourceMode, jint iCapVideoLayer )
 {
     ALOGD("create video frame bmp");
@@ -320,10 +418,10 @@ static void com_droidlogic_app_tv_TvControlManager_create_video_frame_bitmap(JNI
     //get skbitmap
     jclass bmp_clazz;
     jfieldID skbmp_fid;
-    jint hbmp;
+    jlong hbmp;
     bmp_clazz = env->FindClass("android/graphics/Bitmap");
-    skbmp_fid  = env->GetFieldID(bmp_clazz, "mNativeBitmap", "I");
-    hbmp = env->GetIntField(bmpobj, skbmp_fid);
+    skbmp_fid  = env->GetFieldID(bmp_clazz, "mNativePtr", "J");
+    hbmp = env->GetLongField(bmpobj, skbmp_fid);
     SkBitmap *pSkBmp = reinterpret_cast<SkBitmap *>(hbmp);
     ALOGD("pSkBmp = %d", hbmp);
     ALOGD("bmp width = %d height = %d", pSkBmp->width(), pSkBmp->height());
@@ -387,6 +485,10 @@ static JNINativeMethod camMethods[] = {
         "(Ljava/lang/Object;)V",
         (void *)com_droidlogic_app_tv_TvControlManager_create_subtitle_bitmap
     },
+    {
+        "native_GetFrameBitmap",
+        "(IIIII)Landroid/graphics/Bitmap;",
+        (void*)com_droidlogic_app_tv_TvControlManager_nativeGetFrameBitmap},
     {
         "native_create_video_frame_bitmap",
         "(Ljava/lang/Object;)V",
@@ -457,8 +559,8 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved __unused)
         ALOGE("ERROR: GetEnv failed\n");
         goto bail;
     }
-    assert(env != NULL);
 
+    assert(env != NULL);
     register_com_droidlogic_app_tv_TvControlManager(env);
 
     /* success -- return valid version number */
