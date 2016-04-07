@@ -363,8 +363,6 @@ static jobject com_droidlogic_app_tv_TvControlManager_nativeGetFrameBitmap(JNIEn
         int dumpfd;
         int framecount = 0;
         long *src = NULL;
-        ALOGD("sleep 100ms");
-        usleep(100000);
 
         while (framecount < 10) {
             ret = screenDev->ops.aquire_buffer(screenDev, &buff_info);
