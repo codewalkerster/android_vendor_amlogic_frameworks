@@ -85,6 +85,7 @@ using namespace android;
 #define DISPLAY_HDMI_HDCP_AUTH          "/sys/module/hdmitx20/parameters/hdmi_authenticated"//HDCP Authentication
 #define DISPLAY_HDMI_HDCP_CONF          "/sys/class/amhdmitx/amhdmitx0/hdcp_ctrl" //HDCP config
 #define DISPLAY_HDMI_HDCP_KEY           "/sys/class/amhdmitx/amhdmitx0/hdcp_lstore"//TX have 22 or 14 or none key
+#define DISPLAY_HDMI_HDCP_TEST           "/sys/class/amhdmitx/amhdmitx0/hdcp_test"//write to 1, force hdcp_tx22 quit safely
 
 #define DISPLAY_HPD_STATE               "/sys/class/amhdmitx/amhdmitx0/hpd_state"
 #define DISPLAY_HDMI_EDID               "/sys/class/amhdmitx/amhdmitx0/disp_cap"//RX support display mode
@@ -328,6 +329,7 @@ public:
     void setNativeWindowRect(int x, int y, int w, int h);
     void setVideoPlayingAxis();
 
+    void stopTXHdcp();
     void hdcpSwitch();
 
 #ifndef RECOVERY_MODE

@@ -273,6 +273,10 @@ static void* HdmiPlugDetectThread(void* data) {
                 (!strcmp(u_data.name, "hdmi_power") && !strcmp(u_data.state, "1"))) {
                 pThiz->setMboxDisplay(u_data.state, OUPUT_MODE_STATE_POWER);
             }
+            if (//0: hdmi suspend 1:hdmi resume
+                (!strcmp(u_data.name, "hdmi_power") && !strcmp(u_data.state, "0"))) {
+                pThiz->stopTXHdcp();
+            }
         }
 
 
@@ -1532,6 +1536,18 @@ void DisplayMode::hdcpRxAuthenticate(bool plugIn) {
     }
 }
 
+void DisplayMode::stopTXHdcp() {
+    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_TEST, "1");
+    usleep(10000);
+    //stop HDCP 2.2
+    SYS_LOGI("suspend, stop hdcp_tx22 and hdcp 1.4\n");
+    pSysWrite->setProperty("ctl.stop", "hdcp_tx22");
+    //stop HDCP 1.4
+    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_CONF, DISPLAY_HDMI_HDCP_STOP);
+    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_CONF, "stop22");
+    usleep(2000);
+}
+
 bool DisplayMode::hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
     bool useHdcp22 = false;
     bool useHdcp14 = false;
@@ -1556,7 +1572,8 @@ bool DisplayMode::hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
     pSysWrite->setProperty("ctl.stop", "hdcp_tx22");
     //stop HDCP 1.4
     pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_CONF, DISPLAY_HDMI_HDCP_STOP);
-
+    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_CONF, "stop22");
+    usleep(2000);
     //char cap[MAX_STR_LEN] = {0};
     //pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, cap);
     if (/*(_strstr(cap, (char *)"2160p") != NULL) && */(_strstr(hdcpRxVer, (char *)"22") != NULL) &&
