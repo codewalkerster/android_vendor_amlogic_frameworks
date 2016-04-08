@@ -189,4 +189,12 @@ public class DisplayPositionManager {
         else
             return true;
     }
+
+    public void zoomByPosition(int x, int y, int w, int h){
+        int right = x+w-1;
+        int bottom = y+h-1;
+        writeFile(OutputModeManager.FB0_WINDOW_AXIS, x + " " + y + " " + right + " " + bottom);
+        mOutputModeManager.savePosition(x, y, w, h);
+        mOutputModeManager.setOsdMouse(x, y, w, h);
+    }
 }
