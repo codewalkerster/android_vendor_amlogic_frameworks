@@ -246,7 +246,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     @Override
     public void onAppPrivateCommand(String action, Bundle data) {
         if (DEBUG)
-            Log.d(TAG, "onAppPrivateCommand");
+            Log.d(TAG, "onAppPrivateCommand, action = " + action);
         if (mSessionHandler == null)
             return;
         Message msg = mSessionHandler.obtainMessage(
