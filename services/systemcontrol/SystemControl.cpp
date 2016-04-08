@@ -29,8 +29,10 @@
 #include <binder/IServiceManager.h>
 #include <binder/PermissionCache.h>
 #include <stdint.h>
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <private/android_filesystem_config.h>
+#include <pthread.h>
 
 #include "SystemControl.h"
 #include "ubootenv.h"
@@ -204,6 +206,331 @@ int32_t SystemControl::set3DMode(const String16& mode3d) {
     }
 
     return pDisplayMode->set3DMode(String8(mode3d).string());
+}
+
+void SystemControl::init3DSetting(void) {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("init3DSetting\n");
+    }
+
+    setDisplay3DFormat(FORMAT_3D_OFF);//for osd
+    setDisplay3DTo2DFormat(FORMAT_3D_OFF);//for video
+}
+
+int32_t SystemControl::getVideo3DFormat(void) {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("getVideo3DFormat\n");
+    }
+
+    int32_t format = -1;
+    int32_t vpp3Dformat = -1;
+    int video_fd = open(VIDEO_PATH, O_RDWR);
+    if (video_fd < 0) {
+        return -1;
+    }
+    ioctl(video_fd, AMSTREAM_IOC_GET_SOURCE_VIDEO_3D_TYPE, &vpp3Dformat);
+    format = get3DFormatByVpp(vpp3Dformat);
+    close(video_fd);
+
+    return format;
+}
+
+int32_t SystemControl::getDisplay3DTo2DFormat(void) {
+    int32_t format = -1;
+    unsigned int operation = 0;
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("getDisplay3DTo2DFormat\n");
+    }
+
+    int video_fd = open(VIDEO_PATH, O_RDWR);
+    if (video_fd < 0) {
+        return -1;
+    }
+    ioctl(video_fd, AMSTREAM_IOC_GET_3D_TYPE, &operation);
+    close(video_fd);
+    format = get3DFormatByOperation(operation);
+
+    return format;
+}
+
+bool SystemControl::setDisplay3DTo2DFormat(int format) {
+    bool ret = false;
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("setDisplay3DTo2DFormat format:%d\n", format);
+    }
+
+    setDiBypassAll(format);
+    int video_fd = open(VIDEO_PATH, O_RDWR);
+    if (video_fd < 0) {
+        ALOGE("setDisplay3DTo2DFormat video_fd:%d\n", video_fd);
+        return false;
+    }
+    unsigned int operation = get3DOperationByFormat(format);
+    ALOGI("setDisplay3DTo2DFormat operation:%d\n", operation);
+    if (ioctl(video_fd, AMSTREAM_IOC_SET_3D_TYPE, operation) == 0) {
+        ret = true;
+    }
+    close(video_fd);
+
+    return ret;
+}
+
+bool SystemControl::setDisplay3DFormat(int format) {
+    bool ret = false;
+    String16 di3DformatStr;
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("setDisplay3DFormat format:%d\n", format);
+    }
+
+    if (format == FORMAT_3D_AUTO) {
+        format = getVideo3DFormat();
+    }
+
+    mDisplay3DFormat = format;
+    char format3DStr[64] = {0};
+    get3DFormatStr(format, format3DStr);
+    if (pDisplayMode->set3DMode(format3DStr) == 0) {
+        ret = true;
+    }
+
+    return ret;
+}
+
+int32_t SystemControl::getDisplay3DFormat(void) {
+    return mDisplay3DFormat;
+}
+
+bool SystemControl::setOsd3DFormat(int format) {
+    bool ret = false;
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("setOsd3DFormat format:%d\n", format);
+    }
+
+    // TODO: needn't implement right now
+
+    return ret;
+}
+
+bool SystemControl::switch3DTo2D(int format) {
+    bool ret = false;
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("switch3DTo2D format:%d\n", format);
+    }
+
+    setDiBypassAll(format);
+    int video_fd = open(VIDEO_PATH, O_RDWR);
+    if (video_fd < 0) {
+        return false;
+    }
+    unsigned int operation = get3DOperationByFormat(format);
+    if (ioctl(video_fd, AMSTREAM_IOC_SET_3D_TYPE, operation) == 0) {
+        ret = true;
+    }
+    close(video_fd);
+
+    return ret;
+}
+
+bool SystemControl::switch2DTo3D(int format) {
+    bool ret = false;
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("switch2DTo3D format:%d\n", format);
+    }
+
+    // TODO: implement later
+
+    return ret;
+}
+
+void* SystemControl::detect3DThread(void* data) {
+    SystemControl *pThiz = (SystemControl*)data;
+    int retry = RETRY_MAX;
+    int di3Dformat[5] = {0};
+    int times[5] = {0};
+    String16 di3DformatStr;
+    char format3DStr[64] = {0};
+
+    while (retry > 0) {
+        retry--;
+        di3Dformat[retry] = pThiz->getVideo3DFormat();
+        //ALOGI("[detect3DThread]di3Dformat[%d]:%d\n", retry, di3Dformat[retry]);
+        usleep(200000);//200ms
+    }
+
+    //get the 3d format which was detected most times
+    for (int i = 0; i < RETRY_MAX - 1; i++) {
+        for (int j = i + 1; j < RETRY_MAX; j++) {
+            if (di3Dformat[i] == di3Dformat[j]) {
+                times[i]++;
+            }
+        }
+    }
+    int max = times[0];
+    int idx = 0;
+    for (int i = 0; i < RETRY_MAX - 1; i++) {
+        if (times[i] > max) {
+            max = times[i];
+            idx = i;
+        }
+    }
+    //can't detect 3d format correctly, 3d off
+    if (max == 1) {
+        idx = 0;
+        di3Dformat[0] = 0;
+    }
+
+    if (pThiz->mLogLevel > LOG_LEVEL_1) {
+        ALOGI("[detect3DThread]after queue di3Dformat[%d]:%d\n", idx, di3Dformat[idx]);
+    }
+
+    pThiz->mDisplay3DFormat = di3Dformat[idx];
+    pThiz->get3DFormatStr(di3Dformat[idx], format3DStr);
+    pThiz->pDisplayMode->set3DMode(format3DStr);
+    return NULL;
+}
+
+void SystemControl::autoDetect3DForMbox() {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("autoDetect3DForMbox\n");
+    }
+
+    pthread_t id;
+    int ret = pthread_create(&id, NULL, detect3DThread, this);
+    if (ret != 0) {
+        ALOGE("[autoDetect3DForMbox:%d]ERROR; pthread_create failed rc=%d\n",__LINE__, ret);
+    }
+}
+
+void SystemControl::setDiBypassAll(int format) {
+    if (FORMAT_3D_OFF == format) {
+        writeSysfs(String16(DI_BYPASS_ALL), String16("0"));
+    }
+    else {
+        writeSysfs(String16(DI_BYPASS_ALL), String16("1"));
+    }
+}
+
+unsigned int SystemControl::get3DOperationByFormat(int format) {
+    unsigned int operation = MODE_3D_DISABLE;
+
+    switch (format) {
+        case FORMAT_3D_OFF:
+            operation = MODE_3D_DISABLE;
+            break;
+        case FORMAT_3D_AUTO:
+            operation = MODE_3D_AUTO;
+            break;
+        case FORMAT_3D_SIDE_BY_SIDE:
+            operation = MODE_3D_LR;
+            break;
+        case FORMAT_3D_TOP_AND_BOTTOM:
+            operation = MODE_3D_TB;
+            break;
+        case FORMAT_3D_LINE_ALTERNATIVE:
+            operation = MODE_3D_LA;
+            break;
+        case FORMAT_3D_FRAME_ALTERNATIVE:
+            operation = MODE_3D_FA;
+            break;
+        case FORMAT_3D_TO_2D_LEFT_EYE:
+            operation = MODE_3D_TO_2D_L;
+            break;
+        case FORMAT_3D_TO_2D_RIGHT_EYE:
+            operation = MODE_3D_TO_2D_R;
+            break;
+        default:
+            operation = MODE_3D_DISABLE;
+            break;
+    }
+
+    return operation;
+}
+
+int SystemControl::get3DFormatByOperation(unsigned int operation) {
+    int format = -1;
+
+    switch (operation) {
+        case MODE_3D_DISABLE:
+            format = FORMAT_3D_OFF;
+            break;
+        case MODE_3D_AUTO:
+            format = FORMAT_3D_AUTO;
+            break;
+        case MODE_3D_LR:
+            format = FORMAT_3D_SIDE_BY_SIDE;
+            break;
+        case MODE_3D_TB:
+            format = FORMAT_3D_TOP_AND_BOTTOM;
+            break;
+        case MODE_3D_LA:
+            format = FORMAT_3D_LINE_ALTERNATIVE;
+            break;
+        case MODE_3D_FA:
+            format = FORMAT_3D_FRAME_ALTERNATIVE;
+            break;
+        case MODE_3D_TO_2D_L:
+            format = FORMAT_3D_TO_2D_LEFT_EYE;
+            break;
+        case MODE_3D_TO_2D_R:
+            format = FORMAT_3D_TO_2D_RIGHT_EYE;
+            break;
+        default:
+            format = FORMAT_3D_OFF;
+            break;
+    }
+
+    return format;
+}
+
+int SystemControl::get3DFormatByVpp(int vpp3Dformat) {
+    int format = -1;
+
+    switch (vpp3Dformat) {
+        case VPP_3D_MODE_NULL:
+            format = FORMAT_3D_OFF;
+            break;
+        case VPP_3D_MODE_LR:
+            format = FORMAT_3D_SIDE_BY_SIDE;
+            break;
+        case VPP_3D_MODE_TB:
+            format = FORMAT_3D_TOP_AND_BOTTOM;
+            break;
+        case VPP_3D_MODE_LA:
+            format = FORMAT_3D_LINE_ALTERNATIVE;
+            break;
+        case VPP_3D_MODE_FA:
+            format = FORMAT_3D_FRAME_ALTERNATIVE;
+            break;
+        default:
+            format = FORMAT_3D_OFF;
+            break;
+    }
+
+    return format;
+}
+
+void SystemControl::get3DFormatStr(int format, char *str) {
+    switch (format) {
+        case FORMAT_3D_OFF:
+            strcpy(str, "3doff");
+            break;
+        case FORMAT_3D_AUTO:
+            strcpy(str, "3dauto");
+            break;
+        case FORMAT_3D_SIDE_BY_SIDE:
+            strcpy(str, "3dlr");
+            break;
+        case FORMAT_3D_TOP_AND_BOTTOM:
+            strcpy(str, "3dtb");
+            break;
+        case FORMAT_3D_LINE_ALTERNATIVE:
+            break;
+        case FORMAT_3D_FRAME_ALTERNATIVE:
+            break;
+        default:
+            strcpy(str, "3doff");
+            break;
+    }
 }
 
 void SystemControl::setDigitalMode(const String16& mode) {

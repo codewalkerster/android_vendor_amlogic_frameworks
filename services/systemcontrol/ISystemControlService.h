@@ -64,6 +64,19 @@ enum {
     SET_DIGITAL_MODE        = IBinder::FIRST_CALL_TRANSACTION + 22,
     SET_3D_MODE             = IBinder::FIRST_CALL_TRANSACTION + 23,
     SET_LISTENER            = IBinder::FIRST_CALL_TRANSACTION + 24,
+
+    //add 3D set api for XiaoMi by wxl 20160406
+    INIT_3D_SETTING                = IBinder::FIRST_CALL_TRANSACTION + 25,
+    GET_VIDEO_3D_FORMAT            = IBinder::FIRST_CALL_TRANSACTION + 26,
+    GET_VIDEO_3DTO2D_FORMAT        = IBinder::FIRST_CALL_TRANSACTION + 27,
+    SET_VIDEO_3DTO2D_FORMAT        = IBinder::FIRST_CALL_TRANSACTION + 28,
+    SET_DISPLAY_3D_FORMAT          = IBinder::FIRST_CALL_TRANSACTION + 29,
+    GET_DISPLAY_3D_FORMAT          = IBinder::FIRST_CALL_TRANSACTION + 30,
+    SET_OSD_3D_FORMAT_HOLDER       = IBinder::FIRST_CALL_TRANSACTION + 31,
+    SET_OSD_3D_FORMAT              = IBinder::FIRST_CALL_TRANSACTION + 32,
+    SWITCH_3DTO2D                  = IBinder::FIRST_CALL_TRANSACTION + 33,
+    SWITCH_2DTO3D                  = IBinder::FIRST_CALL_TRANSACTION + 34,
+    AUTO_DETECT_3D                 = IBinder::FIRST_CALL_TRANSACTION + 35,
 };
 
 // ----------------------------------------------------------------------------
@@ -107,6 +120,18 @@ public:
     virtual void setNativeWindowRect(int x, int y, int w, int h) = 0;
     virtual void setVideoPlayingAxis(void) = 0;
     //virtual void setPowerMode(int mode) = 0;
+
+    //add 3D set api for XiaoMi by wxl 20160406
+    virtual void init3DSetting(void) = 0;
+    virtual int getVideo3DFormat(void) = 0;
+    virtual int getDisplay3DTo2DFormat(void) = 0;
+    virtual bool setDisplay3DTo2DFormat(int format) = 0;
+    virtual bool setDisplay3DFormat(int format) = 0;
+    virtual int getDisplay3DFormat(void) = 0;
+    virtual bool setOsd3DFormat(int format) = 0;
+    virtual bool switch3DTo2D(int format) = 0;
+    virtual bool switch2DTo3D(int format) = 0;
+    virtual void autoDetect3DForMbox(void) = 0;
 };
 
 // ----------------------------------------------------------------------------
