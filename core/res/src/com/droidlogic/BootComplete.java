@@ -37,6 +37,8 @@ public class BootComplete extends BroadcastReceiver {
                 try {
                     Settings.Secure.putInt(context.getContentResolver(),
                             Settings.Secure.SHOW_IME_WITH_HARD_KEYBOARD, 1);
+                    Settings.Global.putInt(context.getContentResolver(),
+                            Settings.Global.CAPTIVE_PORTAL_DETECTION_ENABLED, 0);
                 } catch (NumberFormatException e) {
                     Log.e(TAG, "could not find hard keyboard ", e);
                 }
