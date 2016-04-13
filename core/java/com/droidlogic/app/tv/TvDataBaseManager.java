@@ -360,7 +360,7 @@ public class TvDataBaseManager {
 
     public void setChannelName (ChannelInfo channel, String targetName) {
         if (channel != null) {
-            channel.setDisplayName(targetName);
+            channel.setDisplayNameLocal(targetName);
             updateChannelInfo(channel);
         }
     }
