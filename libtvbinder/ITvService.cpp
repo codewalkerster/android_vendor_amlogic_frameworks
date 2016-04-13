@@ -38,7 +38,6 @@ status_t BnTvService::onTransact(
         CHECK_INTERFACE(ITvService, data, reply);
         sp<ITvClient> tvClient = interface_cast<ITvClient>(data.readStrongBinder());
         sp<ITv> tv = connect(tvClient);
-        ALOGD("BnTvService::onTransact(　sp<ITv> tv = connect(tvClient);");
         reply->writeStrongBinder(IInterface::asBinder(tv));
         return NO_ERROR;
     }

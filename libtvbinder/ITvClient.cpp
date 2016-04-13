@@ -39,15 +39,9 @@ status_t BnTvClient::onTransact(uint32_t code, const Parcel &data, Parcel *reply
         CHECK_INTERFACE(ITvClient, data, reply);
         Parcel ext;
         int32_t msgType = data.readInt32();
+        ALOGV("BnTvClient::onTransact NOTIFY_CALLBACK msg type :%d", msgType);
 
         ext.appendFrom(const_cast<Parcel *>(&data), data.dataPosition(), data.dataAvail());
-
-
-        switch (msgType) {
-        default:
-            ALOGE("BnTvClient::onTransact NOTIFY_CALLBACK msg type ----= %d", msgType);
-            break;
-        }
         notifyCallback(msgType, ext);
         return NO_ERROR;
     }

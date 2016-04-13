@@ -90,13 +90,9 @@ public class TvControlManager {
 
     private int mNativeContext; // accessed by native methods
     private EventHandler mEventHandler;
-    private ErrorCallback mErrorCallback;
     private TVInSignalInfo.SigInfoChangeListener mSigInfoChangeLister = null;
     private TVInSignalInfo.SigChannelSearchListener mSigChanSearchListener = null;
-    private VGAAdjustChangeListener mVGAChangeListener = null;
     private Status3DChangeListener mStatus3DChangeListener = null;
-    private StatusTVChangeListener mStatusTVChangeListener = null;
-    private DreamPanelChangeListener mDreamPanelChangeListener = null;
     private AdcCalibrationListener mAdcCalibrationListener = null;
     private SourceSwitchListener mSourceSwitchListener = null;
     private ChannelSelectListener mChannelSelectListener = null;
@@ -112,7 +108,6 @@ public class TvControlManager {
     private VframBMPEventListener mVframBMPListener = null;
     private EpgEventListener mEpgListener = null;
     private AVPlaybackListener mAVPlaybackListener = null;
-    private VchipLockStatusListener mLockStatusListener = null;
 
     private static TvControlManager mInstance;
 
@@ -328,16 +323,6 @@ public class TvControlManager {
                     break;
                 case VCHIP_CALLBACK:
                     Log.i(TAG,"atsc ---VCHIP_CALLBACK-----------------");
-                    p = ((Parcel) (msg.obj));
-                    if (mLockStatusListener != null) {
-                        VchipLockStatus lockStatus = new VchipLockStatus();
-                        lockStatus.blockstatus = p.readInt();
-                        lockStatus.blockType = p.readInt();
-                        lockStatus.vchipDimension = p.readString();
-                        lockStatus.vchipAbbrev = p.readString();
-                        lockStatus.vchipText = p.readString();
-                        mLockStatusListener.onLock(lockStatus);
-                    }
                     break;
                 case EPG_EVENT_CALLBACK:
                     p = ((Parcel) (msg.obj));
@@ -380,9 +365,6 @@ public class TvControlManager {
                     }
                     break;
                 case VGA_CALLBACK:
-                    if (mVGAChangeListener != null) {
-                        mVGAChangeListener.onVGAAdjustChange(((Parcel) (msg.obj)).readInt());
-                    }
                     break;
                 case STATUS_3D_CALLBACK:
                     if (mStatus3DChangeListener != null) {
@@ -639,26 +621,6 @@ public class TvControlManager {
     }
 
     /**
-     * @Function: GetVideoStreamStatus
-     * @Description: Get video stream status to check decoder is actvie or inactive.
-     * @Param:
-     * @Return: 1 active, 0 inactive
-     */
-    public int GetVideoStreamStatus() {
-        return sendCmd(GET_VIDEO_STREAM_STATUS);
-    }
-
-    /**
-     * @Function: GetFirstStartSwitchType
-     * @Description: Get first start switch type.
-     * @Param:
-     * @Return: reference as enum first_start_type
-     */
-    public int GetFirstStartSwitchType() {
-        return sendCmd(GET_FIRST_START_SWITCH_TYPE);
-    }
-
-    /**
      * @Function: SetPreviewWindow
      * @Description: Set source input preview window axis
      * @Param: win_pos, refer to class window_pos_t
@@ -667,17 +629,6 @@ public class TvControlManager {
     public int SetPreviewWindow(int x1, int y1, int x2, int y2) {
         int val[] = new int[]{x1, y1, x2, y2};
         return sendCmdIntArray(SET_PREVIEW_WINDOW, val);
-    }
-
-    /**
-     * @Function: SetDisableVideo
-     * @Description: to enable/disable video
-     * @Param: value 0/1
-     * @Return: 0 success, -1 fail
-     */
-    public int SetDisableVideo(int arg0) {
-        int val[] = new int[]{arg0};
-        return sendCmdIntArray(SET_VIDEO_DISABLE, val);
     }
 
     /**
@@ -698,144 +649,9 @@ public class TvControlManager {
         sendCmdToTv(cmd, r);
         return r.readString();
     }
-
     // Tv function END
 
-    // VGA
-
-    /**
-     * @Function: RunVGAAutoAdjust
-     * @Description: Do vag auto adjustment
-     * @Param:
-     * @Return: 0 success, -1 fail
-     */
-    public int RunVGAAutoAdjust() {
-        return sendCmd(RUN_VGA_AUTO_ADJUST);
-    }
-
-    /**
-     * @Function: GetVGAAutoAdjustStatus
-     * @Description: Get vag auto adjust status
-     * @Param:
-     * @Return: refer to enum tvin_process_status_t
-     */
-    public int GetVGAAutoAdjustStatus() {
-        return sendCmd(GET_VGA_AUTO_ADJUST_STATUS);
-    }
-
-    /**
-     * @Function: IsVGAAutoAdjustDone
-     * @Description: To check if vag auto adjustment is done.
-     * @Param:
-     * @Return: 0 success, -1 fail
-     */
-    public int IsVGAAutoAdjustDone(TVInSignalInfo.SignalFmt fmt) {
-        int val[] = new int[]{fmt.toInt()};
-        return sendCmdIntArray(IS_VGA_AUTO_ADJUST_DONE, val);
-    }
-
-    /**
-     * @Function: SetVGAHPos
-     * @Description: Adjust vag h pos
-     * @Param: value h pos, fmt current signal fmt
-     * @Return: 0 success, -1 fail
-     */
-    public int SetVGAHPos(int value, TVInSignalInfo.SignalFmt fmt) {
-        int val[] = new int[]{value, fmt.toInt()};
-        return sendCmdIntArray(SET_VGA_HPOS, val);
-    }
-
-    /**
-     * @Function: GetVGAHPos
-     * @Description: Get vag h pos
-     * @Param: fmt current signal fmt
-     * @Return: h pos
-     */
-    public int GetVGAHPos(TVInSignalInfo.SignalFmt fmt) {
-        int val[] = new int[]{fmt.toInt()};
-        return sendCmdIntArray(GET_VGA_HPOS, val);
-    }
-
-    /**
-     * @Function: SetVGAVPos
-     * @Description: Adjust vag v pos
-     * @Param: value v pos, fmt current signal fmt
-     * @Return: 0 success, -1 fail
-     */
-    public int SetVGAVPos(int value, TVInSignalInfo.SignalFmt fmt) {
-        int val[] = new int[]{value, fmt.toInt()};
-        return sendCmdIntArray(SET_VGA_VPOS, val);
-    }
-
-    /**
-     * @Function: GetVGAVPos
-     * @Description: Get vag v pos
-     * @Param: fmt current signal fmt
-     * @Return: v pos
-     */
-    public int GetVGAVPos(TVInSignalInfo.SignalFmt fmt) {
-        int val[] = new int[]{fmt.toInt()};
-        return sendCmdIntArray(GET_VGA_VPOS, val);
-    }
-
-    /**
-     * @Function: SetVGAClock
-     * @Description: Adjust vag clock
-     * @Param: value clock, fmt current signal fmt
-     * @Return: 0 success, -1 fail
-     */
-    public int SetVGAClock(int value, TVInSignalInfo.SignalFmt fmt) {
-        int val[] = new int[]{value, fmt.toInt()};
-        return sendCmdIntArray(SET_VGA_CLOCK, val);
-    }
-
-    /**
-     * @Function: GetVGAClock
-     * @Description: Get vag clock
-     * @Param: fmt current signal fmt
-     * @Return: vga clock
-     */
-    public int GetVGAClock(TVInSignalInfo.SignalFmt fmt) {
-        int val[] = new int[]{fmt.toInt()};
-        return sendCmdIntArray(GET_VGA_CLOCK, val);
-    }
-
-    /**
-     * @Function: SetVGAPhase
-     * @Description: Adjust vag phase
-     * @Param: value clock, fmt current signal fmt
-     * @Return: 0 success, -1 fail
-     */
-    public int SetVGAPhase(int value, TVInSignalInfo.SignalFmt fmt) {
-        int val[] = new int[]{value, fmt.toInt()};
-        return sendCmdIntArray(SET_VGA_PHASE, val);
-    }
-
-    /**
-     * @Function: GetVGAPhase
-     * @Description: Get vag phase
-     * @Param: fmt current signal fmt
-     * @Return: vga phase
-     */
-    public int GetVGAPhase(TVInSignalInfo.SignalFmt fmt) {
-        int val[] = new int[]{fmt.toInt()};
-        return sendCmdIntArray(GET_VGA_PHASE, val);
-    }
-
-    /**
-     * @Function: SetVGAParamDefault
-     * @Description: reset vag param
-     * @Param:
-     * @Return: 0 success, -1 fail
-     */
-    public int SetVGAParamDefault() {
-        return sendCmd(SET_VGAPARAM_DEFAULT);
-    }
-    // VGA END
-
-
     // HDMI
-
     /**
      * @Function: SetHdmiEdidVersion
      * @Description: set hdmi edid version to 1.4 or 2.0
@@ -991,15 +807,6 @@ public class TvControlManager {
     public int SaveHue(int value, SourceInput_Type source) {
         int val[] = new int[]{value, source.toInt()};
         return sendCmdIntArray(SAVE_HUE, val);
-    }
-
-    public int SetSceneMode(int scene_mode,int is_save) {
-        int val[] = new int[]{scene_mode, is_save};
-        return sendCmdIntArray(SET_SCENEMODE, val);
-    }
-
-    public int GetSCENEMode() {
-        return sendCmd(GET_SCENEMODE);
     }
 
     public enum PQMode {
@@ -1646,85 +1453,9 @@ public class TvControlManager {
         return sendCmd(FACTORY_SET_OUT_DEFAULT);
     }
 
-    public int FactoryGetGlobal_OGO_Offset_RGain() {
-        return sendCmd(FACTORY_GETGLOBALOGO_RGAIN);
-    }
-
-    public int FactoryGetGlobal_OGO_Offset_GGain() {
-        return sendCmd(FACTORY_GETGLOBALOGO_GGAIN);
-    }
-
-    public int FactoryGetGlobal_OGO_Offset_BGain() {
-        return sendCmd(FACTORY_GETGLOBALOGO_BGAIN);
-    }
-
-    public int FactoryGetGlobal_OGO_Offset_ROffset() {
-        return sendCmd(FACTORY_GETGLOBALOGO_ROFFSET);
-    }
-
-    public int FactoryGetGlobal_OGO_Offset_GOffset() {
-        return sendCmd(FACTORY_GETGLOBALOGO_GOFFSET);
-    }
-
-    public int FactoryGetGlobal_OGO_Offset_BOffset() {
-        return sendCmd(FACTORY_GETGLOBALOGO_BOFFSET);
-    }
-
-    public int FactorySetGlobal_OGO_Offset_RGain(int rgain) {
-        int val[] = new int[]{rgain};
-        return sendCmdIntArray(FACTORY_SETGLOBALOGO_RGAIN, val);
-    }
-
-    public int FactorySetGlobal_OGO_Offset_GGain(int ggain) {
-        int val[] = new int[]{ggain};
-        return sendCmdIntArray(FACTORY_SETGLOBALOGO_GGAIN, val);
-    }
-
-    public int FactorySetGlobal_OGO_Offset_BGain(int bgain) {
-        int val[] = new int[]{bgain};
-        return sendCmdIntArray(FACTORY_SETGLOBALOGO_BGAIN, val);
-    }
-
-    public int FactorySetGlobal_OGO_Offset_ROffset(int roffset) {
-        int val[] = new int[]{roffset};
-        return sendCmdIntArray(FACTORY_SETGLOBALOGO_ROFFSET, val);
-    }
-
-    public int FactorySetGlobal_OGO_Offset_GOffset(int goffset) {
-        int val[] = new int[]{goffset};
-        return sendCmdIntArray(FACTORY_SETGLOBALOGO_GOFFSET, val);
-    }
-
-    public int FactorySetGlobal_OGO_Offset_BOffset(int boffset) {
-        int val[] = new int[]{boffset};
-        return sendCmdIntArray(FACTORY_SETGLOBALOGO_BOFFSET, val);
-    }
-
     public int FactoryCleanAllTableForProgram() {
         return sendCmd(FACTORY_CLEAN_ALL_TABLE_FOR_PROGRAM);
     }
-
-    /**
-     * @Function: FactoryGetAdbdStatus
-     * @Description: factory get adbd status
-     * @Param: none
-     * @Return: 0 off ; 1 on ; -1 error
-     */
-    public int FactoryGetAdbdStatus() {
-        return sendCmd(FACTORY_GETADBD_STATUS);
-    }
-
-    /**
-     * @Function: FactorySetAdbdSwitch
-     * @Description: factory set adbd switch
-     * @Param: adbd_switch(0 : off ; 1 : on)
-     * @Return: 0 success ; -1 failed ; -2 param error
-     */
-    public int FactorySetAdbdSwitch(int adbd_switch) {
-        int val[] = new int[]{adbd_switch};
-        return sendCmdIntArray(FACTORY_SETADBD_SWITCH, val);
-    }
-
 
     public int FactorySetPatternYUV(int mask, int y, int u, int v) {
         int val[] = new int[]{mask, y, u, v};
@@ -1812,27 +1543,6 @@ public class TvControlManager {
      */
     public int GetAudioMuteKeyStatus() {
         return sendCmd(GET_AUDIO_MUTEKEY_STATUS);
-    }
-
-    /**
-     * @Function: SetAudioForceMuteStatus
-     * @Description: Set audio mute or unmute by force
-     * @Param: ForceMuteStatus AUDIO_MUTE_ON or AUDIO_MUTE_OFF
-     * @Return: 0 success, -1 fail
-     */
-    public int SetAudioForceMuteStatus(int ForceMuteStatus) {
-        int val[] = new int[]{ForceMuteStatus};
-        return sendCmdIntArray(SET_AUDIO_FORCE_MUTE_STATUS, val);
-    }
-
-    /**
-     * @Function: GetAudioForceMuteStatus
-     * @Description: Get audio mute status
-     * @Param:
-     * @Return: AUDIO_MUTE_ON or AUDIO_MUTE_OFF
-     */
-    public int GetAudioForceMuteStatus() {
-        return sendCmd(GET_AUDIO_FORCE_MUTE_STATUS);
     }
 
     /**
@@ -2518,16 +2228,6 @@ public class TvControlManager {
     }
 
     /**
-     * @Function: GetAudioSPDIFSwitch
-     * @Description: Get audio SPDIF Switch
-     * @Param:
-     * @Return: value refer to AUDIO_SWITCH_OFF or AUDIO_SWITCH_ON
-     */
-    public int GetSaveAudioSPDIFSwitch() {
-        return sendCmd(GET_AUDIO_SPDIF_SWITCH);
-    }
-
-    /**
      * @Function: SaveCurAudioSPDIFSwitch
      * @Description: Save audio SPDIF Switch(stored in flash)
      * @Param: value refer to AUDIO_SWITCH_OFF or AUDIO_SWITCH_ON
@@ -2561,16 +2261,6 @@ public class TvControlManager {
     }
 
     /**
-     * @Function: GetAudioSPDIFMode
-     * @Description: Get audio SPDIF Mode
-     * @Param:
-     * @Return: value refer to enum CC_AUD_SPDIF_MODE
-     */
-    public int GetSaveAudioSPDIFMode() {
-        return sendCmd(GET_AUDIO_SPDIF_MODE);
-    }
-
-    /**
      * @Function: SaveCurAudioSPDIFMode
      * @Description: Save audio SPDIF Mode(stored in flash)
      * @Param: value refer to enum CC_AUD_SPDIF_MODE
@@ -2589,38 +2279,6 @@ public class TvControlManager {
      */
     public int GetCurAudioSPDIFMode() {
         return sendCmd(GET_CUR_AUDIO_SPDIF_MODE);
-    }
-
-    /**
-     * @Function: OpenAmAudio
-     * @Description: Open amaudio module
-     * @Param: sr, input sample rate
-     * @Return: 0 success, -1 fail
-     */
-    public int OpenAmAudio(int sr) {
-        int val[] = new int[]{sr};
-        return sendCmdIntArray(OPEN_AMAUDIO, val);
-    }
-
-    /**
-     * @Function: CloseAmAudio
-     * @Description: Close amaudio module
-     * @Param:
-     * @Return: 0 success, -1 fail
-     */
-    public int CloseAmAudio() {
-        return sendCmd(CLOSE_AMAUDIO);
-    }
-
-    /**
-     * @Function: SetAmAudioInputSr
-     * @Description: set amaudio input sample rate
-     * @Param: sr, input sample rate
-     * @Return: 0 success, -1 fail
-     */
-    public int SetAmAudioInputSr(int sr) {
-        int val[] = new int[]{sr};
-        return sendCmdIntArray(SET_AMAUDIO_INPUT_SR, val);
     }
 
     /**
@@ -2668,26 +2326,6 @@ public class TvControlManager {
     }
 
     /**
-     * @Function: AudioHandleHeadsetPlugIn
-     * @Description: Audio Handle Headset PlugIn
-     * @Param:
-     * @Return: 0 success, -1 fail
-     */
-    public int AudioHandleHeadsetPlugIn(int tmp_val) {
-        return sendCmd(HANDLE_AUDIO_HEADSET_PLUG_IN);
-    }
-
-    /**
-     * @Function: AudioHandleHeadsetPullOut
-     * @Description: Audio Handle Headset PullOut
-     * @Param:
-     * @Return: 0 success, -1 fail
-     */
-    public int AudioHandleHeadsetPullOut(int tmp_val) {
-        return sendCmd(HANDLE_AUDIO_HEADSET_PULL_OUT);
-    }
-
-    /**
      * @Function: SetCurProgVolumeCompesition
      * @Description: SET Audio Volume Compesition
      * @Param: 0~10
@@ -2696,18 +2334,6 @@ public class TvControlManager {
     public int SetCurProgVolumeCompesition(int tmp_val) {
         int val[] = new int[]{tmp_val};
         return sendCmdIntArray(SET_AUDIO_VOL_COMP, val);
-    }
-
-    /**
-     * empty api--------------------------------
-     * @Function: ATVSaveVolumeCompesition
-     * @Description: ATV SAVE Audio Volume Compesition
-     * @Param: 0~10
-     * @Return: 0 success, -1 fail
-     */
-    public int ATVSaveVolumeCompesition(int tmp_val) {
-        int val[] = new int[]{tmp_val};
-        return sendCmdIntArray(SAVE_AUDIO_VOL_COMP, val);
     }
 
     /**
@@ -2740,17 +2366,6 @@ public class TvControlManager {
     public int SetLineInCaptureVolume(int l_vol, int r_vol) {
         int val[] = new int[]{l_vol, r_vol};
         return sendCmdIntArray(SET_LINE_IN_CAPTURE_VOL, val);
-    }
-
-    /**
-     * @Function: SetNoiseGateThreshold
-     * @Description: set noise gate threshold
-     * @Param: value (0~255)
-     * @Return: 0 success, -1 fail
-     */
-    public void SetNoiseGateThreshold(int thresh) {
-        int val[] = new int[]{thresh};
-        sendCmdIntArray(SET_NOISE_GATE_THRESHOLD, val);
     }
     // AUDIO END
 
@@ -3107,27 +2722,6 @@ public class TvControlManager {
     }
 
     /**
-     * @Function: SSMSetBusStatus
-     * @Description: Set i2c bus status
-     * @Param: tmp_val bus status value
-     * @Return: 0 success, -1 fail
-     */
-    public int SSMSetBusStatus(int tmp_val) {
-        int val[] = new int[]{tmp_val};
-        return sendCmdIntArray(SSM_SET_BUS_STATUS, val);
-    }
-
-    /**
-     * @Function: SSMGetBusStatus
-     * @Description: Get i2c bus status value
-     * @Param:
-     * @Return: status value
-     */
-    public int SSMGetBusStatus() {
-        return sendCmd(SSM_GET_BUS_STATUS);
-    }
-
-    /**
      * @Function: SSMSaveInputSourceParentalControl
      * @Description: Save parental control flag to corresponding source input
      * @Param: source_input refer to enum SourceInput, ctl_flag enable or disable this source input
@@ -3179,42 +2773,6 @@ public class TvControlManager {
     public int SSMSaveParentalControlPassWord(String pass_wd_str) {
         String val[] = new String[]{pass_wd_str};
         return sendCmdStringArray(SSM_SAVE_PARENTAL_CTL_PASS_WORD, val);
-    }
-
-    /**
-     * @Function: SSMReadParentalControlPassWord
-     * @Description: Read parental control password
-     * @Param:
-     * @Return: password string
-     */
-    public String SSMReadParentalControlPassWord() {
-        libtv_log_open();
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        cmd.writeInt(SSM_READ_PARENTAL_CTL_PASS_WORD);
-        sendCmdToTv(cmd, r);
-        return r.readString();
-    }
-
-    /**
-     * @Function: SSMSaveUsingDefaultHDCPKeyFlag
-     * @Description: Save use default HDCP key flag
-     * @Param: switch_flag enable or disable default key
-     * @Return: 0 success, -1 fail
-     */
-    public int SSMSaveUsingDefaultHDCPKeyFlag(int switch_flag) {
-        int val[] = new int[]{switch_flag};
-        return sendCmdIntArray(SSM_SAVE_USING_DEF_HDCP_KEY_FLAG, val);
-    }
-
-    /**
-     * @Function: SSMReadUsingDefaultHDCPKeyFlag
-     * @Description: Read use default HDCP key flag
-     * @Param:
-     * @Return: use flag
-     */
-    public int SSMReadUsingDefaultHDCPKeyFlag() {
-        return sendCmd(SSM_READ_USING_DEF_HDCP_KEY_FLAG);
     }
 
     /**
@@ -3512,48 +3070,6 @@ public class TvControlManager {
         return sendCmd(SSM_READ_HDCP_KEY_ENABLE);
     }
 
-    public enum CC_TV_TYPE {
-        TV_TYPE_ATV(0),
-        TV_TYPE_DVBC(1),
-        TV_TYPE_DTMB(2),
-        TV_TYPE_ATSC(3),
-        TV_TYPE_ATV_DVBC(4),
-        TV_TYPE_ATV_DTMB(5),
-        TV_TYPE_DVBC_DTMB(6),
-        TV_TYPE_ATV_DVBC_DTMB(7);
-
-        private int val;
-
-        CC_TV_TYPE(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    /**
-     * @Function: SSMSaveProjectID
-     * @Description: Save project id
-     * @Param: project id
-     * @Return: 0 success, -1 fail
-     */
-    public int SSMSaveProjectID(int tmp_id) {
-        int val[] = new int[]{tmp_id};
-        return sendCmdIntArray(SSM_SAVE_PROJECT_ID, val);
-    }
-
-    /**
-     * @Function: SSMReadProjectID
-     * @Description: Read project id
-     * @Param:
-     * @Return: return project id
-     */
-    public int SSMReadProjectID() {
-        return sendCmd(SSM_READ_PROJECT_ID);
-    }
-
     /**
      * @Function: SSMSaveHDCPKey
      * @Description: save hdcp key
@@ -3599,35 +3115,6 @@ public class TvControlManager {
     // SSM END
 
     //MISC
-
-    /**
-     * @Function: TvMiscPropertySet
-     * @Description: Set android property
-     * @Param: key_str property name string, value_str property set value string
-     * @Return: 0 success, -1 fail
-     */
-    public int TvMiscPropertySet(String key_str, String value_str) {
-        String val[] = new String[]{key_str, value_str};
-        return sendCmdStringArray(MISC_PROP_SET, val);
-    }
-
-    /**
-     * @Function: TvMiscPropertySet
-     * @Description: Get android property
-     * @Param: key_str property name string, value_str property get value string
-     * @Return: 0 success, -1 fail
-     */
-    public String TvMiscPropertyGet(String key_str, String def_str) {
-        libtv_log_open();
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        cmd.writeInt(MISC_PROP_GET);
-        cmd.writeString(key_str);
-        cmd.writeString(def_str);
-        sendCmdToTv(cmd, r);
-        return r.readString();
-    }
-
     /**
      * @Function: TvMiscConfigSet
      * @Description: Set tv config
@@ -3721,33 +3208,7 @@ public class TvControlManager {
         return sendCmdIntArray(MISC_SET_WDT_USER_PET_RESET_ENABLE, val);
     }
 
-    /**
-     * @Function: TvMiscSetI2CBusStatus
-     * @Description: Enable or disable i2c bus
-     * @Param: tmp_val 1 enable or 0 disable
-     * @Return: 0 success, -1 fail
-     */
-    public int TvMiscSetI2CBusStatus(int tmp_val) {
-        int val[] = new int[]{tmp_val};
-        return sendCmdIntArray(MISC_SET_I2C_BUS_STATUS, val);
-    }
-
-    /**
-     * @Function: TvMiscGetI2CBusStatus
-     * @Description: Get i2c bus status
-     * @Param:
-     * @Return: value 1 enable or 0 disable
-     */
-    public int TvMiscGetI2CBusStatus() {
-        return sendCmd(MISC_GET_I2C_BUS_STATUS);
-    }
-
     // tv version info
-    public class android_ver_info {
-        public String build_release_ver;
-        public String build_number_ver;
-    }
-
     public static class kernel_ver_info {
         public String linux_ver_info;
         public String build_usr_info;
@@ -3771,50 +3232,10 @@ public class TvControlManager {
     }
 
     public class version_info {
-        public android_ver_info android_ver;
         public String ubootVer;
         public kernel_ver_info kernel_ver;
         public tvapi_ver_info tvapi_ver;
         public dvb_ver_info dvb_ver;
-    }
-
-    public class project_info {
-        public String version;
-        public String panel_type;
-        public String panel_outputmode;
-        public String panel_rev;
-        public String panel_name;
-        public String amp_curve_name;
-    }
-
-    /**
-     * @Function: TvMiscGetAndroidVersion
-     * @Description: Get android version
-     * @Param: none
-     * @Return: android_ver_info
-     */
-    public android_ver_info TvMiscGetAndroidVersion() {
-        libtv_log_open();
-        android_ver_info tmpInfo = new android_ver_info();
-
-        tmpInfo.build_release_ver = Build.VERSION.RELEASE;
-        tmpInfo.build_number_ver = Build.DISPLAY;
-
-        return tmpInfo;
-    }
-
-    /**
-     * @Function: TvMiscGetUbootVersion
-     * @Description: Get uboot version
-     * @Param: none
-     * @Return:
-     */
-    public String TvMiscGetUbootVersion() {
-        libtv_log_open();
-        String ubootvar = TvMiscPropertyGet("ro.ubootenv.varible.prefix",
-                "ubootenv.var");
-        String ver = TvMiscPropertyGet(ubootvar + "." + "ubootversion", "VERSION_ERROR");
-        return ver;
     }
 
     /**
@@ -3944,48 +3365,12 @@ public class TvControlManager {
         libtv_log_open();
         version_info tmpInfo = new version_info();
 
-        tmpInfo.android_ver = TvMiscGetAndroidVersion();
-        tmpInfo.ubootVer = TvMiscGetUbootVersion();
+        tmpInfo.ubootVer = "";
         tmpInfo.kernel_ver = TvMiscGetKernelVersion();
         tmpInfo.tvapi_ver = TvMiscGetTVAPIVersion();
         tmpInfo.dvb_ver = TvMiscGetDVBAPIVersion();
 
         return tmpInfo;
-    }
-
-    /**
-     * @Function: TvMiscGetProjectInfo
-     * @Description: Get project info
-     * @Param: none
-     * @Return: project_info
-     */
-    public project_info TvMiscGetProjectInfo() {
-        libtv_log_open();
-        project_info tmpInfo = new project_info();
-
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        cmd.writeInt(MISC_GET_PROJECT_INFO);
-        sendCmdToTv(cmd, r);
-
-        tmpInfo.version = r.readString();
-        tmpInfo.panel_type = r.readString();
-        tmpInfo.panel_outputmode = r.readString();
-        tmpInfo.panel_rev = r.readString();
-        tmpInfo.panel_name = r.readString();
-        tmpInfo.amp_curve_name = r.readString();
-
-        return tmpInfo;
-    }
-
-    /**
-     * @Function: TvMiscGetPlatformType
-     * @Description: Get platform type
-     * @Param: none
-     * @Return: 0: T868 no fbc 1:T866 has fbc
-     */
-    public int TvMiscGetPlatformType() {
-        return sendCmd(MISC_GET_PLATFORM_TYPE);
     }
 
     public enum SerialDeviceID {
@@ -4043,47 +3428,6 @@ public class TvControlManager {
 
         sendCmdToTv(cmd, r);
         return r.readInt();
-    }
-
-    /**
-     * @Function: TvMiscDeleteDirFiles
-     * @Description: Delete dir files
-     * @Param: par_str dir path string, flag -f, -fr...
-     * @Return: 0 success, -1 fail
-     */
-    public int TvMiscDeleteDirFiles(String path_str, int flag) {
-        libtv_log_open();
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        int tmpRet;
-        cmd.writeInt(DELETE_DIR_FILES);
-        cmd.writeString(path_str);
-        cmd.writeInt(flag);
-        sendCmdToTv(cmd, r);
-        tmpRet = r.readInt();
-        return tmpRet;
-    }
-
-    /**
-     * @Function: TvMiscSetPowerLedIndicator
-     * @Description: Set power led indicator, red or green.
-     * @Param: onoff: 1 on, 0 off
-     * @Return: 0 success, -1 fail
-     */
-    public int TvMiscSetPowerLedIndicator(int onoff) {
-        int val[] = new int[]{onoff};
-        return sendCmdIntArray(MISC_SET_POWER_LED_INDICATOR, val);
-    }
-
-    /**
-     * @Function: TvMiscMutePanel
-     * @Description: Mute panel or unmute panel, power on or off panel and backlight.
-     * @Param: par_str dir path string, flag -f, -fr...
-     * @Return: 0 success, -1 fail
-     */
-    public int TvMiscMutePanel(int onoff) {
-        int val[] = new int[]{onoff};
-        return sendCmdIntArray(MISC_SET_PANEL_MUTE, val);
     }
     //MISC END
 
@@ -4226,152 +3570,6 @@ public class TvControlManager {
     }
 
     /**
-     * @Function: SSMEEPROMWriteOneByte_N310_N311
-     * @Description: Write one byte to eerpom
-     * @Param: offset pos in eeprom for this byte, val one byte value
-     * @Return: 0 success, -1 fail
-     */
-    public int SSMEEPROMWriteOneByte_N310_N311(int offset, int value) {
-        int val[] = new int[]{offset, value};
-        return sendCmdIntArray(SSM_EEPROM_SAVE_ONE_BYTE_N310_N311, val);
-    }
-
-    /**
-     * @Function: SSMEEPROMReadOneByte_N310_N311
-     * @Description: Read one byte from eeprom
-     * @Param: offset pos in eeprom for this byte to read
-     * @Return: one byte read value
-     */
-    public int SSMEEPROMReadOneByte_N310_N311(int offset) {
-        int val[] = new int[]{offset};
-        return sendCmdIntArray(SSM_EEPROM_READ_ONE_BYTE_N310_N311, val);
-    }
-
-    /**
-     * @Function: SSMEEPROMWriteNBytes
-     * @Description: Write n bytes to eeprom
-     * @Param: offset pos in eeprom for the bytes, data_len how many bytes, data_buf n bytes write buffer
-     * @Return: 0 success, -1 fail
-     */
-    public int SSMEEPROMWriteNBytes_N310_N311(int offset, int data_len, int data_buf[]) {
-        libtv_log_open();
-        int i = 0, ret = 0;
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-
-        cmd.writeInt(SSM_EEPROM_SAVE_N_BYTES_N310_N311);
-        cmd.writeInt(offset);
-        cmd.writeInt(data_len);
-        for (i = 0; i < data_len; i++) {
-            cmd.writeInt(data_buf[i]);
-        }
-
-        sendCmdToTv(cmd, r);
-        ret = r.readInt();
-        return ret;
-    }
-
-    /**
-     * @Function: SSMEEPROMReadNBytes_N310_N311
-     * @Description: Read one byte from eeprom
-     * @Param: offset pos in eeprom for the bytes, data_len how many bytes, data_buf n bytes read buffer
-     * @Return: 0 success, -1 fail
-     */
-    public int SSMEEPROMReadNBytes_N310_N311(int offset, int data_len, int data_buf[]) {
-        libtv_log_open();
-        int i = 0, tmp_data_len = 0, ret = 0;
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-
-        cmd.writeInt(SSM_EEPROM_READ_N_BYTES_N310_N311);
-        cmd.writeInt(offset);
-        cmd.writeInt(data_len);
-
-        sendCmdToTv(cmd, r);
-
-        data_len = r.readInt();
-        for (i = 0; i < data_len; i++) {
-            data_buf[i] = r.readInt();
-        }
-
-        ret = r.readInt();
-        return ret;
-    }
-
-    /**
-     * @Function: SSMFlashWriteOneByte
-     * @Description: Write one byte to flash
-     * @Param: offset pos in flash for this byte, val one byte value
-     * @Return: 0 success, -1 fail
-     */
-    public int SSMFlashWriteOneByte_N310_N311(int offset, int value) {
-        int val[] = new int[]{offset, value};
-        return sendCmdIntArray(SSM_FLASH_SAVE_ONE_BYTE_N310_N311, val);
-    }
-
-    /**
-     * @Function: SSMFlashReadOneByte
-     * @Description: Read one byte from flash
-     * @Param: offset pos in flash for this byte to read
-     * @Return: one byte read value
-     */
-    public int SSMFlashReadOneByte_N310_N311(int offset) {
-        int val[] = new int[]{offset};
-        return sendCmdIntArray(SSM_FLASH_READ_ONE_BYTE_N310_N311, val);
-    }
-
-    /**
-     * @Function: SSMFlashWriteNBytes
-     * @Description: Write n bytes to flash
-     * @Param: offset pos in flash for the bytes, data_len how many bytes, data_buf n bytes write buffer
-     * @Return: 0 success, -1 fail
-     */
-    public int SSMFlashWriteNBytes_N310_N311(int offset, int data_len, int data_buf[]) {
-        libtv_log_open();
-        int i = 0, ret = 0;
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-
-        cmd.writeInt(SSM_FLASH_SAVE_N_BYTES_N310_N311);
-        cmd.writeInt(offset);
-        cmd.writeInt(data_len);
-        for (i = 0; i < data_len; i++) {
-            cmd.writeInt(data_buf[i]);
-        }
-
-        sendCmdToTv(cmd, r);
-        ret = r.readInt();
-        return ret;
-    }
-
-    /**
-     * @Function: SSMFlashReadNBytes
-     * @Description: Read one byte from flash
-     * @Param: offset pos in flash for the bytes, data_len how many bytes, data_buf n bytes read buffer
-     * @Return: 0 success, -1 fail
-     */
-    public int SSMFlashReadNBytes_N310_N311(int offset, int data_len, int data_buf[]) {
-        libtv_log_open();
-        int i = 0, tmp_data_len = 0, ret = 0;
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-
-        cmd.writeInt(SSM_FLASH_READ_N_BYTES_N310_N311);
-        cmd.writeInt(offset);
-        cmd.writeInt(data_len);
-
-        sendCmdToTv(cmd, r);
-
-        data_len = r.readInt();
-        for (i = 0; i < data_len; i++) {
-            data_buf[i] = r.readInt();
-        }
-
-        ret = r.readInt();
-        return ret;
-    }
-
-    /**
      * @Function: ATVGetChanInfo
      * @Description: Get atv current channel info
      * @Param: dbID,program's in the srv_table of DB
@@ -4509,10 +3707,6 @@ public class TvControlManager {
         return tmpRet;
     }
 
-    public int TvSubtitleDrawUnlock() {
-        return sendCmd(TV_SUBTITLE_DRAW_END);
-    }
-
     public Bitmap CreateSubtitleBitmap() {
         libtv_log_open();
         Bitmap subtitleFrame = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888);
@@ -4638,7 +3832,6 @@ public class TvControlManager {
         void onFrameStable(ScanningFrameStableEvent ev);
     }
 
-
     //epg
     public void setEpgListener(EpgEventListener l) {
         libtv_log_open();
@@ -4762,7 +3955,6 @@ public class TvControlManager {
     public int DtvGetAudioChannleMod() {
         return sendCmd(DTV_GET_AUDIO_CHANNEL_MOD);
     }
-
 
     public int DtvGetFreqByProgId(int progId) {
         int val[] = new int[]{progId};
@@ -4893,12 +4085,6 @@ public class TvControlManager {
         return pBookEventInfoList;
     }
 
-    public int setEventBookFlag(int id, int bookFlag) {
-        int val[] = new int[]{id, bookFlag};
-        sendCmdIntArray(DTV_SET_BOOKING_FLAG, val);
-        return 0;
-    }
-
     public int setProgramName(int id, String name) {
         libtv_log_open();
         Parcel cmd = Parcel.obtain();
@@ -4939,19 +4125,6 @@ public class TvControlManager {
         sendCmdIntArray(DTV_SET_PROGRAM_LOCKED, val);
         return 0;
     }
-
-    /*public int PlayProgram(int progid) {
-      libtv_log_open();
-      Parcel cmd = Parcel.obtain();
-      Parcel r = Parcel.obtain();
-      int tmpRet ;
-      cmd.writeInt(PLAY_PROGRAM);
-      cmd.writeInt(progid);
-      sendCmdToTv(cmd, r);
-      tmpRet = r.readInt();
-
-      return tmpRet;
-      }*/
 
     public int PlayATVProgram(int freq, int videoStd, int audioStd, int fineTune, int audioCompetation) {
         int val[] = new int[]{4, freq, videoStd, audioStd, fineTune, audioCompetation};
@@ -5115,188 +4288,11 @@ public class TvControlManager {
         return sendCmd(DTV_STOP_CC);
     }
 
-    public String Test1(int progid) {
-        libtv_log_open();
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        int tmpRet ;
-        cmd.writeInt(DTV_TEST_1);
-        cmd.writeInt(progid);
-        sendCmdToTv(cmd, r);
-        return r.readString();
-    }
-
-    public String Test2(int c) {
-        libtv_log_open();
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        int tmpRet ;
-        cmd.writeInt(DTV_TEST_2);
-        cmd.writeInt(c);
-        sendCmdToTv(cmd, r);
-        return r.readString();
-    }
-
-    public int tvAutoScan() {
-        return sendCmd(TV_AUTO_SCAN);
-    }
-
-    /* public int tvSetScanSource(scan_source_t source) {
-       Parcel cmd = Parcel.obtain();
-       Parcel r = Parcel.obtain();
-       int tmpRet ;
-       cmd.writeInt(TV_SET_SCAN_SOURCE);
-       cmd.writeInt(source.toInt());
-       sendCmdToTv(cmd, r);
-       tmpRet = r.readInt();
-
-       return tmpRet;
-       }*/
-
-    public int tvSetAttennaType(atsc_attenna_type_t source) {
-        int val[] = new int[]{source.toInt()};
-        return sendCmdIntArray(TV_SET_ATSC_ATTENNA_TYPE, val);
-    }
-
-    public atsc_attenna_type_t tvGetAttennaType( ) {
-        libtv_log_open();
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        int tmpRet ;
-        cmd.writeInt(TV_GET_ATSC_ATTENNA_TYPE);
-        sendCmdToTv(cmd, r);
-        tmpRet = r.readInt();
-        for (atsc_attenna_type_t t:atsc_attenna_type_t.values()) {
-            if (t.toInt() == tmpRet)
-                return t;
-        }
-        return null;
-    }
-
-    public int HistogramGet_AVE() {
-        return sendCmd(GET_HISTGRAM_AVE);
-    }
-
-    public int GetHistGram(int hist_gram_buf[]) {
-        libtv_log_open();
-        int i = 0, tmp_buf_size = 0, ret = 0;
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-
-        cmd.writeInt(GET_HISTGRAM);
-        sendCmdToTv(cmd, r);
-
-        tmp_buf_size = r.readInt();
-        for (i = 0; i < tmp_buf_size; i++) {
-            hist_gram_buf[i] = r.readInt();
-        }
-
-        ret = r.readInt();
-        return ret;
-    }
-
-    public int atscSetVchipLockstatus(String dimensioName,int ratingRegionId,int arr_length,int[] arr) {
-        libtv_log_open();
-        int tmpRet  = -1;
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        cmd.writeInt(DTV_SET_VCHIP_LOCKSTATUS);
-        cmd.writeString(dimensioName);
-        cmd.writeInt(ratingRegionId);
-        cmd.writeInt(arr_length);
-        for (int i=0; i<arr_length; i++) {
-            cmd.writeInt(arr[i]);
-        }
-        sendCmdToTv(cmd, r);
-        tmpRet = r.readInt();
-        return tmpRet;
-    }
-
-    public int[] atscGetVchipLockstatus(String dimensioName,int ratingRegionId) {
-        libtv_log_open();
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        cmd.writeInt(DTV_GET_VCHIP_LOCKSTATUS);
-        cmd.writeString(dimensioName);
-        cmd.writeInt(ratingRegionId);
-        sendCmdToTv(cmd, r);
-        int size = r.readInt();
-        int[] arr =new int[size];
-        for (int i=0; i<size; i++) {
-            arr[i]=r.readInt();
-        }
-        return arr;
-    }
-
-    public int atscSetVchipUbblock() {
-        return sendCmd(DTV_SET_VCHIP_UNBLOCK);
-    }
-
-    public VchipLockStatus atscGetCurrentVchipBlock() {
-        libtv_log_open();
-        Parcel cmd = Parcel.obtain();
-        Parcel r = Parcel.obtain();
-        cmd.writeInt(DTV_GET_CURRENT_VCHIP_BLOCK);
-        sendCmdToTv(cmd, r);
-        VchipLockStatus lockStatus = new VchipLockStatus();
-        lockStatus.blockstatus = r.readInt();
-        lockStatus.vchipDimension = r.readString();
-        lockStatus.vchipAbbrev = r.readString();
-        return lockStatus;
-    }
-
     private void libtv_log_open(){
         if (tvLogFlg) {
             StackTraceElement traceElement = ((new Exception()).getStackTrace())[1];
             Log.i(TAG, traceElement.getMethodName());
         }
-    }
-
-    public int dtvSetVchipBlockOnOff(int onOff ,int regin_id) {
-        int val[] = new int[]{onOff, regin_id};
-        return sendCmdIntArray(DTV_SET_VCHIP_BLOCK_ON_OFF, val);
-    }
-
-    //Vchip Lock Status
-    public class VchipLockStatus {
-        public int blockType;
-        public int blockstatus;
-        public String vchipDimension;
-        public String vchipText;
-        public String vchipAbbrev;
-    }
-
-    public void setVchipLockStatusListener(VchipLockStatusListener l) {
-        libtv_log_open();
-        mLockStatusListener = l;
-    }
-
-    public interface VchipLockStatusListener {
-        void onLock(VchipLockStatus lockStatus);
-    }
-
-    public enum SOUND_TRACK_MODE {
-        SOUND_TRACK_MODE_MONO(0),
-        SOUND_TRACK_MODE_STEREO(1),
-        SOUND_TRACK_MODE_SAP(2);
-        private int val;
-
-        SOUND_TRACK_MODE(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public int Tv_SetSoundTrackMode(SOUND_TRACK_MODE mode) {
-        int val[] = new int[]{mode.toInt()};
-        return sendCmdIntArray(TV_SET_SOUND_TRACK_MODE, val);
-    }
-
-    public int Tv_GetSoundTrackMode() {
-        return sendCmd(TV_GET_SOUND_TRACK_MODE);
     }
 
     public enum LEFT_RIGHT_SOUND_CHANNEL {
@@ -5313,15 +4309,6 @@ public class TvControlManager {
         public int toInt() {
             return this.val;
         }
-    }
-
-    public int setLeftRightSondChannel(LEFT_RIGHT_SOUND_CHANNEL mode) {
-        int val[] = new int[]{mode.toInt()};
-        return sendCmdIntArray(SET_LEFT_RIGHT_SOUND_CHANNEL, val);
-    }
-
-    public int getLeftRightSondChannel() {
-        return sendCmd(GET_LEFT_RIGHT_SOUND_CHANNEL);
     }
 
     public class ProgList {
@@ -5394,42 +4381,6 @@ public class TvControlManager {
         }
         Log.i(TAG,"get prog list size = "+pList.size());
         return pList;
-    }
-
-    public enum vpp_display_resolution_t {
-        VPP_DISPLAY_RESOLUTION_1366X768(0),
-        VPP_DISPLAY_RESOLUTION_1920X1080(1),
-        VPP_DISPLAY_RESOLUTION_3840X2160(2),
-        VPP_DISPLAY_RESOLUTION_MAX(3);
-        private int val;
-
-        vpp_display_resolution_t(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    /**
-     * @Function:GetDisplayResolutionConfig
-     * @Description, get the display resolution config
-     * @Param: none
-     * @Return: value refer to enum vpp_display_resolution_t
-     */
-    public int GetDisplayResolutionConfig() {
-        return sendCmd(GET_DISPLAY_RESOLUTION_CONFIG);
-    }
-
-    /**
-     * @Function:GetDisplayResolutionInfo
-     * @Description, get the display resolution info
-     * @Param: none
-     * @Return: high 16 bits is width, low 16 bits is height
-     */
-    public int GetDisplayResolutionInfo() {
-        return sendCmd(GET_DISPLAY_RESOLUTION_INFO);
     }
 
     public int GetHdmiHdcpKeyKsvInfo(int data_buf[]) {
@@ -5659,7 +4610,6 @@ public class TvControlManager {
         return sendCmdIntArray(FACTORY_FBC_SET_ELEC_MODE, val);
     }
 
-
     /**
      * @Function: FactoryGet_AUTO_ELEC_MODE
      * @Description:
@@ -5669,28 +4619,6 @@ public class TvControlManager {
     public int FactoryGet_AUTO_ELEC_MODE() {
         return sendCmd(FACTORY_FBC_GET_ELEC_MODE);
     }
-
-    /**
-     * @Function: FactorySet_FBC_Backlight_N360
-     * @Description:
-     * @Param:
-     * @Return:
-     */
-    public int FactorySet_FBC_Backlight_N360(int mode) {
-        int val[] = new int[]{mode};
-        return sendCmdIntArray(FACTORY_FBC_SET_BACKLIFHT_N360, val);
-    }
-
-    /**
-     * @Function: FactoryGet_FBC_Backlight_N360
-     * @Description:
-     * @Param:
-     * @Return:
-     */
-    public int FactoryGet_FBC_Backlight_N360() {
-        return sendCmd(FACTORY_FBC_GET_BACKLIFHT_N360);
-    }
-
 
     /**
      * @Function: FactorySet_FBC_Picture_Mode
@@ -5968,11 +4896,6 @@ public class TvControlManager {
         return sendCmdIntArray(FACTORY_FBC_PANEL_SUSPEND, val);
     }
 
-    public int SetKalaokIOLevel(int level) {
-        int val[] = new int[]{level};
-        return sendCmdIntArray(SET_KALAOK_IO_LEVEL, val);
-    }
-
     //@:value ,default 0
     public int FactorySet_FBC_Panel_User_Setting_Default(int value) {
         int val[] = new int[]{value};
@@ -6112,272 +5035,6 @@ public class TvControlManager {
         return sendCmd(FACTORY_WHITE_BALANCE_GET_GRAY_PATTERN);
     }
 
-    public int Factory_FBC_Get_LightSensor_Status_N310() {
-        return sendCmd(FACTROY_FBC_GET_LIGHT_SENSOR_STATUS_N310);
-    }
-
-    public int Factory_FBC_Set_LightSensor_Status_N310(int value) {
-        int val[] = new int[]{value};
-        return sendCmdIntArray(FACTROY_FBC_SET_LIGHT_SENSOR_STATUS_N310, val);
-    }
-
-    public int Factory_FBC_Get_DreamPanel_Status_N310() {
-        return sendCmd(FACTROY_FBC_GET_DREAM_PANEL_STATUS_N310);
-    }
-
-    public int Factory_FBC_Set_DreamPanel_Status_N310(int value) {
-        int val[] = new int[]{value};
-        return sendCmdIntArray(FACTROY_FBC_SET_DREAM_PANEL_STATUS_N310, val);
-    }
-
-    public int Factory_FBC_Get_MULT_PQ_Status_N310() {
-        return sendCmd(FACTROY_FBC_GET_MULT_PQ_STATUS_N310);
-    }
-
-    public int Factory_FBC_Set_MULT_PQ_Status_N310(int value) {
-        int val[] = new int[]{value};
-        return sendCmdIntArray(FACTROY_FBC_SET_MULT_PQ_STATUS_N310, val);
-    }
-
-    public int Factory_FBC_Get_MEMC_Status_N310() {
-        return sendCmd(FACTROY_FBC_GET_MEMC_STATUS_N310);
-    }
-
-    public int Factory_FBC_Set_MEMC_Status_N310(int value) {
-        int val[] = new int[]{value};
-        return sendCmdIntArray(FACTROY_FBC_SET_MEMC_STATUS_N310, val);
-    }
-
-    //value:
-    /*
-    #define REBOOT_FLAG_NORMAL              0x00000000
-    #define REBOOT_FLAG_UPGRADE             0x80808080
-    #define REBOOT_FLAG_UPGRADE2            0x88888888      // reserved
-    #define REBOOT_FLAG_SUSPEND             0x12345678*/
-    public int FactorySet_FBC_Power_Reboot(int value) {
-        int val[] = new int[]{value};
-        return sendCmdIntArray(FACTORY_FBC_POWER_REBOOT, val);
-    }
-
-    //ref to FBC include/key_const.h
-    public static final int AML_FBC_KEY_NOP                                 = 0;
-    public static final int AML_FBC_KEY_NUM_PLUS10                          = 1;
-    public static final int AML_FBC_KEY_NUM_0                               = 2;
-    public static final int AML_FBC_KEY_NUM_1                               = 3;
-    public static final int AML_FBC_KEY_NUM_2                               = 4;
-    public static final int AML_FBC_KEY_NUM_3                               = 5;
-    public static final int AML_FBC_KEY_NUM_4                               = 6;
-    public static final int AML_FBC_KEY_NUM_5                               = 7;
-    public static final int AML_FBC_KEY_NUM_6                               = 8;
-    public static final int AML_FBC_KEY_NUM_7                               = 9;
-    public static final int AML_FBC_KEY_NUM_8                               = 10;
-    public static final int AML_FBC_KEY_NUM_9                               = 11;
-    public static final int AML_FBC_KEY_UP                                  = 12;
-    public static final int AML_FBC_KEY_DOWN                                = 13;
-    public static final int AML_FBC_KEY_LEFT                                = 14;
-    public static final int AML_FBC_KEY_RIGHT                               = 15;
-    public static final int AML_FBC_KEY_ENTER                               = 16;
-    public static final int AML_FBC_KEY_EXIT                                = 17;
-    public static final int AML_FBC_KEY_PAGE_UP                             = 18;
-    public static final int AML_FBC_KEY_PAGE_DOWN                           = 19;
-    public static final int AML_FBC_KEY_POWER                               = 20;
-    public static final int AML_FBC_KEY_SLEEP                               = 21;
-    public static final int AML_FBC_KEY_HOME                                = 22;
-    public static final int AML_FBC_KEY_SETUP                               = 23;
-    public static final int AML_FBC_KEY_OSD                                 = 24;
-    public static final int AML_FBC_KEY_MENU                                = 25;
-    public static final int AML_FBC_KEY_DISPLAY                             = 26;
-    public static final int AML_FBC_KEY_MARK                                = 27;
-    public static final int AML_FBC_KEY_CLEAR                               = 28;
-    public static final int AML_FBC_KEY_PLAY_PAUSE                          = 29;
-    public static final int AML_FBC_KEY_STOP                                = 30;
-    public static final int AML_FBC_KEY_PAUSE                               = 31;
-    public static final int AML_FBC_KEY_NEXT_CHAP                           = 32;
-    public static final int AML_FBC_KEY_PREVIOUS_CHAP                       = 33;
-    public static final int AML_FBC_KEY_FAST_FORWARD                        = 34;
-    public static final int AML_FBC_KEY_FAST_BACKWARD                       = 35;
-    public static final int AML_FBC_KEY_REPEAT                              = 36;
-    public static final int AML_FBC_KEY_PLAY_MODE                           = 37;
-    public static final int AML_FBC_KEY_SLIDE_SHOW                          = 38;
-    public static final int AML_FBC_KEY_MUTE                                = 39;
-    public static final int AML_FBC_KEY_VOL_MINUS                           = 40;
-    public static final int AML_FBC_KEY_VOL_PLUS                            = 41;
-    public static final int AML_FBC_KEY_ZOOM                                = 42;
-    public static final int AML_FBC_KEY_ROTATE                              = 43;
-    public static final int AML_FBC_KEY_MOUSE_L_DOWN                        = 44;
-    public static final int AML_FBC_KEY_MOUSE_L_UP                          = 45;
-    public static final int AML_FBC_KEY_MOUSE_R_DOWN                        = 46;
-    public static final int AML_FBC_KEY_MOUSE_R_UP                          = 47;
-    public static final int AML_FBC_KEY_MOUSE_M_DOWN                        = 48;
-    public static final int AML_FBC_KEY_MOUSE_M_UP                          = 49;
-    public static final int AML_FBC_KEY_MOUSE_ROLL_DOWN                     = 50;
-    public static final int AML_FBC_KEY_MOUSE_ROLL_UP                       = 51;
-    public static final int AML_FBC_KEY_MOUSE_MOVE                          = 52;
-    public static final int AML_FBC_KEY_LONG_EXIT                           = 53;
-    public static final int AML_FBC_KEY_LONG_RIGHT                          = 54;
-    public static final int AML_FBC_KEY_LONG_LEFT                           = 55;
-    public static final int AML_FBC_KEY_LONG_DOWN                           = 56;
-    public static final int AML_FBC_KEY_LONG_UP                             = 57;
-    public static final int AML_FBC_KEY_LONG_ENTER                          = 58;
-    public static final int AML_FBC_KEY_LONG_MENU                           = 59;
-    public static final int AML_FBC_KEY_OPEN_CLOSE                          = 60;
-    public static final int AML_FBC_KEY_NTSC_PAL                            = 61;
-    public static final int AML_FBC_KEY_PROGRESSIVE                         = 62;
-    public static final int AML_FBC_KEY_TITLE_CALL                          = 63;
-    public static final int AML_FBC_KEY_AUDIO                               = 64;
-    public static final int AML_FBC_KEY_SUBPICTURE                          = 65;
-    public static final int AML_FBC_KEY_ANGLE                               = 66;
-    public static final int AML_FBC_KEY_AB_PLAY                             = 67;
-    public static final int AML_FBC_KEY_RECODE                              = 68;
-    public static final int AML_FBC_KEY_SHORTCUT                            = 69;
-    public static final int AML_FBC_KEY_ORIGINAL                            = 70;
-    public static final int AML_FBC_KEY_BOOKING                             = 71;
-    public static final int AML_FBC_KEY_ORDER_SYSTEM                        = 72;
-    public static final int AML_FBC_KEY_SOUND_CTRL                          = 73;
-    public static final int AML_FBC_KEY_FUNCTION                            = 74;
-    public static final int AML_FBC_KEY_SCHEDULE                            = 75;
-    public static final int AML_FBC_KEY_FAVOR                               = 76;
-    public static final int AML_FBC_KEY_RELATION                            = 77;
-    public static final int AML_FBC_KEY_FIRST                               = 78;
-    public static final int AML_FBC_KEY_DELETE                              = 79;
-    public static final int AML_FBC_KEY_SLIDE_RELEASE                       = 80;
-    public static final int AML_FBC_KEY_SLIDE_TOUCH                         = 81;
-    public static final int AML_FBC_KEY_SLIDE_LEFT                          = 82;
-    public static final int AML_FBC_KEY_SLIDE_RIGHT                         = 83;
-    public static final int AML_FBC_KEY_SLIDE_UP                            = 84;
-    public static final int AML_FBC_KEY_SLIDE_DOWN                          = 85;
-    public static final int AML_FBC_KEY_SLIDE_CLOCKWISE                     = 86;
-    public static final int AML_FBC_KEY_SLIDE_ANTI_CLOCKWISE                = 87;
-    public static final int AML_FBC_KEY_SLIDE_UP_LEFT                       = 88;
-    public static final int AML_FBC_KEY_SLIDE_UP_RIGHT                      = 89;
-    public static final int AML_FBC_KEY_SLIDE_DOWN_LEFT                     = 90;
-    public static final int AML_FBC_KEY_SLIDE_DOWN_RIGHT                    = 91;
-    public static final int AML_FBC_KEY_SLIDE_NULL                          = 92;
-    public static final int AML_FBC_KEY_MENU_CALL                           = 93;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_A                  = 94;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_B                  = 95;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_C                  = 96;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_D                  = 97;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_E                  = 98;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_F                  = 99;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_G                  = 100;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_H                  = 101;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_I                  = 102;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_J                  = 103;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_K                  = 104;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_L                  = 105;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_M                  = 106;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_N                  = 107;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_O                  = 108;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_P                  = 109;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_Q                  = 110;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_R                  = 111;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_S                  = 112;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_T                  = 113;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_U                  = 114;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_V                  = 115;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_W                  = 116;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_X                  = 117;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_Y                  = 118;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_Z                  = 119;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_0                  = 120;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_1                  = 121;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_2                  = 122;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_3                  = 123;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_4                  = 124;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_5                  = 125;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_6                  = 126;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_7                  = 127;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_8                  = 128;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_9                  = 129;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_ENTER              = 130;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_SPACE              = 131;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_BACKSPACE          = 132;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_ESC                = 133;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_CAESURA_SIGN       = 134;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_SUBTRACTION_SIGN   = 135;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_EQUALS_SIGN        = 136;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_LEFT_BRACKET       = 137;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_RIGHT_BRACKET      = 138;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_BACKSLASH          = 139;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_SEMICOLON          = 140;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_QUOTATION_MARK     = 141;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_COMMA              = 142;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_POINT              = 143;
-    public static final int AML_FBC_KEY_AML_FBC_KEYBOARD_SLASH              = 144;
-    public static final int AML_FBC_KEY_ALARM_SET                           = 145;
-    public static final int AML_FBC_KEY_ALARM_OFF                           = 146;
-    public static final int AML_FBC_KEY_IPOD_PLAY_PAUSE                     = 147;
-    public static final int AML_FBC_KEY_B_TIME_SET_MINUS                    = 148;
-    public static final int AML_FBC_KEY_B_TIME_SET_PLUS                     = 149;
-    public static final int AML_FBC_KEY_ALARM_B_ONOFF                       = 150;
-    public static final int AML_FBC_KEY_SNOOZE_BRIGHTNESS                   = 151;
-    public static final int AML_FBC_KEY_ALARM_A_ONOFF                       = 152;
-    public static final int AML_FBC_KEY_A_TIME_SET_MINUS                    = 153;
-    public static final int AML_FBC_KEY_A_TIME_SET_PLUS                     = 154;
-    public static final int AML_FBC_KEY_BACK                                = 155;
-    public static final int AML_FBC_KEY_RADIO_BAND                          = 156;
-    public static final int AML_FBC_KEY_OPTION                              = 157;
-    public static final int AML_FBC_KEY_LONG_B_TIME_SET_MINUS               = 158;
-    public static final int AML_FBC_KEY_LONG_B_TIME_SET_PLUS                = 159;
-    public static final int AML_FBC_KEY_LONG_A_TIME_SET_MINUS               = 160;
-    public static final int AML_FBC_KEY_LONG_A_TIME_SET_PLUS                = 161;
-    public static final int AML_FBC_KEY_LONG2_B_TIME_SET_MINUS              = 162;
-    public static final int AML_FBC_KEY_LONG2_B_TIME_SET_PLUS               = 163;
-    public static final int AML_FBC_KEY_LONG2_A_TIME_SET_MINUS              = 164;
-    public static final int AML_FBC_KEY_LONG2_A_TIME_SET_PLUS               = 165;
-    public static final int AML_FBC_KEY_LONG2_LEFT                          = 166;
-    public static final int AML_FBC_KEY_LONG2_RIGHT                         = 167;
-    public static final int AML_FBC_KEY_LONGRLS_LEFT                        = 168;
-    public static final int AML_FBC_KEY_LONGRLS_RIGHT                       = 169;
-    public static final int AML_FBC_KEY_LONGRLS_B_TIME_SET_MINUS            = 170;
-    public static final int AML_FBC_KEY_LONGRLS_B_TIME_SET_PLUS             = 171;
-    public static final int AML_FBC_KEY_LONGRLS_A_TIME_SET_MINUS            = 172;
-    public static final int AML_FBC_KEY_LONGRLS_A_TIME_SET_PLUS             = 173;
-    public static final int AML_FBC_KEY_LONG2RLS_LEFT                       = 174;
-    public static final int AML_FBC_KEY_LONG2RLS_RIGHT                      = 175;
-    public static final int AML_FBC_KEY_LONG2RLS_B_TIME_SET_MINUS           = 176;
-    public static final int AML_FBC_KEY_LONG2RLS_B_TIME_SET_PLUS            = 177;
-    public static final int AML_FBC_KEY_LONG2RLS_A_TIME_SET_MINUS           = 178;
-    public static final int AML_FBC_KEY_LONG2RLS_A_TIME_SET_PLUS            = 179;
-
-    //@param:keyCode  AML_FBC_KEY_XXX   param:default 0
-    public int FactorySet_FBC_SEND_KEY_TO_FBC(int keyCode, int param) {
-        int val[] = new int[]{keyCode, param};
-        return sendCmdIntArray(FACTORY_FBC_SEND_KEY_TO_FBC, val);
-    }
-
-    /**
-     * @Description:copy srcPath to desPath
-     * @Return:0 success,-1 fail
-     */
-    public int CopyFile (String srcPath,String desPath) {
-        String val[] = new String[]{srcPath, desPath};
-        return sendCmdStringArray(FACTORY_COPY_FILE, val);
-    }
-
-    /**
-     * @Function: TvMiscChannelExport
-     * @Description: export the /param/dtv.db file to the udisk
-     * @Param: none
-     * @Return: 0 success , -1 copy fail , -2 other
-     */
-    public int TvMiscChannelExport(String destPath) {
-        String val[] = new String[]{destPath};
-        return sendCmdStringArray(MISC_CHANNEL_EXPORT, val);
-    }
-
-    /**
-     * @Function: TvMiscChannelImport
-     * @Description: import the dtv.db file from the udisk to the /param directory
-     * @Param: none
-     * @Return: 0 success , -1 copy fail , -2 other
-     */
-    public int TvMiscChannelImport(String srcPath) {
-        String val[] = new String[]{srcPath};
-        return sendCmdStringArray(MISC_CHANNEL_IMPORT, val);
-    }
-
     // set listener when not need to listen set null
 
     public final static int EVENT_AV_PLAYBACK_NODATA            = 1;
@@ -6394,13 +5051,6 @@ public class TvControlManager {
         mAVPlaybackListener = l;
     }
 
-    public static final int TV_ERROR_UNKNOWN = 1;
-    public static final int TV_ERROR_SERVER_DIED = 100;
-
-    public interface ErrorCallback {
-        void onError(int error, TvControlManager tv);
-    };
-
     public void SetSigInfoChangeListener(TVInSignalInfo.SigInfoChangeListener l) {
         libtv_log_open();
         mSigInfoChangeLister = l;
@@ -6411,38 +5061,8 @@ public class TvControlManager {
         mSigChanSearchListener = l;
     }
 
-    public enum CC_VGA_AUTO_ADJUST_STATUS {
-        CC_VGA_AUTO_ADJUST_START(0),
-        CC_VGA_AUTO_ADJUST_SUCCESS(1),
-        CC_VGA_AUTO_ADJUST_FAILED(-1),
-        CC_VGA_AUTO_ADJUST_CURTIMMING_FAILED(-2),
-        CC_VGA_AUTO_ADJUST_PARA_FAILED(-3),
-        CC_VGA_AUTO_ADJUST_TERMINATED(-4),
-        CC_VGA_AUTO_ADJUST_IDLE(-5);
-        private int val;
-        CC_VGA_AUTO_ADJUST_STATUS(int val) {
-            this.val = val;
-        }
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public interface VGAAdjustChangeListener {
-        void onVGAAdjustChange(int state);
-    };
-
-    public void SetVGAChangeListener(VGAAdjustChangeListener l) {
-        libtv_log_open();
-        mVGAChangeListener = l;
-    }
-
     public interface Status3DChangeListener {
         void onStatus3DChange(int state);
-    }
-
-    public interface StatusTVChangeListener {
-        void onStatusTVChange(int type,int state,int mode,int freq,int para1,int para2);
     }
 
     public interface StatusSourceConnectListener {
@@ -6477,20 +5097,6 @@ public class TvControlManager {
         mStatus3DChangeListener = l;
     }
 
-    public void SetStatusTVChangeListener(StatusTVChangeListener l) {
-        libtv_log_open();
-        mStatusTVChangeListener = l;
-    }
-
-    public interface DreamPanelChangeListener {
-        void onDreamPanelChange(int msg_pdu[]);
-    };
-
-    public void SetDreamPanelChangeListener(DreamPanelChangeListener l) {
-        libtv_log_open();
-        mDreamPanelChangeListener = l;
-    }
-
     public interface AdcCalibrationListener {
         void onAdcCalibrationChange(int state);
     }
@@ -6516,11 +5122,6 @@ public class TvControlManager {
     public void SetChannelSelectListener(ChannelSelectListener l) {
         libtv_log_open();
         mChannelSelectListener = l;
-    }
-
-    public final void setErrorCallback(ErrorCallback cb) {
-        libtv_log_open();
-        mErrorCallback = cb;
     }
 
     public interface SerialCommunicationListener {
