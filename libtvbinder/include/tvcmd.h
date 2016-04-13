@@ -28,6 +28,8 @@ enum tvcmd_e {
     //hdmi
     SET_HDMI_EDID_VER = 44,
     SET_HDCP_KEY_ENABLE = 45,
+    SET_HDMI_COLOR_RANGE_MODE = 46,
+    GET_HDMI_COLOR_RANGE_MODE = 47,
 
     // PQ
     //SET_SCENEMODE = 192,
