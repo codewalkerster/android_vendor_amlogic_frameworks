@@ -66,6 +66,8 @@ public interface TvControlCommand {
     int SAVE_NOISE_REDUCTION_MODE = 226;
     int SET_BACKLIGHT_SWITCH = 227;
     int GET_BACKLIGHT_SWITCH = 228;
+    int SET_EYE_PROTETION_MODE = 230;
+    int GET_EYE_PROTETION_MODE = 231;
     int GETRGBOGO_POSTOFFSET = 233;
     int GETRGBOGO_GAIN = 236;
 

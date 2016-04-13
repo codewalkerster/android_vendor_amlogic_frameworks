@@ -1071,6 +1071,15 @@ public class TvControlManager {
         return sendCmdIntArray(SAVE_DISPLAY_MODE, val);
     }
 
+    public int SetEyeProtectionMode(boolean enable) {
+        int val[] = new int[]{enable ? 1 : 0};
+        return sendCmdIntArray(SET_EYE_PROTETION_MODE, val);
+    }
+
+    public boolean GetEyeProtectionMode() {
+        return (sendCmd(GET_EYE_PROTETION_MODE) == 1) ? true : false;
+    }
+
     public enum Noise_Reduction_Mode {
         REDUCE_NOISE_CLOSE(0),
         REDUCE_NOISE_WEAK(1),
