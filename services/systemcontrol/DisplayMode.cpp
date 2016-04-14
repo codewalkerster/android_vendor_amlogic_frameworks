@@ -207,6 +207,19 @@ static bool isMatch(uevent_data_t* ueventData, const char* matchName) {
     return matched;
 }
 
+#ifndef RECOVERY_MODE
+static void sfRepaintEverything() {
+    sp<IServiceManager> sm = defaultServiceManager();
+    sp<IBinder> sf = sm->getService(String16("SurfaceFlinger"));
+    if (sf != NULL) {
+        Parcel data;
+        data.writeInterfaceToken(String16("android.ui.ISurfaceComposer"));
+        //SYS_LOGI("send message to sf to repaint everything!\n");
+        sf->transact(1004, data, NULL);
+    }
+}
+#endif
+
 // all the hdmi plug checking complete in this loop
 static void* HdmiPlugDetectThread(void* data) {
     DisplayMode *pThiz = (DisplayMode*)data;
@@ -285,14 +298,7 @@ static void* HdmiPlugDetectThread(void* data) {
             //0: no aml video data, 1: aml video data aviliable
             if (!strcmp(u_data.name, "video_layer1") && !strcmp(u_data.state, "1")) {
                 SYS_LOGI("Video Layer1 switch_state: %s switch_name: %s\n", u_data.state, u_data.name);
-                sp<IServiceManager> sm = defaultServiceManager();
-                sp<IBinder> sf = sm->getService(String16("SurfaceFlinger"));
-                if (sf != NULL) {
-                    Parcel data;
-                    data.writeInterfaceToken(String16("android.ui.ISurfaceComposer"));
-                    //SYS_LOGI("send message to sf to repaint everything!\n");
-                    sf->transact(1004, data, NULL);
-                }
+                sfRepaintEverything();
             }
         }
 #endif
@@ -1505,6 +1511,8 @@ void* DisplayMode::hdcpRxThreadLoop(void* data) {
 
 #ifndef RECOVERY_MODE
     char isPlugin = 'N';
+    static int lastVideoState = 0;
+    int curVideoState = 0;
     while (true) {
         char valueStr[10] = {0};
         pThiz->pSysWrite->readSysfs(HDMI_RX_HPD_STATE, valueStr);
@@ -1517,6 +1525,15 @@ void* DisplayMode::hdcpRxThreadLoop(void* data) {
         }
         //if (_strstr(valueStr, (char *)"1"))
 
+        memset(valueStr, 0, sizeof(valueStr));
+        pThiz->pSysWrite->readSysfs(SYSFS_VIDEO_LAYER_STATE, valueStr);
+        curVideoState = atoi(valueStr);
+
+        if (curVideoState != lastVideoState) {
+            SYS_LOGI("Video Layer1 switch_state: %d\n", curVideoState);
+            sfRepaintEverything();
+            lastVideoState = curVideoState;
+        }
         usleep(200*1000);//sleep 200ms
     }
 #endif
