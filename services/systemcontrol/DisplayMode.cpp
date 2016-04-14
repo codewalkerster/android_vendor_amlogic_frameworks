@@ -991,6 +991,19 @@ void DisplayMode::filterHdmiMode(char* mode, hdmi_data_t* data) {
 #endif
 }
 
+void DisplayMode::standardMode(char* mode) {
+    char* p;
+    if ((p = strstr(mode, SUFFIX_10BIT)) != NULL) {
+    } else if ((p = strstr(mode, SUFFIX_12BIT)) != NULL) {
+    } else if ((p = strstr(mode, SUFFIX_14BIT)) != NULL) {
+    } else if ((p = strstr(mode, SUFFIX_RGB)) != NULL) {
+    }
+
+    if (p != NULL) {
+        memset(p, 0, strlen(p));
+    }
+}
+
 void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
     if (strstr(data->edid, "null") != NULL) {
         pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, mode, DEFAULT_OUTPUT_MODE);
@@ -1124,7 +1137,10 @@ void DisplayMode::setTVOutputMode(const char* outputmode, bool initState) {
     int outputheight = 0;
     int position[4] = { 0, 0, 0, 0 };
 
-    getPosition(outputmode, position);
+    char std_mode[MODE_LEN] = {0};
+    strcpy(std_mode, outputmode);
+    standardMode(std_mode);
+    getPosition(std_mode, position);
     outputx = position[0];
     outputy = position[1];
     outputwidth = position[2];

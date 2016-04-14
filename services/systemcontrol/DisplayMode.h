@@ -175,6 +175,11 @@ using namespace android;
 #define ENV_4K2KSMPTE_W                 "ubootenv.var.4k2ksmpte_w"
 #define ENV_4K2KSMPTE_H                 "ubootenv.var.4k2ksmpte_h"
 
+#define SUFFIX_10BIT                    "10bit"
+#define SUFFIX_12BIT                    "12bit"
+#define SUFFIX_14BIT                    "14bit"
+#define SUFFIX_RGB                      "rgb"
+
 #define UBOOTENV_DIGITAUDIO             "ubootenv.var.digitaudiooutput"
 #define UBOOTENV_HDMIMODE               "ubootenv.var.hdmimode"
 #define UBOOTENV_CVBSMODE               "ubootenv.var.cvbsmode"
@@ -346,6 +351,7 @@ private:
     void getBestHdmiMode(char * mode, hdmi_data_t* data);
     void getHighestHdmiMode(char* mode, hdmi_data_t* data);
     void filterHdmiMode(char * mode, hdmi_data_t* data);
+    void standardMode(char* mode);
     void getHdmiOutputMode(char *mode, hdmi_data_t* data);
     bool isEdidChange();
     bool isBestOutputmode();
