@@ -504,6 +504,10 @@ public class ChannelInfo {
         mDisplayName = name;
     }
 
+    public void setDisplayNameLocal(String name) {
+        mDisplayNameMulti = mDisplayNameMulti.replace(getDisplayNameLocal(), name);
+    }
+
     public void setVideoStd(int std) {
         mVideoStd = std;
     }
