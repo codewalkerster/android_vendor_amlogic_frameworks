@@ -99,6 +99,7 @@ public interface TvControlCommand {
     int FACTORY_SET_OUT_DEFAULT = 281;
     int FACTORY_CLEAN_ALL_TABLE_FOR_PROGRAM = 294;
     int FACTORY_SETPATTERN_YUV = 297;
+    int FACTORY_SET_GAMMA_PATTERN = 298;
     // FACTORY END
 
     // AUDIO
