@@ -1131,6 +1131,29 @@ public class TvControlManager {
         return sendCmdIntArray(SAVE_NOISE_REDUCTION_MODE, val);
     }
 
+    public enum GAMMA_CURVE_TYPE {
+        GAMMA_CURVE_AUTO(-1),//choose gamma table by value has been saved.
+        GAMMA_CURVE_DEFAULT(0),
+        GAMMA_CURVE_2_1(1),
+        GAMMA_CURVE_2_2(2),
+        GAMMA_CURVE_2_3(3),
+        GAMMA_CURVE_2_4(4),
+        GAMMA_CURVE_MAX(5);
+
+        private int val;
+        GAMMA_CURVE_TYPE(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    public int setGamma(GAMMA_CURVE_TYPE gamma_curve, int is_save) {
+        int val[] = new int[]{gamma_curve.toInt(), is_save};
+        return sendCmdIntArray(SET_GAMMA, val);
+    }
     // PQ END
 
     // FACTORY

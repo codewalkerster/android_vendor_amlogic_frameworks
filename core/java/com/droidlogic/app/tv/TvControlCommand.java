@@ -68,6 +68,7 @@ public interface TvControlCommand {
     int GET_BACKLIGHT_SWITCH = 228;
     int SET_EYE_PROTETION_MODE = 230;
     int GET_EYE_PROTETION_MODE = 231;
+    int SET_GAMMA = 232;
     int GETRGBOGO_POSTOFFSET = 233;
     int GETRGBOGO_GAIN = 236;
 
