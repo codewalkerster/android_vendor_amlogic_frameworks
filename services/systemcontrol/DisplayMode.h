@@ -365,7 +365,7 @@ private:
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
 
     int getBootenvInt(const char* key, int defaultVal);
-    static bool hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14);
+    static bool hdcpInit(DisplayMode *disMode, SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14);
     static void hdcpAuthenticate(DisplayMode *disMode, SysWrite *pSysWrite, bool useHdcp22, bool useHdcp14);
     static void* hdcpThreadLoop(void* data);
     static void* hdcpRxThreadLoop(void* data);
@@ -402,6 +402,9 @@ private:
     SysWrite *pSysWrite = NULL;
     char mMode3d[32];//this used for video 3d set
     bool m3dModeSet;
+    bool m3dModeImpl;
+
+    char mLastDisMode[32];//last display mode
 
     pthread_mutex_t pthreadMutex;
     sem_t pthreadSem;

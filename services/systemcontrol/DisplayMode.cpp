@@ -322,6 +322,7 @@ DisplayMode::DisplayMode(const char *path)
     mDisplayHeight(FULL_HEIGHT_1080),
     mLogLevel(LOG_LEVEL_DEFAULT),
     m3dModeSet(false),
+    m3dModeImpl(false),
     pthreadIdHdcp(0) {
 
     if (NULL == path) {
@@ -600,6 +601,11 @@ int DisplayMode::modeToIndex3D(const char *mode3d) {
 }
 
 void DisplayMode::mode3DImpl() {
+    if (m3dModeImpl) {
+        SYS_LOGI("[mode3DImpl]3d mode is setting, m3dModeImpl:true\n");
+        return;
+    }
+    m3dModeImpl = true;
     pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, "-1"); // "-1" means stop hdcp 14/22
     usleep(100 * 1000);
     pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); // Turn off TMDS PHY
@@ -619,20 +625,39 @@ void DisplayMode::mode3DImpl() {
         default:
             break;
     }
-    pSysWrite->writeSysfs(AV_HDMI_CONFIG, mMode3d);
 
 #ifndef RECOVERY_MODE
-    SurfaceComposerClient::setDisplay2Stereoscopic(0, format);
     SurfaceComposerClient::openGlobalTransaction();
+    SurfaceComposerClient::setDisplay2Stereoscopic(0, format);
     SurfaceComposerClient::closeGlobalTransaction();
 #endif
+    usleep(200 * 1000);
+
+    char curDisplayMode[MODE_LEN] = {0};
+    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
+    SYS_LOGI("[mode3DImpl]index:%d, curDisplayMode:%s\n", index, curDisplayMode);
+    if (index != VIDEO_3D_MODE_OFF) {
+        if (strstr(curDisplayMode, "2160p") != NULL || strstr(curDisplayMode, "smpte") != NULL) {
+            setMboxOutputMode(MODE_1080P50HZ);
+            strcpy(mLastDisMode, curDisplayMode);
+        }
+    }
+    else {
+        if (strlen(mLastDisMode) != 0) {
+            setMboxOutputMode(mLastDisMode);
+            memset(mLastDisMode, 0, sizeof(mLastDisMode));
+        }
+    }
+
+    pSysWrite->writeSysfs(AV_HDMI_CONFIG, mMode3d);
 
     usleep(100 * 1000);
     pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); // Turn on TMDS PHY
     usleep(100 * 1000);
     pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
 
-    m3dModeSet = false; //3d mode set finish
+    m3dModeImpl = false;//3d mode implement finish
+    m3dModeSet = false;//3d mode set finish
 }
 void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
     hdmi_data_t data;
@@ -1581,7 +1606,7 @@ void DisplayMode::stopTXHdcp() {
     usleep(2000);
 }
 
-bool DisplayMode::hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
+bool DisplayMode::hdcpInit(DisplayMode *disMode, SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
     bool useHdcp22 = false;
     bool useHdcp14 = false;
 #ifdef HDCP_AUTHENTICATION
@@ -1612,26 +1637,32 @@ bool DisplayMode::hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
     if (/*(_strstr(cap, (char *)"2160p") != NULL) && */(_strstr(hdcpRxVer, (char *)"22") != NULL) &&
         (_strstr(hdcpTxKey, (char *)"22") != NULL)) {
         useHdcp22 = true;
-        pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, DISPLAY_HDMI_HDCP_22);
-
-        //SYS_LOGI("HDCP 2.2, stop hdcp_tx22, init will kill hdcp_tx22\n");
-        //pSysWrite->setProperty("ctl.stop", "hdcp_tx22");
-        usleep(50*1000);
-        SYS_LOGI("HDCP 2.2, start hdcp_tx22\n");
-        pSysWrite->setProperty("ctl.start", "hdcp_tx22");
     }
 
     if (!useHdcp22 && (_strstr(hdcpRxVer, (char *)"14") != NULL) &&
         (_strstr(hdcpTxKey, (char *)"14") != NULL)) {
         useHdcp14 = true;
         SYS_LOGI("HDCP 1.4\n");
-        pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, DISPLAY_HDMI_HDCP_14);
+    }
+
+    if ((useHdcp22 ||useHdcp14) && disMode->m3dModeSet) {
+        disMode->mode3DImpl();
     }
 
     if (!useHdcp22 && !useHdcp14) {
         //do not support hdcp1.4 and hdcp2.2
         SYS_LOGE("device do not support hdcp1.4 or hdcp2.2\n");
         return false;
+    }
+
+    if (useHdcp22) {
+        pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, DISPLAY_HDMI_HDCP_22);
+        usleep(50*1000);
+        SYS_LOGI("HDCP 2.2, start hdcp_tx22\n");
+        pSysWrite->setProperty("ctl.start", "hdcp_tx22");
+    }
+    else if (useHdcp14) {
+        pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, DISPLAY_HDMI_HDCP_14);
     }
 #endif
     pSysWrite = pSysWrite;
@@ -1689,7 +1720,7 @@ void* DisplayMode::hdcpThreadLoop(void* data) {
 
     SYS_LOGI("HDCP thread loop entry\n");
     sem_post(&pThiz->pthreadSem);
-    if (hdcpInit(sysWrite, &hdcp22, &hdcp14)) {
+    if (hdcpInit(pThiz, sysWrite, &hdcp22, &hdcp14)) {
         //first close osd, after HDCP authenticate completely, then open osd
         sysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
 
