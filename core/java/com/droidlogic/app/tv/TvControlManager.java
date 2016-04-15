@@ -207,8 +207,10 @@ public class TvControlManager {
         }
 
         private void readScanEvent(ScannerEvent scan_ev, Parcel p) {
-            int i;
+            int i, j;
             scan_ev.type = p.readInt();
+            Log.d(TAG, "scan ev type:"+ scan_ev.type);
+
             scan_ev.precent = p.readInt();
             scan_ev.totalcount = p.readInt();
             scan_ev.lock = p.readInt();
@@ -274,6 +276,20 @@ public class TvControlManager {
             scan_ev.scrambled = p.readInt();
             scan_ev.scan_mode = p.readInt();
             scan_ev.sdtVersion = p.readInt();
+            scan_ev.sort_mode = p.readInt();
+
+            scan_ev.lcnInfo = new ScannerLcnInfo();
+            scan_ev.lcnInfo.netId = p.readInt();
+            scan_ev.lcnInfo.tsId = p.readInt();
+            scan_ev.lcnInfo.serviceId = p.readInt();
+            scan_ev.lcnInfo.visible = new int[4];
+            scan_ev.lcnInfo.lcn = new int[4];
+            scan_ev.lcnInfo.valid = new int[4];
+            for (j=0; j<4; j++) {
+                scan_ev.lcnInfo.visible[j] = p.readInt();
+                scan_ev.lcnInfo.lcn[j] = p.readInt();
+                scan_ev.lcnInfo.valid[j] = p.readInt();
+            }
         }
 
         @Override
@@ -3761,6 +3777,7 @@ public class TvControlManager {
     public final static int EVENT_DTV_PROG_DATA             = 8;
     public final static int EVENT_SCAN_EXIT                 = 9;
     public final static int EVENT_SCAN_BEGIN                = 10;
+    public final static int EVENT_LCN_INFO_DATA             = 11;
 
     public class ScannerEvent {
         public int type;
@@ -3812,6 +3829,18 @@ public class TvControlManager {
         public int scan_mode;
 
         public int sdtVersion;
+
+        public int sort_mode;
+        public ScannerLcnInfo lcnInfo;
+    }
+
+    public class ScannerLcnInfo {
+        public int netId;
+        public int tsId;
+        public int serviceId;
+        public int[] visible;
+        public int[] lcn;
+        public int[] valid;
     }
 
     public interface ScannerEventListener {
