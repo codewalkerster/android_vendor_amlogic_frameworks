@@ -457,6 +457,21 @@ public class TvDataBaseManager {
         if (sourceChannel == null || targetChannel == null
             || sourceChannel.getNumber() == targetChannel.getNumber())
             return;
+        ContentValues updateValues = new ContentValues();
+
+        Uri sourceUri = TvContract.buildChannelUri(sourceChannel.getId());
+        updateValues.put(Channels.COLUMN_DISPLAY_NUMBER, targetChannel.getNumber());
+        mContentResolver.update(sourceUri, updateValues, null, null);
+
+        Uri targetUri = TvContract.buildChannelUri(targetChannel.getId());
+        updateValues.put(Channels.COLUMN_DISPLAY_NUMBER, sourceChannel.getNumber());
+        mContentResolver.update(targetUri, updateValues, null, null);
+    }
+
+    public void moveChannel (ChannelInfo sourceChannel, ChannelInfo targetChannel) {
+        if ( sourceChannel == null ||  sourceChannel == null
+                || targetChannel.getNumber() == sourceChannel.getNumber())
+            return;
 
         Uri channelsUri = TvContract.buildChannelsUriForInput(sourceChannel.getInputId());
         String[] projection = {Channels._ID, Channels.COLUMN_DISPLAY_NUMBER, Channels.COLUMN_DISPLAY_NAME};
@@ -472,61 +487,20 @@ public class TvDataBaseManager {
 
                 Uri uri = TvContract.buildChannelUri(rowId);
                 ContentValues updateValues = new ContentValues();
-                if (number == sourceChannel.getNumber()) {
-                    if (DEBUG)
-                        Log.d(TAG, "swapChannel: update source channel: number=" + number + " name=" + name);
-                    updateValues.put(Channels.COLUMN_DISPLAY_NUMBER, targetChannel.getNumber());
-                    mContentResolver.update(uri, updateValues, null, null);
-                } else if (number == targetChannel.getNumber()){
-                    if (DEBUG)
-                        Log.d(TAG, "@@@@@@@@@@ swapChannel: update target channel: number=" + number + " name=" + name);
-                    updateValues.put(Channels.COLUMN_DISPLAY_NUMBER, sourceChannel.getNumber());
-                    mContentResolver.update(uri, updateValues, null, null);
-                }
-            }
-        } catch (Exception e) {
-            //TODO
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
-        }
-    }
-
-    public void moveChannel (ArrayList<ChannelInfo> channelList, int channelNumber, int targetNumber) {
-        if (channelList == null || channelList.size() == 0
-                || channelNumber >= channelList.size() || targetNumber >= channelList.size())
-            return;
-
-        ChannelInfo channel = channelList.get(channelNumber);
-        Uri channelsUri = TvContract.buildChannelsUriForInput(channel.getInputId());
-        String[] projection = {Channels._ID, Channels.COLUMN_DISPLAY_NUMBER, Channels.COLUMN_DISPLAY_NAME};
-
-        Cursor cursor = null;
-        try {
-            cursor = mContentResolver.query(channelsUri, projection,
-                Channels.COLUMN_SERVICE_TYPE + "=?", new String[]{channel.getServiceType()}, null);
-            while (cursor != null && cursor.moveToNext()) {
-                long rowId = cursor.getLong(findPosition(projection, Channels._ID));
-                int number = cursor.getInt(findPosition(projection,Channels.COLUMN_DISPLAY_NUMBER));
-                String name = cursor.getString(findPosition(projection,Channels.COLUMN_DISPLAY_NAME));
-
-                Uri uri = TvContract.buildChannelUri(rowId);
-                ContentValues updateValues = new ContentValues();
-                if (targetNumber < channelNumber) {
-                    if (number >= targetNumber && number < channelNumber) {
+                if (targetChannel.getNumber() < sourceChannel.getNumber()) {
+                    if (number >= targetChannel.getNumber() && number < sourceChannel.getNumber()) {
                         updateValues.put(Channels.COLUMN_DISPLAY_NUMBER, number + 1);
                         mContentResolver.update(uri, updateValues, null, null);
                     }
-                } else if (targetNumber > channelNumber){
-                    if (number > channelNumber && number <= targetNumber) {
+                } else if (targetChannel.getNumber() > sourceChannel.getNumber()){
+                    if (number > sourceChannel.getNumber() && number <= targetChannel.getNumber()) {
                         updateValues.put(Channels.COLUMN_DISPLAY_NUMBER, number - 1);
                         mContentResolver.update(uri, updateValues, null, null);
                     }
                 }
 
-                if (number == channelNumber) {
-                    updateValues.put(Channels.COLUMN_DISPLAY_NUMBER, targetNumber);
+                if (number == sourceChannel.getNumber()) {
+                    updateValues.put(Channels.COLUMN_DISPLAY_NUMBER, targetChannel.getNumber());
                     mContentResolver.update(uri, updateValues, null, null);
                 }
             }
