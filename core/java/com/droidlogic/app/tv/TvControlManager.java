@@ -865,11 +865,11 @@ public class TvControlManager {
      * @Function: SetSharpness
      * @Description: Set current source sharpness value
      * @Param: value saturation, source_type refer to enum SourceInput_Type, is_enable set 1 as default
-     * @Param: status_3d refer to enum Tvin_3d_Status, is_save 1 to save
+     * @Param: is_save 1 to save
      * @Return: 0 success, -1 fail
      */
-    public int SetSharpness(int value, SourceInput_Type source_type, int is_enable, int status_3d, int is_save) {
-        int val[] = new int[]{value, source_type.toInt(), is_enable, status_3d, is_save};
+    public int SetSharpness(int value, SourceInput_Type source_type, int is_enable, int is_save) {
+        int val[] = new int[]{value, source_type.toInt(), is_enable, is_save};
         return sendCmdIntArray(SET_SHARPNESS, val);
     }
 
@@ -1406,33 +1406,32 @@ public class TvControlManager {
     /**
      * @Function: FactorySetOverscanParams
      * @Description: Set overscan params of corresponding source type and fmt for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, fmt refer to enum tvin_sig_fmt_e, status_3d refer to enum Tvin_3d_Status
+     * @Param: source_type refer to enum SourceInput_Type, fmt refer to enum tvin_sig_fmt_e
      * @Param: trans_fmt refer to enum tvin_trans_fmt, cutwin_t refer to class tvin_cutwin_t
      * @Return: 0 success, -1 fail
      */
-    public int FactorySetOverscanParams(SourceInput_Type source_type, TVInSignalInfo.SignalFmt fmt, Tvin_3d_Status status_3d,
+    public int FactorySetOverscanParams(SourceInput_Type source_type, TVInSignalInfo.SignalFmt fmt,
             TVInSignalInfo.TransFmt trans_fmt, tvin_cutwin_t cutwin_t) {
-        int val[] = new int[]{source_type.toInt(), fmt.toInt(), status_3d.ordinal(),
-            trans_fmt.ordinal(), cutwin_t.hs, cutwin_t.he, cutwin_t.vs, cutwin_t.ve};
+        int val[] = new int[]{source_type.toInt(), fmt.toInt(), trans_fmt.ordinal(),
+            cutwin_t.hs, cutwin_t.he, cutwin_t.vs, cutwin_t.ve};
         return sendCmdIntArray(FACTORY_SETOVERSCAN, val);
     }
 
     /**
      * @Function: FactoryGetOverscanParams
      * @Description: Get overscan params of corresponding source type and fmt for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, fmt refer to enum tvin_sig_fmt_e, status_3d refer to enum Tvin_3d_Status
+     * @Param: source_type refer to enum SourceInput_Type, fmt refer to enum tvin_sig_fmt_e
      * @Param: trans_fmt refer to enum tvin_trans_fmt
      * @Return: cutwin_t value for overscan refer to class tvin_cutwin_t
      */
     public tvin_cutwin_t FactoryGetOverscanParams(SourceInput_Type source_type, TVInSignalInfo.SignalFmt fmt,
-            Tvin_3d_Status status_3d, TVInSignalInfo.TransFmt trans_fmt) {
+            TVInSignalInfo.TransFmt trans_fmt) {
         libtv_log_open();
         Parcel cmd = Parcel.obtain();
         Parcel r = Parcel.obtain();
         cmd.writeInt(FACTORY_GETOVERSCAN);
         cmd.writeInt(source_type.ordinal());
         cmd.writeInt(fmt.toInt());
-        cmd.writeInt(status_3d.ordinal());
         cmd.writeInt(trans_fmt.ordinal());
         sendCmdToTv(cmd, r);
         tvin_cutwin_t cutwin_t = new tvin_cutwin_t();
@@ -2880,27 +2879,6 @@ public class TvControlManager {
     }
 
     /**
-     * @Function: SSMSaveDisable3D
-     * @Description: Save disable 3D flag
-     * @Param: flag 3d disable flag
-     * @Return: 0 success, -1 fail
-     */
-    public int SSMSaveDisable3D(int flag) {
-        int val[] = new int[]{flag};
-        return sendCmdIntArray(SSM_SAVE_DISABLE_3D, val);
-    }
-
-    /**
-     * @Function: SSMReadDisable3D
-     * @Description: Read disable 3D flag
-     * @Param:
-     * @Return: disable flag
-     */
-    public int SSMReadDisable3D() {
-        return sendCmd(SSM_READ_DISABLE_3D);
-    }
-
-    /**
      * @Function: SSMSaveGlobalOgoEnable
      * @Description: Save enable global ogo flag
      * @Param: flag enable flag
@@ -2912,7 +2890,7 @@ public class TvControlManager {
     }
 
     /**
-     * @Function: SSMReadDisable3D
+     * @Function: SSMReadGlobalOgoEnable
      * @Description: Read enable global ogo flag
      * @Param:
      * @Return: enable flag
@@ -5142,106 +5120,6 @@ public class TvControlManager {
         libtv_log_open();
         mCloseCaptionListener = l;
     }
-
-    // 3D
-    public enum Mode_3D {
-        MODE_3D_CLOSE(0),
-        MODE_3D_AUTO(1),
-        //        MODE_3D_2D_TO_3D(2),
-        MODE_3D_LEFT_RIGHT(2),
-        MODE_3D_UP_DOWN(3),
-        MODE_3D_LINE_ALTERNATIVE(4),
-        MODE_3D_FRAME_ALTERNATIVE(5),
-        MODE_3D_MAX(6);
-
-        private int val;
-
-        Mode_3D(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public enum Tvin_3d_Status {
-        STATUS3D_DISABLE(0),
-        STATUS3D_AUTO(1),
-        //        STATUS3D_2D_TO_3D(2),
-        STATUS3D_LR(2),
-        STATUS3D_BT(3),
-        STATUS3D_LINE_ALTERNATIVE(4),
-        STATUS3D_FRAME_ALTERNATIVE(5),
-        STATUS3D_MAX(6);
-        private int val;
-
-        Tvin_3d_Status(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public enum Mode_3D_2D {
-        MODE_3D_2D_CLOSE(0),
-        MODE_3D_2D_LEFT(1),
-        MODE_3D_2D_RIGHT(2);
-
-        private int val;
-
-        Mode_3D_2D(int val) {
-            this.val = val;
-        }
-
-        public int toInt() {
-            return this.val;
-        }
-    }
-
-    public int Get3DStatus() {
-        return sendCmd(GET_3D_STATUS);
-    }
-
-    public int Set3DMode(Mode_3D mode, Tvin_3d_Status status) {
-        int val[] = new int[]{mode.toInt(), status.toInt()};
-        return sendCmdIntArray(SET_3D_MODE, val);
-    }
-
-
-    public int Get3DMode() {
-        return sendCmd(GET_3D_MODE);
-    }
-
-    public int Set3DLRSwith(int on_off, Tvin_3d_Status status) {
-        int val[] = new int[]{on_off, status.toInt()};
-        return sendCmdIntArray(SET_3D_LR_SWITH, val);
-    }
-
-    public int Get3DLRSwith() {
-        return sendCmd(GET_3D_LR_SWITH);
-    }
-
-    public int Set3DTo2DMode(Mode_3D_2D mode, Tvin_3d_Status status) {
-        int val[] = new int[]{mode.toInt(), status.toInt()};
-        return sendCmdIntArray(SET_3D_TO_2D_MODE, val);
-    }
-
-    public int Get3DTo2DMode() {
-        return sendCmd(GET_3D_TO_2D_MODE);
-    }
-
-    public int Set3DDepth(int value) {
-        int val[] = new int[]{value};
-        return sendCmdIntArray(SET_3D_DEPTH, val);
-    }
-
-    public int Get3DDepth() {
-        return sendCmd(GET_3D_DEPTH);
-    }
-    // 3D END
 
     public enum SourceInput {
         TV(0),

@@ -28,20 +28,6 @@ public interface TvControlCommand {
     int SET_HDMI_EDID_VER = 44;
     int SET_HDCP_KEY_ENABLE = 45;
 
-    // 3D
-    int GET_3D_STATUS = 60;
-    int SET_3D_MODE = 61;
-    int GET_3D_MODE = 62;
-    int SET_3D_LR_SWITH = 63;
-    int GET_3D_LR_SWITH = 64;
-    int SET_3D_TO_2D_MODE = 65;
-    int GET_3D_TO_2D_MODE = 66;
-    int SET_3D_DEPTH = 67;
-    int GET_3D_DEPTH = 68;
-    int GET_3D_AUTO_DETECT =69;
-    int SET_3D_AUTO_DETECT =70;
-    // 3D END
-
     // PQ
     //int SET_SCENEMODE = 192;
     //int GET_SCENEMODE = 193;
@@ -305,8 +291,6 @@ public interface TvControlCommand {
     int SSM_READ_HDMIEQ_MODE = 646;
     int SSM_SAVE_HDMIINTERNAL_MODE = 647;
     int SSM_READ_HDMIINTERNAL_MODE = 648;
-    int SSM_SAVE_DISABLE_3D = 649;
-    int SSM_READ_DISABLE_3D = 650;
     int SSM_SAVE_GLOBAL_OGOENABLE = 651;
     int SSM_READ_GLOBAL_OGOENABLE = 652;
     int SSM_SAVE_LOCAL_DIMING_STATUS = 653;
