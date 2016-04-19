@@ -34,6 +34,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     private HandlerThread mHandlerThread;
     private Handler mSessionHandler;
     private TvControlManager mTvControlManager;
+    private boolean mHasRetuned = false;
 
     protected int ACTION_FAILED = -1;
     protected int ACTION_SUCCESS = 1;
@@ -79,13 +80,17 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     }
 
     private int startTvPlay() {
-        if (mHardware != null) {
-            if (mSurface != null && mSurface.isValid()) {
-                mHardware.setSurface(mSurface, mConfigs[0]);
-                return ACTION_SUCCESS;
+        if (mConfigs == null) {//exception happened, re-tune one time.
+            if (mHasRetuned) {
+                notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN);
+                mHasRetuned = false;
             } else {
-                Log.d(TAG, "startTvPlay fail with invalid surface "+ mSurface);
+                notifyChannelRetuned(mChannelUri);
+                mHasRetuned = true;
             }
+        } else if (mHardware != null && mSurface != null && mSurface.isValid()) {
+            mHardware.setSurface(mSurface, mConfigs[0]);
+            return ACTION_SUCCESS;
         }
         return ACTION_FAILED;
     }
