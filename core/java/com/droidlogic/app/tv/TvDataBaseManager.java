@@ -262,20 +262,6 @@ public class TvDataBaseManager {
                 +"]");
     }
 
-    private Map<String, String>  buildAtvChannelMap (ChannelInfo channel){
-        Map<String, String> map = new HashMap<String, String>();
-        map.put(ChannelInfo.KEY_VFMT, String.valueOf(channel.getVfmt()));
-        map.put(ChannelInfo.KEY_FREQUENCY, String.valueOf(channel.getFrequency()));
-        map.put(ChannelInfo.KEY_VIDEO_STD, String.valueOf(channel.getVideoStd()));
-        map.put(ChannelInfo.KEY_AUDIO_STD, String.valueOf(channel.getAudioStd()));
-        map.put(ChannelInfo.KEY_IS_AUTO_STD, String.valueOf(channel.getIsAutoStd()));
-        map.put(ChannelInfo.KEY_FINE_TUNE, String.valueOf(channel.getFineTune()));
-        map.put(ChannelInfo.KEY_AUDIO_COMPENSATION, String.valueOf(channel.getAudioCompensation()));
-        map.put(ChannelInfo.KEY_IS_FAVOURITE, String.valueOf(channel.isFavourite() ? 1 : 0));
-
-        return map;
-    }
-
     private ContentValues  buildDtvChannelData (ChannelInfo channel){
         ContentValues values = new ContentValues();
         values.put(Channels.COLUMN_INPUT_ID, channel.getInputId());
@@ -331,6 +317,21 @@ public class TvDataBaseManager {
         values.put(TvContract.Channels.COLUMN_INTERNAL_PROVIDER_DATA, output);
 
         return values;
+    }
+
+    private Map<String, String>  buildAtvChannelMap (ChannelInfo channel){
+        Map<String, String> map = new HashMap<String, String>();
+        map.put(ChannelInfo.KEY_VFMT, String.valueOf(channel.getVfmt()));
+        map.put(ChannelInfo.KEY_FREQUENCY, String.valueOf(channel.getFrequency()));
+        map.put(ChannelInfo.KEY_VIDEO_STD, String.valueOf(channel.getVideoStd()));
+        map.put(ChannelInfo.KEY_AUDIO_STD, String.valueOf(channel.getAudioStd()));
+        map.put(ChannelInfo.KEY_IS_AUTO_STD, String.valueOf(channel.getIsAutoStd()));
+        map.put(ChannelInfo.KEY_FINE_TUNE, String.valueOf(channel.getFineTune()));
+        map.put(ChannelInfo.KEY_AUDIO_COMPENSATION, String.valueOf(channel.getAudioCompensation()));
+        map.put(ChannelInfo.KEY_IS_FAVOURITE, String.valueOf(channel.isFavourite() ? 1 : 0));
+        map.put(ChannelInfo.KEY_MULTI_NAME, channel.getDisplayNameMulti());
+
+        return map;
     }
 
     private void declineChannelNum( ChannelInfo channel) {

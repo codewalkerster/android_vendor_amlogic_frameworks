@@ -246,8 +246,10 @@ enum {
 #define MODE_4K2K30HZ                   "2160p30hz"
 #define MODE_4K2K50HZ                   "2160p50hz"
 #define MODE_4K2K50HZ420                "2160p50hz420"
+#define MODE_4K2K50HZ422                "2160p50hz422"
 #define MODE_4K2K60HZ                   "2160p60hz"
 #define MODE_4K2K60HZ420                "2160p60hz420"
+#define MODE_4K2K60HZ422                "2160p60hz422"
 #define MODE_4K2KSMPTE                  "smpte24hz"
 
 enum {
@@ -269,10 +271,12 @@ enum {
     DISPLAY_MODE_4K2K30HZ               = 15,
     DISPLAY_MODE_4K2K50HZ               = 16,
     DISPLAY_MODE_4K2K50HZ420            = 17,
-    DISPLAY_MODE_4K2K60HZ               = 18,
-    DISPLAY_MODE_4K2K60HZ420            = 19,
-    DISPLAY_MODE_4K2KSMPTE              = 20,
-    DISPLAY_MODE_TOTAL                  = 21
+    DISPLAY_MODE_4K2K50HZ422            = 18,
+    DISPLAY_MODE_4K2K60HZ               = 19,
+    DISPLAY_MODE_4K2K60HZ420            = 20,
+    DISPLAY_MODE_4K2K60HZ422            = 21,
+    DISPLAY_MODE_4K2KSMPTE              = 22,
+    DISPLAY_MODE_TOTAL                  = 23
 };
 
 typedef enum {
