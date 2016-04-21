@@ -210,13 +210,6 @@ using namespace android;
 #define VIDEO_3D_TOP_BOTTOM             "3dtb"
 
 enum {
-    VIDEO_3D_MODE_OFF                   = 0,
-    VIDEO_3D_MODE_SIDE_BY_SIDE          = 1,
-    VIDEO_3D_MODE_TOP_BOTTOM            = 2,
-    VIDEO_3D_MODE_TOTAL                 = 3
-};
-
-enum {
     EVENT_OUTPUT_MODE_CHANGE            = 0,
     EVENT_DIGITAL_MODE_CHANGE           = 1,
 };
@@ -369,7 +362,7 @@ private:
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
 
     int getBootenvInt(const char* key, int defaultVal);
-    static bool hdcpInit(DisplayMode *disMode, SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14);
+    static bool hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14);
     static void hdcpAuthenticate(DisplayMode *disMode, SysWrite *pSysWrite, bool useHdcp22, bool useHdcp14);
     static void* hdcpThreadLoop(void* data);
     static void* hdcpRxThreadLoop(void* data);
@@ -378,7 +371,7 @@ private:
     void hdcpRxAuthenticate(bool plugIn);
 
     int modeToIndex3D(const char *mode3d);
-    void mode3DImpl();
+    void mode3DImpl(const char* mode3d);
 
     const char* pConfigPath;
     int mDisplayType;
@@ -405,9 +398,6 @@ private:
     int mLogLevel;
     SysWrite *pSysWrite = NULL;
     char mMode3d[32];//this used for video 3d set
-    bool m3dModeSet;
-    bool m3dModeImpl;
-
     char mLastDisMode[32];//last display mode
 
     pthread_mutex_t pthreadMutex;
