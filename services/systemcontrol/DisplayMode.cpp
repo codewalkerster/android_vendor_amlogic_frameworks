@@ -75,12 +75,6 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_4K2KSMPTE
 };
 
-static const char* VIDEO_3D_MODE_LIST[VIDEO_3D_MODE_TOTAL] = {
-    VIDEO_3D_OFF,
-    VIDEO_3D_SIDE_BY_SIDE,
-    VIDEO_3D_TOP_BOTTOM
-};
-
 /**
  * strstr - Find the first substring in a %NUL terminated string
  * @s1: The string to be searched
@@ -323,8 +317,6 @@ DisplayMode::DisplayMode(const char *path)
     mDisplayWidth(FULL_WIDTH_1080),
     mDisplayHeight(FULL_HEIGHT_1080),
     mLogLevel(LOG_LEVEL_DEFAULT),
-    m3dModeSet(false),
-    m3dModeImpl(false),
     pthreadIdHdcp(0) {
 
     if (NULL == path) {
@@ -562,83 +554,20 @@ int DisplayMode::set3DMode(const char* mode3d) {
 
     pSysWrite->readSysfs(AV_HDMI_3D_SUPPORT, is3DSupport);
     if (strcmp(is3DSupport, "1")) {
-        SYS_LOGI("[set3DMode]3d is not support.\n");
+        SYS_LOGE("[set3DMode]3d is not support.\n");
         return -1;
     }
 
-    if (m3dModeSet) {
-        SYS_LOGI("[set3DMode]3d mode is setting, m3dModeSet:true\n");
-        return -2;
-    }
-
     if (!strcmp(mMode3d, mode3d)) {
-        SYS_LOGI("[set3DMode]mMode3d equals to mode3d:%s\n", mode3d);
+        SYS_LOGE("[set3DMode]mMode3d equals to mode3d:%s\n", mode3d);
         return 0;
     }
 
-    m3dModeSet = true;
-    strcpy(mMode3d, mode3d);
-    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
-    usleep(100 * 1000);
-
-    if (0 != pthreadIdHdcp) {
-        hdcpThreadExit(pthreadIdHdcp);
-        pthreadIdHdcp = 0;
-    }
-    hdcpThreadStart();
-    return 0;
-}
-
-int DisplayMode::modeToIndex3D(const char *mode3d) {
-    int index = VIDEO_3D_MODE_OFF;
-    for (int i = 0; i < VIDEO_3D_MODE_TOTAL; i++) {
-        if (!strcmp(mode3d, VIDEO_3D_MODE_LIST[i])) {
-            index = i;
-            break;
-        }
-    }
-
-    //SYS_LOGI("modeToIndex3D mode:%s index:%d", mode, index);
-    return index;
-}
-
-void DisplayMode::mode3DImpl() {
-    if (m3dModeImpl) {
-        SYS_LOGI("[mode3DImpl]3d mode is setting, m3dModeImpl:true\n");
-        return;
-    }
-    m3dModeImpl = true;
-    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, "-1"); // "-1" means stop hdcp 14/22
-    usleep(100 * 1000);
-    pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); // Turn off TMDS PHY
-
-    int format = SURFACE_3D_OFF;
-    int index = modeToIndex3D(mMode3d);
-    switch (index) {
-        case VIDEO_3D_MODE_OFF:
-            format = SURFACE_3D_OFF;
-            break;
-        case VIDEO_3D_MODE_SIDE_BY_SIDE:
-            format = SURFACE_3D_SIDE_BY_SIDE;
-            break;
-        case VIDEO_3D_MODE_TOP_BOTTOM:
-            format = SURFACE_3D_TOP_BOTTOM;
-            break;
-        default:
-            break;
-    }
-
-#ifndef RECOVERY_MODE
-    SurfaceComposerClient::openGlobalTransaction();
-    SurfaceComposerClient::setDisplay2Stereoscopic(0, format);
-    SurfaceComposerClient::closeGlobalTransaction();
-#endif
-    usleep(200 * 1000);
+    stopTXHdcp();
 
     char curDisplayMode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
-    SYS_LOGI("[mode3DImpl]index:%d, curDisplayMode:%s\n", index, curDisplayMode);
-    if (index != VIDEO_3D_MODE_OFF) {
+    if (strcmp(mode3d, VIDEO_3D_OFF)) {
         if (strstr(curDisplayMode, "2160p") != NULL || strstr(curDisplayMode, "smpte") != NULL) {
             setMboxOutputMode(MODE_1080P50HZ);
             strcpy(mLastDisMode, curDisplayMode);
@@ -651,15 +580,47 @@ void DisplayMode::mode3DImpl() {
         }
     }
 
-    pSysWrite->writeSysfs(AV_HDMI_CONFIG, mMode3d);
+    strcpy(mMode3d, mode3d);
+    mode3DImpl(mode3d);
+
+    if (0 != pthreadIdHdcp) {
+        hdcpThreadExit(pthreadIdHdcp);
+        pthreadIdHdcp = 0;
+    }
+    hdcpThreadStart();
+    return 0;
+}
+
+void DisplayMode::mode3DImpl(const char* mode3d) {
+    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
+    usleep(100 * 1000);
+    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, "-1"); // "-1" means stop hdcp 14/22
+    usleep(100 * 1000);
+    pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); // Turn off TMDS PHY
+
+    int format = SURFACE_3D_OFF;
+    if (!strcmp(mode3d, VIDEO_3D_OFF)) {
+        format = SURFACE_3D_OFF;
+    }
+    else if (!strcmp(mode3d, VIDEO_3D_SIDE_BY_SIDE)) {
+        format = SURFACE_3D_SIDE_BY_SIDE;
+    }
+    else if (!strcmp(mode3d, VIDEO_3D_TOP_BOTTOM)) {
+        format = SURFACE_3D_TOP_BOTTOM;
+    }
+
+#ifndef RECOVERY_MODE
+    SurfaceComposerClient::openGlobalTransaction();
+    SurfaceComposerClient::setDisplay2Stereoscopic(0, format);
+    SurfaceComposerClient::closeGlobalTransaction();
+#endif
+
+    pSysWrite->writeSysfs(AV_HDMI_CONFIG, mode3d);
 
     usleep(100 * 1000);
     pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); // Turn on TMDS PHY
     usleep(100 * 1000);
     pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
-
-    m3dModeImpl = false;//3d mode implement finish
-    m3dModeSet = false;//3d mode set finish
 }
 void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
     hdmi_data_t data;
@@ -1612,7 +1573,7 @@ void DisplayMode::stopTXHdcp() {
     usleep(2000);
 }
 
-bool DisplayMode::hdcpInit(DisplayMode *disMode, SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
+bool DisplayMode::hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
     bool useHdcp22 = false;
     bool useHdcp14 = false;
 #ifdef HDCP_AUTHENTICATION
@@ -1649,10 +1610,6 @@ bool DisplayMode::hdcpInit(DisplayMode *disMode, SysWrite *pSysWrite, bool *pHdc
         (_strstr(hdcpTxKey, (char *)"14") != NULL)) {
         useHdcp14 = true;
         SYS_LOGI("HDCP 1.4\n");
-    }
-
-    if ((useHdcp22 ||useHdcp14) && disMode->m3dModeSet) {
-        disMode->mode3DImpl();
     }
 
     if (!useHdcp22 && !useHdcp14) {
@@ -1726,7 +1683,7 @@ void* DisplayMode::hdcpThreadLoop(void* data) {
 
     SYS_LOGI("HDCP thread loop entry\n");
     sem_post(&pThiz->pthreadSem);
-    if (hdcpInit(pThiz, sysWrite, &hdcp22, &hdcp14)) {
+    if (hdcpInit(sysWrite, &hdcp22, &hdcp14)) {
         //first close osd, after HDCP authenticate completely, then open osd
         sysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
 
@@ -1734,11 +1691,6 @@ void* DisplayMode::hdcpThreadLoop(void* data) {
 
         sysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
         sysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-    }
-    else {
-        if (pThiz->m3dModeSet) {
-            pThiz->mode3DImpl();
-        }
     }
     return NULL;
 }
