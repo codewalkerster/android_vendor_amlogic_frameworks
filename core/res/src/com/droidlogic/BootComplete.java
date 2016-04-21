@@ -4,6 +4,7 @@ package com.droidlogic;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.provider.Settings;
@@ -59,6 +60,10 @@ public class BootComplete extends BroadcastReceiver {
 
             //start optimization service
             context.startService(new Intent(context, Optimization.class));
+
+            if (context.getPackageManager().hasSystemFeature(NetflixService.FEATURE_SOFTWARE_NETFLIX)) {
+                context.startService(new Intent(context, NetflixService.class));
+            }
 
             initDefaultAnimationSettings(context);
         }

@@ -47,6 +47,8 @@
 
         <service android:name="com.droidlogic.Optimization" />
 
+        <service android:name="com.droidlogic.NetflixService" />
+
         <receiver android:name="com.droidlogic.BootComplete">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
