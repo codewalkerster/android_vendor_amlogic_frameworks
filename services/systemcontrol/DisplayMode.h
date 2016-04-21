@@ -85,7 +85,7 @@ using namespace android;
 #define DISPLAY_HDMI_HDCP_AUTH          "/sys/module/hdmitx20/parameters/hdmi_authenticated"//HDCP Authentication
 #define DISPLAY_HDMI_HDCP_CONF          "/sys/class/amhdmitx/amhdmitx0/hdcp_ctrl" //HDCP config
 #define DISPLAY_HDMI_HDCP_KEY           "/sys/class/amhdmitx/amhdmitx0/hdcp_lstore"//TX have 22 or 14 or none key
-#define DISPLAY_HDMI_HDCP_TEST           "/sys/class/amhdmitx/amhdmitx0/hdcp_test"//write to 1, force hdcp_tx22 quit safely
+#define DISPLAY_HDMI_HDCP_TEST          "/sys/class/amhdmitx/amhdmitx0/hdcp_test"//write to 1, force hdcp_tx22 quit safely
 
 #define DISPLAY_HPD_STATE               "/sys/class/amhdmitx/amhdmitx0/hpd_state"
 #define DISPLAY_HDMI_EDID               "/sys/class/amhdmitx/amhdmitx0/disp_cap"//RX support display mode
@@ -107,6 +107,7 @@ using namespace android;
 #define HDMI_RX_PLUG_UEVENT             "DEVPATH=/devices/virtual/switch/hdmirx/state"
 //1:plugin 0:plug out
 #define HDMI_RX_HPD_STATE               "/sys/module/tvin_hdmirx/parameters/hpd_to_esm"
+#define HDMI_RX_KEY_COMBINE             "/sys/module/tvin_hdmirx/parameters/hdcp22_firmware_ok_flag"
 
 #define VIDEO_LAYER1_UEVENT             "DEVPATH=/devices/virtual/switch/video_layer1"
 
@@ -331,7 +332,7 @@ public:
     void setNativeWindowRect(int x, int y, int w, int h);
     void setVideoPlayingAxis();
 
-    void stopTXHdcp();
+    void hdcpTxStop();
     void hdcpSwitch();
 
 #ifndef RECOVERY_MODE
@@ -362,12 +363,12 @@ private:
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
 
     int getBootenvInt(const char* key, int defaultVal);
-    static bool hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14);
-    static void hdcpAuthenticate(DisplayMode *disMode, SysWrite *pSysWrite, bool useHdcp22, bool useHdcp14);
-    static void* hdcpThreadLoop(void* data);
+    bool hdcpTxInit(bool *pHdcp22, bool *pHdcp14);
+    void hdcpTxAuthenticate(bool useHdcp22, bool useHdcp14);
+    static void* hdcpTxThreadLoop(void* data);
     static void* hdcpRxThreadLoop(void* data);
-    int hdcpThreadStart();
-    int hdcpThreadExit(pthread_t thread_id);
+    int hdcpTxThreadStart();
+    int hdcpTxThreadExit(pthread_t thread_id);
     void hdcpRxAuthenticate(bool plugIn);
 
     int modeToIndex3D(const char *mode3d);
