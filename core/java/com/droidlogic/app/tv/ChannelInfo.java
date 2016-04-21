@@ -17,6 +17,10 @@ import java.io.UnsupportedEncodingException;
 public class ChannelInfo {
     private static final String TAG = "ChannelInfo";
 
+    public static final String COLUMN_LCN = Channels.COLUMN_INTERNAL_PROVIDER_FLAG2;
+    public static final String COLUMN_LCN1 = Channels.COLUMN_INTERNAL_PROVIDER_FLAG3;
+    public static final String COLUMN_LCN2 = Channels.COLUMN_INTERNAL_PROVIDER_FLAG4;
+
     public static final String[] COMMON_PROJECTION = {
         Channels._ID,
         Channels.COLUMN_INPUT_ID,
@@ -30,6 +34,9 @@ public class ChannelInfo {
         Channels.COLUMN_VIDEO_FORMAT,
         Channels.COLUMN_INTERNAL_PROVIDER_DATA,
         Channels.COLUMN_BROWSABLE,
+        COLUMN_LCN,
+        COLUMN_LCN1,
+        COLUMN_LCN2
     };
 
     public static final String[] SIMPLE_PROJECTION = {
@@ -145,6 +152,10 @@ public class ChannelInfo {
     private int mScrambled;
 
     private int mSdtVersion;
+
+    private int mLCN;
+    private int mLCN1;
+    private int mLCN2;
 
     private ChannelInfo() {}
 
@@ -297,6 +308,18 @@ public class ChannelInfo {
         index = cursor.getColumnIndex(Channels.COLUMN_BROWSABLE);
         if (index >= 0)
             builder.setBrowsable(cursor.getInt(index)==1 ? true : false);
+
+        index = cursor.getColumnIndex(Channels.COLUMN_INTERNAL_PROVIDER_FLAG1);
+        if (index >= 0)
+            builder.setLCN(cursor.getInt(index));
+
+        index = cursor.getColumnIndex(Channels.COLUMN_INTERNAL_PROVIDER_FLAG2);
+        if (index >= 0)
+            builder.setLCN1(cursor.getInt(index));
+
+        index = cursor.getColumnIndex(Channels.COLUMN_INTERNAL_PROVIDER_FLAG3);
+        if (index >= 0)
+            builder.setLCN2(cursor.getInt(index));
 
         return builder.build();
     }
@@ -469,6 +492,18 @@ public class ChannelInfo {
         return mSdtVersion;
     }
 
+    public int getLCN() {
+        return mLCN;
+    }
+
+    public int getLCN1() {
+        return mLCN1;
+    }
+
+    public int getLCN2() {
+        return mLCN2;
+    }
+
     public boolean isBrowsable() {
         return this.mBrowsable;
     }
@@ -588,6 +623,18 @@ public class ChannelInfo {
         mOriginalNetworkId = id;
     }
 
+    public void setLCN(int lcn) {
+        mLCN = lcn;
+    }
+
+    public void setLCN1(int lcn) {
+        mLCN1 = lcn;
+    }
+
+    public void setLCN2(int lcn) {
+        mLCN2 = lcn;
+    }
+
     public void copyFrom(ChannelInfo channel) {
         if (this == channel)
             return;
@@ -658,6 +705,10 @@ public class ChannelInfo {
             mChannel.mScrambled = 0;
 
             mChannel.mSdtVersion = 0xff;
+
+            mChannel.mLCN = -1;
+            mChannel.mLCN1 = -1;
+            mChannel.mLCN2 = -1;
         }
 
         public Builder setId(long id) {
@@ -876,6 +927,21 @@ public class ChannelInfo {
             return this;
         }
 
+        public Builder setLCN(int lcn) {
+            mChannel.mLCN = lcn;
+            return this;
+        }
+
+        public Builder setLCN1(int lcn) {
+            mChannel.mLCN1 = lcn;
+            return this;
+        }
+
+        public Builder setLCN2(int lcn) {
+            mChannel.mLCN2 = lcn;
+            return this;
+        }
+
         public ChannelInfo build() {
             return mChannel;
         }
@@ -992,7 +1058,10 @@ public class ChannelInfo {
                 "\n SubtitleTrackIndex = " + mSubtitleTrackIndex +
                 "\n FreeCa = " + mFreeCa +
                 "\n Scrambled = " + mScrambled +
-                "\n SdtVersion = " + mSdtVersion
+                "\n SdtVersion = " + mSdtVersion +
+                "\n LCN = " + mLCN +
+                "\n LCN1 = " + mLCN1 +
+                "\n LCN2 = " + mLCN2
                );
     }
 }

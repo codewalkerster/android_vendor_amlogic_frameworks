@@ -300,6 +300,9 @@ public class TvDataBaseManager {
         map.put(ChannelInfo.KEY_SDT_VERSION, String.valueOf(channel.getSdtVersion()));
         String output = ChannelInfo.mapToString(map);
         values.put(TvContract.Channels.COLUMN_INTERNAL_PROVIDER_DATA, output);
+        values.put(ChannelInfo.COLUMN_LCN, channel.getLCN());
+        values.put(ChannelInfo.COLUMN_LCN1, channel.getLCN1());
+        values.put(ChannelInfo.COLUMN_LCN2, channel.getLCN2());
 
         return values;
     }
@@ -367,14 +370,18 @@ public class TvDataBaseManager {
     }
 
     public void deleteChannel(ChannelInfo channel) {
+        deleteChannel(channel, false);
+    }
+
+    public void deleteChannel(ChannelInfo channel, boolean updateChannelNumber) {
         Uri channelsUri = TvContract.buildChannelsUriForInput(channel.getInputId());
         String[] projection = {Channels._ID, Channels.COLUMN_DISPLAY_NUMBER, Channels.COLUMN_DISPLAY_NAME};
-        ArrayList<ContentProviderOperation> ops = new ArrayList<>();
+        ArrayList<ContentProviderOperation> ops = new ArrayList();
 
         int deleteCount = 0;
         deleteCount = mContentResolver.delete(channelsUri, Channels._ID + "=?", new String[]{channel.getId() + ""});
 
-        if (deleteCount > 0) {
+        if ((deleteCount > 0) && updateChannelNumber) {
             Cursor cursor = null;
             try {
                 cursor = mContentResolver.query(channelsUri, projection,
@@ -407,6 +414,32 @@ public class TvDataBaseManager {
     }
 
     public void deleteChannelsContinuous(ArrayList<ChannelInfo> channels) {
+        deleteChannelsContinuous(channels, false);
+    }
+
+    public void deleteChannels(ArrayList<ChannelInfo> channels) {
+        if (channels.size() <= 0)
+            return ;
+
+        Uri channelsUri = TvContract.buildChannelsUriForInput(channels.get(0).getInputId());
+        ArrayList<ContentProviderOperation> ops = new ArrayList();
+        try {
+           for (ChannelInfo c : channels) {
+               Log.d(TAG, "delete:"+c.getId());
+               mContentResolver.delete(channelsUri, Channels._ID + "=?", new String[]{c.getId() + ""});
+       /*        ops.add(ContentProviderOperation.newDelete(
+                        TvContract.buildChannelUri(c.getId()))
+                        .build()
+                    );*/
+            }
+
+//            mContentResolver.applyBatch(TvContract.AUTHORITY, ops);
+        } catch (Exception e) {
+            //TODO
+        }
+   }
+
+    public void deleteChannelsContinuous(ArrayList<ChannelInfo> channels, boolean updateChannelNumber) {
         int count = channels.size();
         if (count <= 0)
             return ;
@@ -419,8 +452,9 @@ public class TvDataBaseManager {
 
         int deleteCount = 0;
         deleteCount = mContentResolver.delete(channelsUri, Channels._ID + ">=? and " + Channels._ID + "<=?", new String[]{startID + "", endID + ""});
+        Log.d(TAG, "delete continuous: [" + startID + " ~ " + endID + "]");
 
-        if (deleteCount > 0) {
+        if ((deleteCount > 0) && updateChannelNumber) {
             Cursor cursor = null;
             ArrayList<ContentProviderOperation> ops = new ArrayList<>();
             try {
@@ -881,7 +915,7 @@ public class TvDataBaseManager {
         try {
             cursor = mContentResolver.query(channelsUri, projection, selection, selectionArgs, null);
             if (cursor == null || cursor.getCount() == 0) {
-                return null;
+                return channelList;
             }
 
             while (cursor.moveToNext())

@@ -175,6 +175,8 @@ public class DroidLogicTvUtils
     public static final String TV_DTV_CHANNEL_INDEX  = "tv_dtv_channel_index";
     public static final String TV_CURRENT_CHANNEL_IS_RADIO = "tv_current_channel_is_radio";
 
+    public static final String TV_KEY_DTV_NUMBER_MODE = "tv_dtv_number_mode";
+
     /**
      * message for {@link TvInputBaseSession#handleMessage(android.os.Message)}
      */
