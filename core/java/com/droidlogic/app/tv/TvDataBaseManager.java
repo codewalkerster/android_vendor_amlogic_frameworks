@@ -1063,6 +1063,10 @@ public class TvDataBaseManager {
     public Program getProgram(long programId) {
         Uri uri = TvContract.buildProgramUri(programId);
 
+        return getProgram(uri);
+    }
+
+    public Program getProgram(Uri uri) {
         Cursor cursor = null;
         Program program = null;
 
