@@ -1509,6 +1509,11 @@ public class TvControlManager {
         return sendCmdIntArray(FACTORY_SETPATTERN_YUV, val);
     }
 
+    public int FactorySetGammaPattern(int gamma_r, int gamma_g, int gamma_b) {
+        int val[] = new int[]{gamma_r<<2, gamma_g<<2, gamma_b<<2};
+        return sendCmdIntArray(FACTORY_SET_GAMMA_PATTERN, val);
+    }
+
     // FACTORY END
 
     // AUDIO
