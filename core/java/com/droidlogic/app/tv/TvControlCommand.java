@@ -27,6 +27,8 @@ public interface TvControlCommand {
     // HDMI
     int SET_HDMI_EDID_VER = 44;
     int SET_HDCP_KEY_ENABLE = 45;
+    int SET_HDMI_COLOR_RANGE = 46;
+    int GET_HDMI_COLOR_RANGE = 47;
 
     // PQ
     //int SET_SCENEMODE = 192;

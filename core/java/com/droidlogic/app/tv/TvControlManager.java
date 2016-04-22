@@ -1080,6 +1080,15 @@ public class TvControlManager {
         return (sendCmd(GET_EYE_PROTETION_MODE) == 1) ? true : false;
     }
 
+    public int SetHdmiColorRange(HdmiColorRangeMode mode) {
+        int val[] = new int[]{mode.toInt()};
+        return sendCmdIntArray(SET_HDMI_COLOR_RANGE, val);
+    }
+
+    public int GetHdmiColorRange() {
+        return sendCmd(GET_HDMI_COLOR_RANGE);
+    }
+
     public enum Noise_Reduction_Mode {
         REDUCE_NOISE_CLOSE(0),
         REDUCE_NOISE_WEAK(1),
@@ -5342,6 +5351,21 @@ public class TvControlManager {
         private int val;
 
         HdcpKeyIsEnable(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    public enum HdmiColorRangeMode {
+        AUTO_RANGE(0),
+        FULL_RANGE(1),
+        LIMIT_RANGE(2);
+        private int val;
+
+        HdmiColorRangeMode(int val) {
             this.val = val;
         }
 
