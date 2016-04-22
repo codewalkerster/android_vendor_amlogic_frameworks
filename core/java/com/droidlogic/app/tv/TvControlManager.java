@@ -1525,7 +1525,7 @@ public class TvControlManager {
     }
 
     public int FactorySetGammaPattern(int gamma_r, int gamma_g, int gamma_b) {
-        int val[] = new int[]{gamma_r<<2, gamma_g<<2, gamma_b<<2};
+        int val[] = new int[]{gamma_r, gamma_g, gamma_b};
         return sendCmdIntArray(FACTORY_SET_GAMMA_PATTERN, val);
     }
 
