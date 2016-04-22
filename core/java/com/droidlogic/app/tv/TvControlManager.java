@@ -831,7 +831,13 @@ public class TvControlManager {
         PQ_MODE_SOFTNESS(2),
         PQ_MODE_USER(3),
         PQ_MODE_MOVIE(4),
-        PQ_MODE_COLORFUL(5);
+        PQ_MODE_COLORFUL(5),
+        PQ_MODE_MONITOR(6),
+        PQ_MODE_GAME(7),
+        PQ_MODE_SPORTS(8),
+        PQ_MODE_SONY(9),
+        PQ_MODE_SAMSUNG(10),
+        PQ_MODE_SHARP(11);
 
         private int val;
 
