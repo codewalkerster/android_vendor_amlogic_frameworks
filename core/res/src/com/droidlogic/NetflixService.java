@@ -11,9 +11,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.IBinder;
 import android.os.Process;
+import android.os.SystemProperties;
 import android.util.Log;
 
+import java.io.File;
 import java.util.List;
+import java.util.Scanner;
 
 public class NetflixService extends Service {
     private static final String TAG = "NetflixService";
@@ -27,6 +30,8 @@ public class NetflixService extends Service {
     public static final String NETFLIX_PKG_NAME             = "com.netflix.ninja";
     public static final String NETFLIX_STATUS_CHANGE        = "com.netflix.action.STATUS_CHANGE";
     public static final String NETFLIX_DIAL_STOP            = "com.netflix.action.DIAL_STOP";
+    private static final String VIDEO_SIZE_DEVICE           = "/sys/class/video/device_resolution";
+    private static boolean mLaunchDialService               = true;
 
     private boolean mIsNetflixFg = false;
     private Context mContext;
@@ -97,9 +102,21 @@ public class NetflixService extends Service {
         List< ActivityManager.RunningTaskInfo > task = am.getRunningTasks (1);
 
         if (task.size() != 0) {
+            if (mLaunchDialService) {
+                mLaunchDialService = false;
+
+                try {
+                    Intent intent = new Intent();
+                    intent.setClassName ("com.netflix.dial", "com.netflix.dial.NetflixDialService");
+                    mContext.startService (intent);
+                } catch (SecurityException e) {
+                    Log.i (TAG, "Initial launching dial Service failed");
+                }
+            }
+
             ComponentName componentInfo = task.get (0).topActivity;
             if (componentInfo.getPackageName().equals (NETFLIX_PKG_NAME) ) {
-                Log.i (TAG, "netflix running as top activity");
+                //Log.i (TAG, "netflix running as top activity");
                 return true;
             }
         }
@@ -129,6 +146,34 @@ public class NetflixService extends Service {
                     intent.putExtra ("status", fg ? 1 : 0);
                     intent.putExtra ("pid", fg?getNetflixPid():-1);
                     mContext.sendBroadcast (intent);
+                }
+
+                if (SystemProperties.getBoolean ("sys.display-size.check", true)) {
+                    try {
+                        Scanner sc = new Scanner (new File(VIDEO_SIZE_DEVICE));
+                        if (sc.hasNext("\\d+x\\d+")) {
+                            String[] parts = sc.nextLine().split ("x");
+                            int w = Integer.parseInt (parts[0]);
+                            int h = Integer.parseInt (parts[1]);
+                            //Log.i(TAG, "Video resolution: " + w + "x" + h);
+
+                            String prop = SystemProperties.get ("sys.display-size", "0x0");
+                            String[] parts_prop = prop.split ("x");
+                            int wd = Integer.parseInt (parts_prop[0]);
+                            int wh = Integer.parseInt (parts_prop[1]);
+
+                            if ((w != wd) || (h != wh)) {
+                                SystemProperties.set ("sys.display-size", String.format("%dx%d", w, h));
+                                //Log.i(TAG, "set sys.display-size property to " + String.format("%dx$d", w, h));
+                            }
+                        } else {
+                            //Log.i(TAG, "Video resolution no pattern found" + sc.nextLine());
+                        }
+                        sc.close();
+
+                    } catch (Exception e) {
+                        Log.i(TAG, "Error parsing video size device node");
+                    }
                 }
             }
         }
