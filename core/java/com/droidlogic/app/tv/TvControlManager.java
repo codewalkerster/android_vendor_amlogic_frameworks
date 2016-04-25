@@ -175,6 +175,25 @@ public class TvControlManager {
         return ret;
     }
 
+    public int sendCmdFloatArray(int cmd, float[] values) {
+        libtv_log_open();
+        Parcel request = Parcel.obtain();
+        Parcel reply = Parcel.obtain();
+        request.writeInt(cmd);
+
+        for (int i = 0; i < values.length; i++) {
+            request.writeFloat(values[i]);
+        }
+        request.setDataPosition(0);
+        processCmd(request, reply);
+        reply.setDataPosition(0);
+        int ret = reply.readInt();
+
+        request.recycle();
+        reply.recycle();
+        return ret;
+    }
+
     public int sendCmdStringArray(int cmd, String[] values) {
         libtv_log_open();
         Parcel request = Parcel.obtain();
@@ -2390,6 +2409,37 @@ public class TvControlManager {
     public int SetAmAudioRightGain(int gain) {
         int val[] = new int[]{gain};
         return sendCmdIntArray(SET_AMAUDIO_RIGHT_GAIN, val);
+    }
+
+    /**
+     * @Function: setAmAudioPreGain
+     * @Description: set amaudio pre gain
+     * @Param: pre_gain, pre_gain value
+     * @Return: 0 success, -1 fail
+     */
+    public int setAmAudioPreGain(float pre_gain) {
+        float val[] = new float[]{pre_gain};
+        return sendCmdFloatArray(SET_AMAUDIO_PRE_GAIN, val);
+    }
+
+    /**
+     * @Function: setAmAudioPreMute
+     * @Description: set amaudio pre mute
+     * @Param: pre_mute, mute or unmute
+     * @Return: 0 success, -1 fail
+     */
+    public int setAmAudioPreMute(int pre_mute) {
+        int val[] = new int[]{pre_mute};
+        return sendCmdIntArray(SET_AMAUDIO_PRE_MUTE, val);
+    }
+
+    /**
+     * @Function: getAmAudioPreMute
+     * @Description: get amaudio pre gain mute or unmute
+     * @Return: mute or unmute
+     */
+    public int getAmAudioPreMute() {
+        return sendCmd(GET_AMAUDIO_PRE_MUTE);
     }
 
     /**
