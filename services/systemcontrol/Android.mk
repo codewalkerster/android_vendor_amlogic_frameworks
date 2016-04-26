@@ -44,7 +44,8 @@ LOCAL_SRC_FILES:= \
   SysWrite.cpp \
   SystemControl.cpp \
   DisplayMode.cpp \
-  SysTokenizer.cpp
+  SysTokenizer.cpp \
+  HDCPKey/hdcp22_key.cpp
 
 LOCAL_SHARED_LIBRARIES := \
   libsystemcontrolservice \

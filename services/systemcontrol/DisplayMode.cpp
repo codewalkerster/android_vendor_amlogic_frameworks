@@ -40,6 +40,8 @@
 #include "DisplayMode.h"
 #include "SysTokenizer.h"
 
+#include "HDCPKey/hdcp22_key.h"
+
 #ifndef RECOVERY_MODE
 #include <binder/IBinder.h>
 #include <binder/IServiceManager.h>
@@ -284,7 +286,7 @@ static void* HdmiPlugDetectThread(void* data) {
             }
             if (//0: hdmi suspend 1:hdmi resume
                 (!strcmp(u_data.name, "hdmi_power") && !strcmp(u_data.state, "0"))) {
-                pThiz->stopTXHdcp();
+                pThiz->hdcpTxStop();
             }
         }
 
@@ -563,7 +565,7 @@ int DisplayMode::set3DMode(const char* mode3d) {
         return 0;
     }
 
-    stopTXHdcp();
+    hdcpTxStop();
 
     char curDisplayMode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
@@ -584,10 +586,10 @@ int DisplayMode::set3DMode(const char* mode3d) {
     mode3DImpl(mode3d);
 
     if (0 != pthreadIdHdcp) {
-        hdcpThreadExit(pthreadIdHdcp);
+        hdcpTxThreadExit(pthreadIdHdcp);
         pthreadIdHdcp = 0;
     }
-    hdcpThreadStart();
+    hdcpTxThreadStart();
     return 0;
 }
 
@@ -764,16 +766,16 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
 
     SYS_LOGI("setMboxOutputMode cvbsMode = %d\n", cvbsMode);
     if (0 != pthreadIdHdcp) {
-        hdcpThreadExit(pthreadIdHdcp);
+        hdcpTxThreadExit(pthreadIdHdcp);
         pthreadIdHdcp = 0;
     }
     //only HDMI mode need HDCP authenticate
     if (!cvbsMode) {
-        hdcpThreadStart();
+        hdcpTxThreadStart();
     }
     else {
-        SYS_LOGI("CVBS mode need stop hdcp_tx22 daemon\n");
-        pSysWrite->setProperty("ctl.stop", "hdcp_tx22");
+        SYS_LOGI("CVBS mode need stop hdcp tx authenticate\n");
+        hdcpTxStop();
     }
 
     if (OUPUT_MODE_STATE_INIT == state) {
@@ -1551,7 +1553,31 @@ void* DisplayMode::hdcpRxThreadLoop(void* data) {
 }
 
 void DisplayMode::hdcpRxAuthenticate(bool plugIn) {
-    SYS_LOGI("HDCP rx 2.2 authenticate plugin:%d, stop hdcp_rx22\n", plugIn);
+#ifndef RECOVERY_MODE
+
+#ifdef IMPDATA_HDCP_RX_KEY
+    if ((access(HDCPRX_BIN_PATH, F_OK) || (access(HDCP_NEW_KEY_CREATED, F_OK) == F_OK)) &&
+        (access(HDCP_PACKED_IMG_PATH, F_OK) == F_OK)) {
+        SYS_LOGI("HDCP rx 2.2 firmware do not exist or new key come, first create it\n");
+        generateHdcpFw(HDCP_FW_LE_OLD_PATH, HDCP_PACKED_IMG_PATH, HDCPRX_BIN_PATH);
+        remove(HDCP_NEW_KEY_CREATED);
+    }
+#else
+    if (access(HDCPRX_BIN_PATH, F_OK)) {
+        SYS_LOGI("HDCP rx 2.2 firmware do not exist, first create it\n");
+        int ret = generateHdcpFwFromStorage(HDCP_FW_LE_PATH, HDCPRX_BIN_PATH);
+        if (ret < 0)
+            pSysWrite->writeSysfs(HDMI_RX_KEY_COMBINE, "0");
+    }
+#endif
+
+    if (access(HDCPRX_BIN_PATH, F_OK)) {
+        SYS_LOGE("HDCP rx 2.2 firmware do not exist, do not need hdcp rx authenticate\n");
+        return;
+    }
+#endif
+
+    SYS_LOGI("HDCP rx 2.2 authenticate plugin:%d, stop hdcp_rx22 %s\n", plugIn, plugIn?"then start hdcp_rx22":"");
     pSysWrite->setProperty("ctl.stop", "hdcp_rx22");
 
     if (plugIn) {
@@ -1561,11 +1587,11 @@ void DisplayMode::hdcpRxAuthenticate(bool plugIn) {
     }
 }
 
-void DisplayMode::stopTXHdcp() {
+void DisplayMode::hdcpTxStop() {
     pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_TEST, "1");
     usleep(10000);
     //stop HDCP 2.2
-    SYS_LOGI("suspend, stop hdcp_tx22 and hdcp 1.4\n");
+    SYS_LOGI("stop hdcp_tx22 and hdcp 1.4\n");
     pSysWrite->setProperty("ctl.stop", "hdcp_tx22");
     //stop HDCP 1.4
     pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_CONF, DISPLAY_HDMI_HDCP_STOP);
@@ -1573,7 +1599,7 @@ void DisplayMode::stopTXHdcp() {
     usleep(2000);
 }
 
-bool DisplayMode::hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
+bool DisplayMode::hdcpTxInit(bool *pHdcp22, bool *pHdcp14) {
     bool useHdcp22 = false;
     bool useHdcp14 = false;
 #ifdef HDCP_AUTHENTICATION
@@ -1592,13 +1618,8 @@ bool DisplayMode::hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
     if ((strlen(hdcpRxVer) == 0) || !(strcmp(hdcpRxVer, "00")))
         return false;
 
-    //stop HDCP 2.2
-    SYS_LOGI("HDCP init, first stop hdcp_tx22 and hdcp 1.4\n");
-    pSysWrite->setProperty("ctl.stop", "hdcp_tx22");
-    //stop HDCP 1.4
-    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_CONF, DISPLAY_HDMI_HDCP_STOP);
-    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_CONF, "stop22");
-    usleep(2000);
+    //stop HDCP
+    hdcpTxStop();
     //char cap[MAX_STR_LEN] = {0};
     //pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, cap);
     if (/*(_strstr(cap, (char *)"2160p") != NULL) && */(_strstr(hdcpRxVer, (char *)"22") != NULL) &&
@@ -1618,6 +1639,7 @@ bool DisplayMode::hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
         return false;
     }
 
+    //start HDCP
     if (useHdcp22) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, DISPLAY_HDMI_HDCP_22);
         usleep(50*1000);
@@ -1628,17 +1650,16 @@ bool DisplayMode::hdcpInit(SysWrite *pSysWrite, bool *pHdcp22, bool *pHdcp14) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, DISPLAY_HDMI_HDCP_14);
     }
 #endif
-    pSysWrite = pSysWrite;
     *pHdcp22 = useHdcp22;
     *pHdcp14 = useHdcp14;
     return true;
 }
 
-void DisplayMode::hdcpAuthenticate(DisplayMode *disMode, SysWrite *pSysWrite, bool useHdcp22, bool useHdcp14) {
+void DisplayMode::hdcpTxAuthenticate(bool useHdcp22, bool useHdcp14) {
 #ifdef HDCP_AUTHENTICATION
     SYS_LOGI("begin to authenticate\n");
     int count = 0;
-    while (!disMode->mExitHdcpThread) {
+    while (!mExitHdcpThread) {
         usleep(200*1000);//sleep 200ms
 
         char auth[MODE_LEN] = {0};
@@ -1668,34 +1689,31 @@ void DisplayMode::hdcpAuthenticate(DisplayMode *disMode, SysWrite *pSysWrite, bo
     }
     SYS_LOGI("authenticate finish\n");
 #else
-    disMode = disMode;
-    pSysWrite = pSysWrite;
     useHdcp22 = useHdcp22;
     useHdcp14 = useHdcp14;
 #endif
 }
 
-void* DisplayMode::hdcpThreadLoop(void* data) {
+void* DisplayMode::hdcpTxThreadLoop(void* data) {
     bool hdcp22 = false;
     bool hdcp14 = false;
     DisplayMode *pThiz = (DisplayMode*)data;
-    SysWrite *sysWrite = pThiz->pSysWrite;
 
     SYS_LOGI("HDCP thread loop entry\n");
     sem_post(&pThiz->pthreadSem);
-    if (hdcpInit(sysWrite, &hdcp22, &hdcp14)) {
+    if (pThiz->hdcpTxInit(&hdcp22, &hdcp14)) {
         //first close osd, after HDCP authenticate completely, then open osd
-        sysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
+        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
 
-        hdcpAuthenticate(pThiz, sysWrite, hdcp22, hdcp14);
+        pThiz->hdcpTxAuthenticate(hdcp22, hdcp14);
 
-        sysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
-        sysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
+        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
     }
     return NULL;
 }
 
-int DisplayMode::hdcpThreadStart() {
+int DisplayMode::hdcpTxThreadStart() {
     int ret;
     pthread_t thread_id;
 
@@ -1706,7 +1724,7 @@ int DisplayMode::hdcpThreadStart() {
     }
 
     mExitHdcpThread = false;
-    ret = pthread_create(&thread_id, NULL, hdcpThreadLoop, this);
+    ret = pthread_create(&thread_id, NULL, hdcpTxThreadLoop, this);
     if (ret != 0) SYS_LOGE("display mode, thread create failed\n");
 
     ret = sem_wait(&pthreadSem);
@@ -1718,7 +1736,7 @@ int DisplayMode::hdcpThreadStart() {
     return 1;
 }
 
-int DisplayMode::hdcpThreadExit(pthread_t thread_id) {
+int DisplayMode::hdcpTxThreadExit(pthread_t thread_id) {
     void *threadResult;
     int ret = 1;
 
@@ -1748,10 +1766,10 @@ void DisplayMode::hdcpSwitch() {
     SYS_LOGI("hdcpSwitch for debug hdcp authenticate\n");
 
     if (0 != pthreadIdHdcp) {
-        hdcpThreadExit(pthreadIdHdcp);
+        hdcpTxThreadExit(pthreadIdHdcp);
         pthreadIdHdcp = 0;
     }
-    hdcpThreadStart();
+    hdcpTxThreadStart();
 }
 
 #ifndef RECOVERY_MODE
