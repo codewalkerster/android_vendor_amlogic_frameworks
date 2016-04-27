@@ -22,6 +22,7 @@
 #include <utils/RefBase.h>
 #include <utils/Errors.h>
 #include <binder/IInterface.h>
+#include <binder/Binder.h>
 
 namespace android {
 
@@ -50,6 +51,7 @@ public:
     virtual int prepare() = 0;
     virtual int show() = 0;
     virtual int release() = 0;
+    virtual int notifyProcessDied(const sp<IBinder> &binder) = 0;
 };
 
 // ----------------------------------------------------------------------------
@@ -71,6 +73,7 @@ public:
         IMAGE_PREPARE_BUF,
         IMAGE_SHOW_BUF,
         IMAGE_SET_DATA_SOURCE_URL,
+        IMAGE_NOTIFY_PROCESSDIED,
     };
 
     virtual status_t onTransact(uint32_t code, const Parcel& data,

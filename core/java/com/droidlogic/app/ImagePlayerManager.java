@@ -2,6 +2,7 @@ package com.droidlogic.app;
 
 import android.content.Context;
 import android.net.Uri;
+import android.os.Binder;
 import android.os.IBinder;
 import android.os.Parcel;
 import android.os.RemoteException;
@@ -29,6 +30,7 @@ public class ImagePlayerManager {
     int TRANSACTION_PREPARE_BUF                     = IBinder.FIRST_CALL_TRANSACTION + 11;
     int TRANSACTION_SHOW_BUF                        = IBinder.FIRST_CALL_TRANSACTION + 12;
     int TRANSACTION_SET_DATA_SOURCE_URL             = IBinder.FIRST_CALL_TRANSACTION + 13;
+    int TRANSACTION_NOTIFY_PROCESSDIED              = IBinder.FIRST_CALL_TRANSACTION + 14;
 
     private Context mContext;
     private IBinder mIBinder = null;
@@ -46,6 +48,7 @@ public class ImagePlayerManager {
         }
 
         init();
+        notifyProcessDied(new Binder());
     }
 
     private int init() {
@@ -63,6 +66,30 @@ public class ImagePlayerManager {
             }
         } catch (RemoteException ex) {
             Log.e(TAG, "init: ImagePlayerService is dead!:" + ex);
+        }
+
+        return REMOTE_EXCEPTION;
+    }
+
+    public int  notifyProcessDied(IBinder cb) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(IMAGE_TOKEN);
+                data.writeInt((cb != null)?1:0);
+                if (cb != null) {
+                    data.writeStrongBinder(cb);
+                }
+                mIBinder.transact(TRANSACTION_NOTIFY_PROCESSDIED,
+                                        data, reply, 0);
+                int result = reply.readInt();
+                reply.recycle();
+                data.recycle();
+                return result;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "notifyProcessDied: ImagePlayerService is dead!:" + ex);
         }
 
         return REMOTE_EXCEPTION;

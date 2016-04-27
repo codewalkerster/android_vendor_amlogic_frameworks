@@ -14,7 +14,7 @@
  *  @note If you inherit anything from this class, you're doomed.
  */
 
-#define LOG_NDEBUG 0
+//#define LOG_NDEBUG 0
 #define LOG_TAG "ImagePlayerService"
 
 #include "utils/Log.h"
@@ -41,6 +41,7 @@
 #include <binder/IServiceManager.h>
 #include <binder/MemoryHeapBase.h>
 #include <binder/MemoryBase.h>
+#include <binder/Binder.h>
 #include <media/stagefright/DataSource.h>
 
 #include <assert.h>
@@ -71,6 +72,20 @@
 #define VIDEO_LAYER_FORMAT_ARGB     2
 
 namespace android {
+class DeathNotifier: public IBinder::DeathRecipient
+{
+    public:
+        DeathNotifier(sp<ImagePlayerService> imageplayerservice) {
+            mImagePlayService = imageplayerservice;
+        }
+
+        void binderDied(const wp<IBinder>& who) {
+            ALOGW("native image player client binder died!");
+            mImagePlayService->release();
+        }
+    private:
+        sp<ImagePlayerService> mImagePlayService;
+};
 class SkHttpStream : public SkStreamRewindable {
 public:
     SkHttpStream(const char url[] = NULL, const sp<IMediaHTTPService> &httpservice = NULL)
@@ -646,6 +661,7 @@ int ImagePlayerService::init() {
 #endif
 
     mMovieThread = new MovieThread(this);
+    mDeathNotifier = new DeathNotifier(this);
 
     ALOGI("init success display fd:%d", mDisplayFd);
 
@@ -661,6 +677,16 @@ int ImagePlayerService::setDataSource (const sp<IMediaHTTPService> &httpService,
 
     mHttpService = httpService;
     setDataSource(srcUrl);
+    return RET_OK;
+}
+
+int ImagePlayerService::notifyProcessDied (const sp<IBinder> &binder) {
+    ALOGI("notifyProcessDied");
+    if (binder == NULL) {
+        ALOGE("notifyProcessDied binder is NULL");
+        return RET_ERR_PARAMETER;
+    }
+    binder->linkToDeath(mDeathNotifier);
     return RET_OK;
 }
 

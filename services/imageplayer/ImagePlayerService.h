@@ -30,6 +30,7 @@
 #include <SkMovie.h>
 //#include <binder/MemoryDealer.h>
 #include <IImagePlayerService.h>
+#include <binder/Binder.h>
 
 #define MAX_FILE_PATH_LEN           1024
 #define MAX_PIC_SIZE                8000
@@ -37,6 +38,7 @@
 namespace android {
 
 class MovieThread;
+class DeathNotifier;
 
 typedef struct {
     char* pBuff;
@@ -108,6 +110,7 @@ class ImagePlayerService :  public BnImagePlayerService {
     virtual int show();
     virtual int release();
     static void instantiate();
+    virtual int notifyProcessDied(const sp<IBinder> &binder);
 
     //use to show gif etc. images
     bool MovieInit(const char path[]);
@@ -173,6 +176,7 @@ class ImagePlayerService :  public BnImagePlayerService {
     int mDisplayFd;
 
     sp<IMediaHTTPService> mHttpService;
+    sp<DeathNotifier> mDeathNotifier;
 };
 
 class MovieThread : public Thread {

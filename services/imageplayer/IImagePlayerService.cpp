@@ -64,6 +64,18 @@ public:
         return reply.readInt32();
     }
 
+    virtual int notifyProcessDied (
+                const sp<IBinder> &binder) {
+            Parcel data, reply;
+            data.writeInterfaceToken(IImagePlayerService::getInterfaceDescriptor());
+            data.writeInt32(binder != NULL);
+            if (binder != NULL) {
+                data.writeStrongBinder(binder);
+            }
+            remote()->transact(BnImagePlayerService::IMAGE_NOTIFY_PROCESSDIED, data, &reply);
+            return reply.readInt32();
+        }
+
     virtual int setDataSource(const char* uri)
     {
         Parcel data, reply;
@@ -284,6 +296,17 @@ status_t BnImagePlayerService::onTransact(
             String8 srcUrl(data.readString16());
             //const char* srcUrl = data.readCString();
             int result = setDataSource(httpService, srcUrl);
+            reply->writeInt32(result);
+            return NO_ERROR;
+        }
+        case IMAGE_NOTIFY_PROCESSDIED: {
+            CHECK_INTERFACE(IImagePlayerService, data, reply);
+
+            sp<IBinder> binder;
+            if (data.readInt32()) {
+                binder = data.readStrongBinder();
+            }
+            int result = notifyProcessDied(binder);
             reply->writeInt32(result);
             return NO_ERROR;
         }
