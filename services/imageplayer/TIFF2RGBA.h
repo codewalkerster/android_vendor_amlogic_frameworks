@@ -19,6 +19,8 @@
 
 #include <SkBitmap.h>
 
+#define MAX_PIC_SIZE                8000
+
 namespace android {
 
 class TIFF2RGBA {

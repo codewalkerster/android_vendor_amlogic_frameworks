@@ -1384,6 +1384,12 @@ int ImagePlayerService::prepare() {
         return RET_ERR_BAD_VALUE;
     }
 
+    if (mWidth > MAX_PIC_SIZE || mHeight > MAX_PIC_SIZE) {
+        ALOGE("prepare image size is too large, we only support w < %d and h < %d, now image size w:%d, h:%d",
+            MAX_PIC_SIZE, MAX_PIC_SIZE, mWidth, mHeight);
+        return RET_ERR_NO_MEMORY;
+    }
+
     if (mDisplayFd < 0) {
         ALOGE("render, but displayFd can not ready");
         return RET_ERR_BAD_VALUE;
