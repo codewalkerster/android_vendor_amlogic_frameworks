@@ -19,6 +19,9 @@ import android.media.tv.TvInputHardwareInfo;
 import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
 import android.media.tv.TvInputService;
+import android.media.tv.TvStreamConfig;
+import android.media.tv.TvInputManager.Hardware;
+import android.media.tv.TvInputManager.HardwareCallback;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -35,16 +38,48 @@ public class DroidLogicTvInputService extends TvInputService implements
 
     private TvInputBaseSession mSession;
     private String mCurrentInputId;
+    public Hardware mHardware;
+    public TvStreamConfig[] mConfigs;
+    private int mDeviceId = -1;
+    private String mInputId;
+
     private int c_displayNum = 0;
     private TvDataBaseManager mTvDataBaseManager;
     private TvControlManager mTvControlManager;
+    private HardwareCallback mHardwareCallback = new HardwareCallback(){
+        @Override
+        public void onReleased() {
+            if (DEBUG)
+                Log.d(TAG, "onReleased");
+
+            mHardware = null;
+        }
+
+        @Override
+        public void onStreamConfigChanged(TvStreamConfig[] configs) {
+            if (DEBUG)
+                Log.d(TAG, "onStreamConfigChanged");
+            mConfigs = configs;
+        }
+    };
 
     /**
      * inputId should get from subclass which must invoke {@link super#onCreateSession(String)}
      */
     @Override
     public Session onCreateSession(String inputId) {
+        TvInputManager tm = (TvInputManager)this.getSystemService(Context.TV_INPUT_SERVICE);
         mCurrentInputId = inputId;
+
+        if (mHardware != null && mDeviceId != -1) {
+            tm.releaseTvInputHardware(mDeviceId, mHardware);
+            mConfigs = null;
+        }
+
+        mCurrentInputId = inputId;
+        mDeviceId = getHardwareDeviceId(inputId);
+        mHardware = tm.acquireTvInputHardware(mDeviceId, mHardwareCallback, tm.getTvInputInfo(inputId));
+
         return null;
     }
 

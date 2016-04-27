@@ -177,16 +177,6 @@ public class DroidLogicTvUtils
 
     public static final String TV_KEY_DTV_NUMBER_MODE = "tv_dtv_number_mode";
 
-    /**
-     * message for {@link TvInputBaseSession#handleMessage(android.os.Message)}
-     */
-    public static final int SESSION_DO_RELEASE          = 1;
-    public static final int SESSION_DO_SET_SURFACE      = 3;
-    public static final int SESSION_DO_SURFACE_CHANGED  = 4;
-    public static final int SESSION_DO_TUNE             = 6;
-    public static final int SESSION_DO_APP_PRIVATE      = 9;
-    public static final int SESSION_UNBLOCK_CONTENT     = 13;
-
     private static final UriMatcher sUriMatcher;
     public static final int NO_MATCH = UriMatcher.NO_MATCH;
     public static final int MATCH_CHANNEL = 1;

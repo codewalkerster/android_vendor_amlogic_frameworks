@@ -6,7 +6,7 @@ import android.media.tv.TvInputManager;
 import android.media.tv.TvInputService;
 import android.media.tv.TvStreamConfig;
 import android.media.tv.TvInputManager.Hardware;
-import android.media.tv.TvInputManager.HardwareCallback;
+import android.provider.Settings;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -22,49 +22,33 @@ import com.droidlogic.app.tv.TvControlManager;
 public abstract class TvInputBaseSession extends TvInputService.Session implements Handler.Callback {
     private static final boolean DEBUG = true;
     private static final String TAG = "TvInputBaseSession";
+    private static final int MSG_DO_TUNE = 0;
 
+    private Context mContext;
+    private int mNumber;
     private String mInputId;
     private int mDeviceId;
     private Surface mSurface;
-    private Hardware mHardware;
     private TvInputManager mTvInputManager;
-    private TvStreamConfig[] mConfigs;
-    private boolean isTuneNotReady = false;
-    private Uri mChannelUri;
-    private HandlerThread mHandlerThread;
+    private boolean mHasRetuned = false;
     private Handler mSessionHandler;
     private TvControlManager mTvControlManager;
-    private boolean mHasRetuned = false;
 
     protected int ACTION_FAILED = -1;
     protected int ACTION_SUCCESS = 1;
 
-    private HardwareCallback mHardwareCallback = new HardwareCallback(){
-        @Override
-        public void onReleased() {
-            if (DEBUG)
-                Log.d(TAG, "onReleased");
-
-            mHardware = null;
-        }
-
-        @Override
-        public void onStreamConfigChanged(TvStreamConfig[] configs) {
-            if (DEBUG)
-                Log.d(TAG, "onStreamConfigChanged");
-            mConfigs = configs;
-        }
-    };
-
     public TvInputBaseSession(Context context, String inputId, int deviceId) {
         super(context);
+        mContext = context;
         mInputId = inputId;
         mDeviceId = deviceId;
-        mTvInputManager = (TvInputManager)context.getSystemService(Context.TV_INPUT_SERVICE);
-        mHardware = mTvInputManager.acquireTvInputHardware(deviceId,
-                mHardwareCallback, mTvInputManager.getTvInputInfo(inputId));
+
         mTvControlManager = TvControlManager.getInstance();
-        initThread(mInputId);
+        mSessionHandler = new Handler(context.getMainLooper(), this);
+    }
+
+    public void setNumber(int number) {
+        mNumber = number;
     }
 
     public String getInputId() {
@@ -75,105 +59,47 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         return mDeviceId;
     }
 
-    public Hardware getHardware() {
-        return mHardware;
-    }
+    public abstract Hardware getHardware();
+    public abstract TvStreamConfig[] getConfigs();
+    public abstract int getCurrentSessionNumber();
+    public abstract void setCurrentSessionNumber(int number);
 
     private int startTvPlay() {
-        if (mConfigs == null) {//exception happened, re-tune one time.
-            if (mHasRetuned) {
-                notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN);
-                mHasRetuned = false;
-            } else {
-                notifyChannelRetuned(mChannelUri);
-                mHasRetuned = true;
-            }
-        } else if (mHardware != null && mSurface != null && mSurface.isValid()) {
-            mHardware.setSurface(mSurface, mConfigs[0]);
+        Log.d(TAG, "startTvPlay inputId=" + mInputId + " number=" + mNumber);
+        if (getHardware() != null && mSurface != null && mSurface.isValid()) {
+            getHardware().setSurface(mSurface, getConfigs()[0]);
             return ACTION_SUCCESS;
         }
         return ACTION_FAILED;
     }
 
     public int stopTvPlay() {
-        if (mHardware != null) {
-            if (mSessionHandler != null) {
-                mSessionHandler.removeMessages(DroidLogicTvUtils.SESSION_DO_TUNE);
-            }
-            mHardware.setSurface(null, null);
+        if (getHardware() != null) {
+
+            getHardware().setSurface(null, null);
             return ACTION_SUCCESS;
-        }
-        return ACTION_FAILED;
-    }
 
-    private void initThread(String inputId) {
-        mHandlerThread = new HandlerThread(inputId);
-        mHandlerThread.start();
-        mSessionHandler = new Handler(mHandlerThread.getLooper(), this);
-    }
-
-    private void releaseThread() {
-        if (mHandlerThread != null) {
-            mHandlerThread.quit();
-            mHandlerThread = null;
-            mSessionHandler = null;
-        }
+         }
+        return ACTION_SUCCESS;
     }
 
     public Surface getSurface() {
         return mSurface;
     }
 
-    @Override
-    public boolean handleMessage(Message msg) {
-        if (DEBUG)
-            Log.d(TAG, "handleMessage, msg.what=" + msg.what);
-        switch (msg.what) {
-            case DroidLogicTvUtils.SESSION_DO_RELEASE:
-                doRelease();
-                break;
-            case DroidLogicTvUtils.SESSION_DO_SET_SURFACE:
-                doSetSurface((Surface)msg.obj);
-                break;
-            case DroidLogicTvUtils.SESSION_DO_SURFACE_CHANGED:
-                doSurfaceChanged((Uri)msg.obj);
-                break;
-            case DroidLogicTvUtils.SESSION_DO_TUNE:
-                if (!isTuneNotReady)
-                    doTune((Uri)msg.obj);
-                break;
-            case DroidLogicTvUtils.SESSION_DO_APP_PRIVATE:
-                doAppPrivateCmd((String)msg.obj, msg.getData());
-                break;
-            case DroidLogicTvUtils.SESSION_UNBLOCK_CONTENT:
-                doUnblockContent((TvContentRating)msg.obj);
-                break;
-            default:
-                break;
-        }
-        return false;
-    }
-
     public void doRelease() {
         Log.d(TAG, "doRelease");
-        if (mHardware != null) {
-            mHardware.setSurface(null, null);
-            mTvInputManager.releaseTvInputHardware(mDeviceId, mHardware);
-        }
-        releaseThread();
     }
 
     public int doTune(Uri uri) {
         Log.d(TAG, "doTune, uri = " + uri);
+
         return startTvPlay();
     }
 
     public void doAppPrivateCmd(String action, Bundle bundle) {
         //do something
-        if (TextUtils.equals(DroidLogicTvUtils.ACTION_STOP_TV, action)
-            || TextUtils.equals(DroidLogicTvUtils.ACTION_STOP_PLAY, action)) {
-            mChannelUri = null;
-        } else if (DroidLogicTvUtils.ACTION_ATV_AUTO_SCAN.equals(action)) {
+		if (DroidLogicTvUtils.ACTION_ATV_AUTO_SCAN.equals(action)) {
             mTvControlManager.AtvAutoScan(TvControlManager.ATV_VIDEO_STD_PAL, TvControlManager.ATV_AUDIO_STD_I, 0);
         } else if (DroidLogicTvUtils.ACTION_DTV_AUTO_SCAN.equals(action)) {
             mTvControlManager.DtvAutoScan();
@@ -190,52 +116,39 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         }
     }
 
-    public int doSurfaceChanged(Uri uri) {
-        Log.d(TAG, "doSurfaceChanged, uri = " + uri);
-        return startTvPlay();
-    }
-
     public void doUnblockContent(TvContentRating rating) {}
 
     public void doSetSurface(Surface surface) {
-        Log.d(TAG, "doSetSurface, surface = " + surface);
-        if (mSurface != null && surface == null) {//TvView destroyed, or session need release
-            isTuneNotReady = true;
-            stopTvPlay();
-        } else if (mSurface == null && surface == null) {
-            Log.d(TAG, "surface has been released.");
-        } else {
-            isTuneNotReady = false;
-            if (!surface.isValid()) {
-                Log.d(TAG, "onSetSurface get invalid surface");
-            }
+        Log.d(TAG, "doSetSurface inputId=" + mInputId + " number=" + mNumber);
+
+        if (surface != null && !surface.isValid()) {
+            Log.d(TAG, "onSetSurface get invalid surface");
+            return;
+        } else if (surface != null) {
+            setCurrentSessionNumber(mNumber);
         }
         mSurface = surface;
+
+        if (mSurface == null && getHardware() != null && mNumber == getCurrentSessionNumber()) {
+            Log.d(TAG, "surface is null, so stop TV play");
+            stopTvPlay();
+        }
     }
 
     @Override
     public void onRelease() {
-        if (mSessionHandler != null)
-            mSessionHandler.obtainMessage(DroidLogicTvUtils.SESSION_DO_RELEASE).sendToTarget();
+        doRelease();
     }
 
     @Override
     public boolean onSetSurface(Surface surface) {
-        if (mSessionHandler != null)
-            mSessionHandler.obtainMessage(DroidLogicTvUtils.SESSION_DO_SET_SURFACE, surface).sendToTarget();
+        Log.d(TAG, "onSetSurface inputId=" + mInputId + " number=" + mNumber + " surface=" + surface);
+        doSetSurface(surface);
         return false;
     }
 
     @Override
     public void onSurfaceChanged(int format, int width, int height) {
-        if (mSessionHandler == null || mChannelUri == null) {
-            if (DEBUG)
-                Log.d(TAG, "onsurfaceChanged mChannelUri=" + mChannelUri);
-            return;
-        }
-
-        mSessionHandler.obtainMessage(
-                DroidLogicTvUtils.SESSION_DO_SURFACE_CHANGED, mChannelUri).sendToTarget();
     }
 
     @Override
@@ -247,13 +160,8 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     public void onAppPrivateCommand(String action, Bundle data) {
         if (DEBUG)
             Log.d(TAG, "onAppPrivateCommand, action = " + action);
-        if (mSessionHandler == null)
-            return;
-        Message msg = mSessionHandler.obtainMessage(
-                DroidLogicTvUtils.SESSION_DO_APP_PRIVATE);
-        msg.setData(data);
-        msg.obj = action;
-        msg.sendToTarget();
+
+        doAppPrivateCmd(action, data);
     }
 
     @Override
@@ -261,11 +169,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         if (DEBUG)
             Log.d(TAG, "onTune, channelUri=" + channelUri);
 
-        mChannelUri = channelUri;
-        if (mSessionHandler != null) {
-            mSessionHandler.obtainMessage(
-                    DroidLogicTvUtils.SESSION_DO_TUNE, channelUri).sendToTarget();
-        }
+        mSessionHandler.obtainMessage(MSG_DO_TUNE, channelUri).sendToTarget();
         return false;
     }
 
@@ -278,10 +182,20 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     public void onUnblockContent(TvContentRating unblockedRating) {
         if (DEBUG)
             Log.d(TAG, "onUnblockContent");
-        if (mSessionHandler == null)
-            return;
-        mSessionHandler.obtainMessage(
-                DroidLogicTvUtils.SESSION_UNBLOCK_CONTENT, unblockedRating).sendToTarget();
+
+        doUnblockContent(unblockedRating);
     }
 
+    @Override
+    public boolean handleMessage(Message msg) {
+        if (DEBUG)
+            Log.d(TAG, "handleMessage, msg.what=" + msg.what);
+        switch (msg.what) {
+            case MSG_DO_TUNE:
+                mSessionHandler.removeMessages(MSG_DO_TUNE);
+                doTune((Uri)msg.obj);
+                break;
+        }
+        return false;
+    }
 }
