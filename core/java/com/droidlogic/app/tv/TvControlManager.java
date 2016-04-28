@@ -3548,6 +3548,17 @@ public class TvControlManager {
         return sendCmd(ATV_DTV_SCAN_RESUME);
     }
 
+    public int DtvSetTextCoding(String coding) {
+        libtv_log_open();
+        Parcel cmd = Parcel.obtain();
+        Parcel r = Parcel.obtain();
+        cmd.writeInt(DTV_SET_TEXT_CODING);
+        cmd.writeString(coding);
+        sendCmdToTv(cmd, r);
+        return 0;
+    }
+
+
     /**
      * @Function: clearAllProgram
      * @Description: clearAllProgram

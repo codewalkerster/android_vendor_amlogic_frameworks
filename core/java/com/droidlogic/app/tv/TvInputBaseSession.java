@@ -99,12 +99,14 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
 
     public void doAppPrivateCmd(String action, Bundle bundle) {
         //do something
-		if (DroidLogicTvUtils.ACTION_ATV_AUTO_SCAN.equals(action)) {
-            mTvControlManager.AtvAutoScan(TvControlManager.ATV_VIDEO_STD_PAL, TvControlManager.ATV_AUDIO_STD_I, 0);
+        if (DroidLogicTvUtils.ACTION_ATV_AUTO_SCAN.equals(action)) {
+            mTvControlManager.AtvAutoScan(TvControlManager.ATV_VIDEO_STD_PAL, TvControlManager.ATV_AUDIO_STD_I, 0, 1);
         } else if (DroidLogicTvUtils.ACTION_DTV_AUTO_SCAN.equals(action)) {
+            mTvControlManager.DtvSetTextCoding("GB2312");
             mTvControlManager.DtvAutoScan();
         } else if (DroidLogicTvUtils.ACTION_DTV_MANUAL_SCAN.equals(action)) {
             if (bundle != null) {
+                mTvControlManager.DtvSetTextCoding("GB2312");
                 mTvControlManager.DtvManualScan(bundle.getInt(DroidLogicTvUtils.PARA_MANUAL_SCAN));
             }
         } else if (DroidLogicTvUtils.ACTION_STOP_SCAN.equals(action)) {
