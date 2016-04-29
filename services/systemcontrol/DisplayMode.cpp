@@ -74,7 +74,12 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_4K2K60HZ,
     MODE_4K2K60HZ420,
     MODE_4K2K60HZ422,
-    MODE_4K2KSMPTE
+    MODE_4K2KSMPTE,
+    MODE_4K2KSMPTE30HZ,
+    MODE_4K2KSMPTE50HZ,
+    MODE_4K2KSMPTE50HZ420,
+    MODE_4K2KSMPTE60HZ,
+    MODE_4K2KSMPTE60HZ420,
 };
 
 /**
@@ -1348,6 +1353,11 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
             position[3] = getBootenvInt(ENV_4K2K60HZ_H, FULL_HEIGHT_4K2K);
             break;
         case DISPLAY_MODE_4K2KSMPTE: // 4k2ksmpte
+        case DISPLAY_MODE_4K2KSMPTE30HZ: // 4k2ksmpte30hz
+        case DISPLAY_MODE_4K2KSMPTE50HZ: // 4k2ksmpte50hz
+        case DISPLAY_MODE_4K2KSMPTE50HZ420: // 4k2ksmpte50hz420
+        case DISPLAY_MODE_4K2KSMPTE60HZ: // 4k2ksmpte60hz
+        case DISPLAY_MODE_4K2KSMPTE60HZ420: // 4k2ksmpte60hz320
             position[0] = getBootenvInt(ENV_4K2KSMPTE_X, 0);
             position[1] = getBootenvInt(ENV_4K2KSMPTE_Y, 0);
             position[2] = getBootenvInt(ENV_4K2KSMPTE_W, FULL_WIDTH_4K2KSMPTE);
@@ -1459,6 +1469,11 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
             setBootEnv(ENV_4K2K60HZ_H, h);
             break;
         case DISPLAY_MODE_4K2KSMPTE:    //4k2ksmpte
+        case DISPLAY_MODE_4K2KSMPTE30HZ: // 4k2ksmpte30hz
+        case DISPLAY_MODE_4K2KSMPTE50HZ: // 4k2ksmpte50hz
+        case DISPLAY_MODE_4K2KSMPTE50HZ420: // 4k2ksmpte50hz420
+        case DISPLAY_MODE_4K2KSMPTE60HZ: // 4k2ksmpte60hz
+        case DISPLAY_MODE_4K2KSMPTE60HZ420: // 4k2ksmpte60hz320
             setBootEnv(ENV_4K2KSMPTE_X, x);
             setBootEnv(ENV_4K2KSMPTE_Y, y);
             setBootEnv(ENV_4K2KSMPTE_W, w);
