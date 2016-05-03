@@ -417,6 +417,7 @@ public interface TvControlCommand {
     int FACTORY_WHITE_BALANCE_GET_ALL_PRAMAS = 1121;
 
     //ATV/DTV
+    int DTV_SET_TEXT_CODING = 1377;
     int ATV_DTV_SCAN_PAUSE = 1378;
     int ATV_DTV_SCAN_RESUME = 1379;
     int ATV_GET_VIDEO_CENTER_FREQ = 1388;
