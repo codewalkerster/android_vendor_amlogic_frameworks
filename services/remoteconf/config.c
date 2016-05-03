@@ -26,11 +26,20 @@
 #include <fcntl.h>
 #include <utils/Log.h>
 #include "remote_config.h"
+#include "keydefine.h"
 
-int set_config(remote_config_t *remote, int device_fd)
+#define DEVICE_NAME             "/dev/amremote"
+
+int set_config(remote_config_t *remote)
 {
-    unsigned int i;
-    unsigned int *para = (unsigned int*)&remote->repeat_delay;
+    unsigned int i, val;
+    unsigned int *para = (unsigned int*)&remote->factory_infcode;
+    int device_fd = open(DEVICE_NAME, O_RDWR);
+    if (device_fd <= 0) {
+        ALOGE("Can't open %s .\n", DEVICE_NAME);
+        return -1;
+    }
+    remote->factory_code >>= 16;
 
     for (i = 0; i < ARRAY_SIZE(config_item); i++) {
         if (para[i] != 0xffffffff) {
@@ -56,5 +65,27 @@ int set_config(remote_config_t *remote, int device_fd)
             ioctl(device_fd, remote_ioc_table[i], &para[i]);
         }
     }
+    ioctl(device_fd, REMOTE_IOC_RESET_KEY_MAPPING, NULL);
+
+    for (i = 0; i < 256; i++)
+        if (remote->key_map[i] != KEY_RESERVED) {
+            val = (i<<16) | remote->key_map[i];
+            ioctl(device_fd, REMOTE_IOC_SET_KEY_MAPPING, &val);
+        }
+
+    for (i = 0; i < 256; i++)
+        if (remote->repeat_key_map[i] != KEY_RESERVED ) {
+            val = (i<<16) | remote->repeat_key_map[i];
+            ioctl(device_fd, REMOTE_IOC_SET_REPEAT_KEY_MAPPING, &val);
+        }
+
+    for (i = 0; i < 4; i++)
+        if (remote->mouse_map[i] != 0xffff) {
+            val = (i<<16) | remote->mouse_map[i];
+            ioctl(device_fd, REMOTE_IOC_SET_MOUSE_MAPPING, &val);
+        }
+
+    close(device_fd);
+
     return 0;
 }

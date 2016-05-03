@@ -32,6 +32,7 @@
 
 enum {
     CONFIG_LEVEL,
+    CUSTOM_LEVEL,
     KEYMAP_LEVEL,
     REPEATKEYMAP_LEVEL,
     MOUSEMAP_LEVEL,
@@ -89,7 +90,7 @@ static void trim_line_data(char *line_data_buf) {
 
 static int remote_config_set(char *name, char *value, remote_config_t *config) {
     unsigned int i;
-    unsigned int *config_para = (unsigned int*) &config->repeat_delay;
+    unsigned int *config_para = (unsigned int*) &config->factory_infcode;
 
     for (i = 0; i < ARRAY_SIZE(config_item); i++) {
         if (strcmp(config_item[i], name) == 0) {
@@ -101,12 +102,14 @@ static int remote_config_set(char *name, char *value, remote_config_t *config) {
     return -1;
 }
 
-int get_config_from_file(FILE *fp, remote_config_t *remote) {
+int parse_and_set_config_from_file(FILE *fp, remote_config_t *remote) {
     char line_data_buf[CC_MAX_LINE_LEN];
     char *name = NULL;
     char *value;
     unsigned short ircode = 0, keycode = 0, adccode, index, custcode;
     unsigned char parse_flag = CONFIG_LEVEL;
+    unsigned char last_flag = CONFIG_LEVEL;
+    unsigned char has_custom_config = 0;
 
     while (fgets(line_data_buf, CC_MAX_LINE_LEN, fp)) {
         trim_line_data(line_data_buf);
@@ -115,6 +118,61 @@ int get_config_from_file(FILE *fp, remote_config_t *remote) {
 
         switch (parse_flag) {
         case CONFIG_LEVEL:
+            last_flag = CONFIG_LEVEL;
+            if (strcasecmp(name, "custom_begin") == 0) {
+                parse_flag = CUSTOM_LEVEL;
+                continue;
+            }
+
+            if (strcasecmp(name, "key_begin") == 0) {
+                parse_flag = KEYMAP_LEVEL;
+                continue;
+            }
+
+            if (strcasecmp(name, "repeat_key_begin") == 0) {
+                parse_flag = REPEATKEYMAP_LEVEL;
+                continue;
+            }
+
+            if (strcasecmp(name, "mouse_begin") == 0) {
+                parse_flag = MOUSEMAP_LEVEL;
+                continue;
+            }
+
+            if (strcasecmp(name, "keyadc_begin") == 0) {
+                parse_flag = ADCMAP_LEVEL;
+                continue;
+            }
+
+            if (strcasecmp(name, "factorycust_begin") == 0) {
+                parse_flag = FACTORYCUSTMAP_LEVEL;
+                continue;
+            }
+
+            value = strchr(line_data_buf, '=');
+            if (value) {
+                *value++ = 0;
+                str_trim(&value);
+            }
+
+            str_trim(&name);
+            if (!*name) {
+                continue;
+            }
+
+            if (remote_config_set(name, value, remote)) {
+                ALOGE("config file has not supported parameter:%s=%s\r\n", name, value);
+            }
+            continue;
+        case CUSTOM_LEVEL:
+            last_flag = CUSTOM_LEVEL;
+            if (strcasecmp(name, "custom_end") == 0) {
+                parse_flag = CONFIG_LEVEL;
+                has_custom_config = 1;
+                set_config(remote);
+                continue;
+            }
+
             if (strcasecmp(name, "key_begin") == 0) {
                 parse_flag = KEYMAP_LEVEL;
                 continue;
@@ -157,7 +215,7 @@ int get_config_from_file(FILE *fp, remote_config_t *remote) {
             continue;
         case KEYMAP_LEVEL:
             if (strcasecmp(name, "key_end") == 0) {
-                parse_flag = CONFIG_LEVEL;
+                parse_flag = last_flag;
                 continue;
             }
 
@@ -184,7 +242,7 @@ int get_config_from_file(FILE *fp, remote_config_t *remote) {
             continue;
         case REPEATKEYMAP_LEVEL:
             if (strcasecmp(name, "repeat_key_end") == 0) {
-                parse_flag = CONFIG_LEVEL;
+                parse_flag = last_flag;
                 continue;
             }
 
@@ -211,7 +269,7 @@ int get_config_from_file(FILE *fp, remote_config_t *remote) {
             continue;
         case MOUSEMAP_LEVEL:
             if (strcasecmp(name, "mouse_end") == 0) {
-                parse_flag = CONFIG_LEVEL;
+                parse_flag = last_flag;
                 continue;
             }
 
@@ -236,7 +294,7 @@ int get_config_from_file(FILE *fp, remote_config_t *remote) {
             continue;
         case ADCMAP_LEVEL:
             if (strcasecmp(name, "keyadc_end") == 0) {
-                parse_flag = CONFIG_LEVEL;
+                parse_flag = last_flag;
                 continue;
             }
 
@@ -264,7 +322,7 @@ int get_config_from_file(FILE *fp, remote_config_t *remote) {
             continue;
 		case FACTORYCUSTMAP_LEVEL:
             if (strcasecmp(name, "factorycust_end") == 0) {
-                parse_flag = CONFIG_LEVEL;
+                parse_flag = last_flag;
                 continue;
             }
 
@@ -290,6 +348,9 @@ int get_config_from_file(FILE *fp, remote_config_t *remote) {
             }
             continue;
         }
+    }
+    if (has_custom_config == 0) {
+        set_config(remote);
     }
     return 0;
 }

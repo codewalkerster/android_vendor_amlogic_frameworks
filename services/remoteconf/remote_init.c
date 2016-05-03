@@ -90,7 +90,6 @@ int remoteinit(const char* path)
     int i;
     unsigned int val;
     remote_config_t *remote = NULL;
-    int device_name_fd = -1;
     int device_kp_fd = -1;
     int ret = 0;
 
@@ -111,12 +110,6 @@ int remoteinit(const char* path)
     remote->repeat_key_map = repeat_key_map;
     remote->mouse_map = mouse_map;
     remote->factory_customercode_map = factory_customercode_map;
-    device_name_fd = open(DEVICE_NAME, O_RDWR);
-    if (device_name_fd < 0) {
-        ALOGE("Can't open %s .\n", DEVICE_NAME);
-        ret = -2;
-        goto exit;
-    }
 
     FILE *fp = fopen(path, "r");
     if (!fp) {
@@ -124,38 +117,11 @@ int remoteinit(const char* path)
         ret = -3;
         goto exit;
     }
-    get_config_from_file(fp, remote);
+    parse_and_set_config_from_file(fp, remote);
     fclose(fp);
 
-    remote->factory_code >>= 16;
-    set_config(remote, device_name_fd);
-    ioctl(device_name_fd, REMOTE_IOC_RESET_KEY_MAPPING, NULL);
-    for (i = 0; i < 256; i++)
-        if (key_map[i] != KEY_RESERVED) {
-            val = (i<<16) | key_map[i];
-            ioctl(device_name_fd, REMOTE_IOC_SET_KEY_MAPPING, &val);
-        }
-
-    for (i = 0; i < 256; i++)
-        if (repeat_key_map[i] != KEY_RESERVED ) {
-            val = (i<<16) | repeat_key_map[i];
-            ioctl(device_name_fd, REMOTE_IOC_SET_REPEAT_KEY_MAPPING, &val);
-        }
-
-    for (i = 0; i < 4; i++)
-        if (mouse_map[i] != 0xffff) {
-            val = (i<<16) | mouse_map[i];
-            ioctl(device_name_fd, REMOTE_IOC_SET_MOUSE_MAPPING, &val);
-        }
-
-    for (i = 0; i < FACTCUSTCODE_MAX; i++)
-        if (factory_customercode_map[i] != 0xffffffff) {
-           val = (i<<16) | factory_customercode_map[i];
-            ioctl(device_name_fd, REMOTE_IOC_SET_FACTORY_CUSTOMCODE, &val);
-        }
-
     device_kp_fd = open(DEVICE_KP, O_RDWR);
-    if (device_kp_fd >= 0) {
+    if (device_kp_fd > 0) {
         if (adc_move_enable != 0) {
             for (i = 0; i < (int)ARRAY_SIZE(adc_map); i++) {
                 if (adc_map[i] != 0xffff) {
@@ -174,9 +140,6 @@ int remoteinit(const char* path)
 exit:
     if (NULL != remote)
         free(remote);
-
-    if (device_name_fd >= 0)
-        close(device_name_fd);
 
     return ret;
 }

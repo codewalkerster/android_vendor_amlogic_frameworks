@@ -75,12 +75,12 @@ typedef struct {
     unsigned short *repeat_key_map;
     unsigned short *mouse_map;
     unsigned int *factory_customercode_map;
+    unsigned int factory_infcode;
     unsigned int repeat_delay;
     unsigned int repeat_peroid;
     unsigned int work_mode ;
     unsigned int mouse_speed;
     unsigned int repeat_enable;
-    unsigned int factory_infcode;
     unsigned int factory_unfcode;
     unsigned int factory_code;
     unsigned int release_delay;
@@ -115,12 +115,12 @@ typedef struct {
 
 //these string must in this order and sync with struct remote_config_t
 static char*  config_item[33]={
+    "factory_infcode",
     "repeat_delay",
     "repeat_peroid",
     "work_mode",
     "mouse_speed",
     "repeat_enable",
-    "factory_infcode",
     "factory_unfcode",
     "factory_code",
     "release_delay",
@@ -154,13 +154,13 @@ static char*  config_item[33]={
 };
 
 static int remote_ioc_table[33]={
+    REMOTE_IOC_INFCODE_CONFIG,
     REMOTE_IOC_SET_REPEAT_DELAY,
     REMOTE_IOC_SET_REPEAT_PERIOD,
     REMOTE_IOC_SET_MODE,
     REMOTE_IOC_SET_MOUSE_SPEED,
 
     REMOTE_IOC_SET_REPEAT_ENABLE,
-    REMOTE_IOC_INFCODE_CONFIG,
     REMOTE_IOC_UNFCODE_CONFIG,
     REMOTE_IOC_SET_CUSTOMCODE,
     REMOTE_IOC_SET_RELEASE_DELAY,
@@ -193,7 +193,7 @@ static int remote_ioc_table[33]={
     REMOTE_IOC_SET_PAGEDOWN_KEY_SCANCODE,
 };
 
-extern int set_config(remote_config_t *remote, int device_fd);
-extern int get_config_from_file(FILE *fp, remote_config_t *remote);
+extern int set_config(remote_config_t *remote);
+extern int parse_and_set_config_from_file(FILE *fp, remote_config_t *remote);
 
 #endif
