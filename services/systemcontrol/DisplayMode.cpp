@@ -1604,17 +1604,34 @@ void* DisplayMode::hdcpRxThreadLoop(void* data) {
     char isPlugin = 'N';
     static int lastVideoState = 0;
     int curVideoState = 0;
+
+#ifdef IMPDATA_HDCP_RX_KEY//used for tcl
+    if ((access(HDCP_RX_DES_FW_PATH, F_OK) || (access(HDCP_NEW_KEY_CREATED, F_OK) == F_OK)) &&
+        (access(HDCP_PACKED_IMG_PATH, F_OK) == F_OK)) {
+        SYS_LOGI("HDCP rx 2.2 firmware do not exist or new key come, first create it\n");
+        generateHdcpFw(HDCP_FW_LE_OLD_PATH, HDCP_PACKED_IMG_PATH, HDCP_RX_DES_FW_PATH);
+        remove(HDCP_NEW_KEY_CREATED);
+    }
+#else
+    if (access(HDCP_RX_DES_FW_PATH, F_OK)) {
+        SYS_LOGI("HDCP rx 2.2 firmware do not exist, first create it\n");
+        int ret = generateHdcpFwFromStorage(HDCP_RX_SRC_FW_PATH, HDCP_RX_DES_FW_PATH);
+        if (ret < 0) {
+            pThiz->pSysWrite->writeSysfs(HDMI_RX_KEY_COMBINE, "0");
+            SYS_LOGE("HDCP rx 2.2 generate firmware fail\n");
+        }
+    }
+#endif
+
     while (true) {
         char valueStr[10] = {0};
         pThiz->pSysWrite->readSysfs(HDMI_RX_HPD_STATE, valueStr);
 
         //SYS_LOGD("hdcpRxThreadLoop hpd_to_esm:%s\n", valueStr);
-        //int val = atoi(valueStr);
         if (valueStr[0] != isPlugin) {
             isPlugin = valueStr[0];
             pThiz->hdcpRxAuthenticate((valueStr[0]=='Y')?true:false);
         }
-        //if (_strstr(valueStr, (char *)"1"))
 
         memset(valueStr, 0, sizeof(valueStr));
         pThiz->pSysWrite->readSysfs(SYSFS_VIDEO_LAYER_STATE, valueStr);
@@ -1634,36 +1651,12 @@ void* DisplayMode::hdcpRxThreadLoop(void* data) {
 }
 
 void DisplayMode::hdcpRxAuthenticate(bool plugIn) {
-#ifndef RECOVERY_MODE
-
-#ifdef IMPDATA_HDCP_RX_KEY
-    if ((access(HDCPRX_BIN_PATH, F_OK) || (access(HDCP_NEW_KEY_CREATED, F_OK) == F_OK)) &&
-        (access(HDCP_PACKED_IMG_PATH, F_OK) == F_OK)) {
-        SYS_LOGI("HDCP rx 2.2 firmware do not exist or new key come, first create it\n");
-        generateHdcpFw(HDCP_FW_LE_OLD_PATH, HDCP_PACKED_IMG_PATH, HDCPRX_BIN_PATH);
-        remove(HDCP_NEW_KEY_CREATED);
-    }
-#else
-    if (access(HDCPRX_BIN_PATH, F_OK)) {
-        SYS_LOGI("HDCP rx 2.2 firmware do not exist, first create it\n");
-        int ret = generateHdcpFwFromStorage(HDCP_FW_LE_PATH, HDCPRX_BIN_PATH);
-        if (ret < 0)
-            pSysWrite->writeSysfs(HDMI_RX_KEY_COMBINE, "0");
-    }
-#endif
-
-    if (access(HDCPRX_BIN_PATH, F_OK)) {
-        SYS_LOGE("HDCP rx 2.2 firmware do not exist, do not need hdcp rx authenticate\n");
-        return;
-    }
-#endif
-
     SYS_LOGI("HDCP rx 2.2 authenticate plugin:%d, stop hdcp_rx22 %s\n", plugIn, plugIn?"then start hdcp_rx22":"");
     pSysWrite->setProperty("ctl.stop", "hdcp_rx22");
 
     if (plugIn) {
         usleep(50*1000);
-        SYS_LOGI("HDCP 2.2, start hdcp_rx22\n");
+        SYS_LOGI("HDCP rx 2.2, start hdcp_rx22\n");
         pSysWrite->setProperty("ctl.start", "hdcp_rx22");
     }
 }

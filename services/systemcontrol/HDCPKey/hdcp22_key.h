@@ -18,8 +18,8 @@
 #define HDCP_PACKED_IMG_PATH        "/impdata/hdcp_key2.0.bin"
 #define HDCP_NEW_KEY_CREATED        "/impdata/newkeyCreated"
 
-#define HDCP_FW_LE_PATH             "/system/etc/firmware/hdcp_rx22/firmware.le"
-#define HDCPRX_BIN_PATH             "/data/firmware.le"
+#define HDCP_RX_SRC_FW_PATH         "/system/etc/firmware/hdcp_rx22/firmware.le"
+#define HDCP_RX_DES_FW_PATH         "/param/firmware.le"
 
 typedef unsigned int        __u32;
 typedef signed int          __s32;

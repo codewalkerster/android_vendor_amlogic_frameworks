@@ -312,17 +312,17 @@ _exit4:
     return 0;
 }
 
-void readSys(const char *path, char *buf, int count) {
-    int fd, len;
+int readSys(const char *path, char *buf, int count) {
+    int fd, len = -1;
 
     if ( NULL == buf ) {
         HDCP_LOGE("buf is NULL");
-        return;
+        return len;
     }
 
     if ((fd = open(path, O_RDONLY)) < 0) {
         HDCP_LOGE("readSysFs, open %s fail.", path);
-        return;
+        return len;
     }
 
     len = read(fd, buf, count);
@@ -331,6 +331,7 @@ void readSys(const char *path, char *buf, int count) {
     }
 
     close(fd);
+    return len;
 }
 
 void writeSys(const char *path, const char *val) {
@@ -445,6 +446,7 @@ int generateHdcpFwFromStorage(const char* firmwarele, const char* newFw)
     FILE* fd_dest       = NULL;
 
     //Copy file
+    int keyLen = 0;
     int rwLen = 0;
     int wantLen = 0;
     int itemSz = 0;
@@ -453,7 +455,7 @@ int generateHdcpFwFromStorage(const char* firmwarele, const char* newFw)
 
     char *itemBuf = new char[ITEM_READ_BUF_SZ];
     if (!itemBuf) {
-        ALOGE("[%d] Exception: fail to alloc buuffer\n", __LINE__);
+        ALOGE("[%d] Exception: fail to alloc buffer\n", __LINE__);
         return -1;
     }
 
@@ -492,7 +494,12 @@ int generateHdcpFwFromStorage(const char* firmwarele, const char* newFw)
     itemSz = 2080;
     writeSys("/sys/class/unifykeys/attach", "1");
     writeSys("/sys/class/unifykeys/name", "hdcp22_rx_fw");
-    readSys("/sys/class/unifykeys/read", itemBuf, itemSz);
+    keyLen = readSys("/sys/class/unifykeys/read", itemBuf, itemSz);
+    if (keyLen < itemSz) {
+        HDCP_LOGE("read key length fail, request len = %d, read len = %d\n", itemSz, keyLen);
+        iRet = -1;
+        goto _exit4;
+    }
     //for (int i = 0; i < itemSz; i++)
     //    HDCP_LOGD("read key [%d] = 0x%x\n", i, itemBuf[i]);
     //read key storage end
