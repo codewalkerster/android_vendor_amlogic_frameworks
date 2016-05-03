@@ -27,8 +27,8 @@ public interface TvControlCommand {
     // HDMI
     int SET_HDMI_EDID_VER = 44;
     int SET_HDCP_KEY_ENABLE = 45;
-    int SET_HDMI_COLOR_RANGE = 46;
-    int GET_HDMI_COLOR_RANGE = 47;
+    int SET_HDMI_COLOR_RANGE_MODE = 46;
+    int GET_HDMI_COLOR_RANGE_MODE = 47;
 
     // PQ
     //int SET_SCENEMODE = 192;
@@ -65,7 +65,6 @@ public interface TvControlCommand {
     int SAVE_DISPLAY_MODE = 223;
     int SET_NOISE_REDUCTION_MODE = 224;
     int GET_NOISE_REDUCTION_MODE = 225;
-    int SAVE_NOISE_REDUCTION_MODE = 226;
     int SET_BACKLIGHT_SWITCH = 227;
     int GET_BACKLIGHT_SWITCH = 228;
     int SET_EYE_PROTETION_MODE = 230;
@@ -334,7 +333,6 @@ public interface TvControlCommand {
     int MISC_CFG_GET = 704;
     int MISC_SET_GPIO_CTL = 705;
     int MISC_GET_GPIO_CTL = 706;
-    int MISC_READ_ADC_VAL = 707;
     int MISC_SET_WDT_USER_PET = 708;
     int MISC_SET_WDT_USER_COUNTER = 709;
     int MISC_SET_WDT_USER_PET_RESET_ENABLE = 710;
@@ -463,7 +461,6 @@ public interface TvControlCommand {
     int DTV_GET_VIDEO_FMT_INFO = 1429;
     int DTV_START_CC = 1430;
     int DTV_STOP_CC = 1431;
-    int DTV_SCAN_AUTO_ATSC = 1433;
     int TV_CLEAR_ALL_PROGRAM  = 1454;
     int SET_BLACKOUT_ENABLE = 1455;
     int START_AUTO_BACKLIGHT = 1456;
