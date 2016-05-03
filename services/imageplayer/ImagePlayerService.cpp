@@ -1388,9 +1388,16 @@ int ImagePlayerService::prepare() {
         ALOGI("it's a movie image, show it with thread");
 
         mMovieImage = true;
-        MovieInit(mImageUrl);
-        delete stream;
-        return RET_OK;
+        if (MovieInit(mImageUrl)) {
+            delete stream;
+            return RET_OK;
+        }
+        else{
+            //delete stream;
+            //return RET_ERR_BAD_VALUE;
+            mMovieImage = false;
+            mBitmap = decode(stream, NULL);
+        }
     }
     else if (isTiffByExtenName(mImageUrl)) {
         mBitmap = decodeTiff(mImageUrl);
@@ -1484,9 +1491,16 @@ int ImagePlayerService::prepareBuf(const char *uri) {
         ALOGI("it's a movie image, show it with thread");
 
         mMovieImage = true;
-        MovieInit(path);
-        delete stream;
-        return RET_OK;
+        if (MovieInit(path)) {
+            delete stream;
+            return RET_OK;
+        }
+        else {
+            //delete stream;
+            //return RET_ERR_INVALID_OPERATION;
+            mMovieImage = false;
+            mBufBitmap = decode(stream, NULL);
+        }
     }
     else if (isTiffByExtenName(uri)) {
         mBufBitmap = decodeTiff(path);
