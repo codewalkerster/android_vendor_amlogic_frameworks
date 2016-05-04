@@ -1105,13 +1105,13 @@ public class TvControlManager {
         return (sendCmd(GET_EYE_PROTETION_MODE) == 1) ? true : false;
     }
 
-    public int SetHdmiColorRange(HdmiColorRangeMode mode) {
+    public int SetHdmiColorRangeMode(HdmiColorRangeMode mode) {
         int val[] = new int[]{mode.toInt()};
-        return sendCmdIntArray(SET_HDMI_COLOR_RANGE, val);
+        return sendCmdIntArray(SET_HDMI_COLOR_RANGE_MODE, val);
     }
 
-    public int GetHdmiColorRange() {
-        return sendCmd(GET_HDMI_COLOR_RANGE);
+    public int GetHdmiColorRangeMode() {
+        return sendCmd(GET_HDMI_COLOR_RANGE_MODE);
     }
 
     public enum Noise_Reduction_Mode {
@@ -1152,17 +1152,6 @@ public class TvControlManager {
     public int GetNoiseReductionMode(SourceInput_Type source) {
         int val[] = new int[]{source.toInt()};
         return sendCmdIntArray(GET_NOISE_REDUCTION_MODE, val);
-    }
-
-    /**
-     * @Function: SaveNoiseReductionMode
-     * @Description: Save current source noise reduction mode
-     * @Param: noise reduction mode refer to enum Noise_Reduction_Mode, source refer to enum SourceInput_Type
-     * @Return: 0 success, -1 fail
-     */
-    public int SaveNoiseReductionMode(Noise_Reduction_Mode nr_mode, SourceInput_Type source) {
-        int val[] = new int[]{nr_mode.toInt(), source.toInt()};
-        return sendCmdIntArray(SAVE_NOISE_REDUCTION_MODE, val);
     }
 
     public enum GAMMA_CURVE_TYPE {
@@ -3261,17 +3250,6 @@ public class TvControlManager {
     }
 
     /**
-     * @Function: TvMiscReadADCVal
-     * @Description: Read adc channel status
-     * @Param: chan_num for adc channel select
-     * @Return: adc read value
-     */
-    public int TvMiscReadADCVal(int chan_num) {
-        int val[] = new int[]{chan_num};
-        return sendCmdIntArray(MISC_READ_ADC_VAL, val);
-    }
-
-    /**
      * @Function: TvMiscSetUserCounter
      * @Description: Enable user counter
      * @Param: counter 1 enable or 0 disable user counter
@@ -3529,11 +3507,6 @@ public class TvControlManager {
 
     public int DtvAutoScan() {
         return sendCmd(DTV_SCAN_AUTO);
-    }
-
-    public int DtvAutoScanAtsc(int attenna, int videoStd,int audioStd) {
-        int val[] = new int[]{attenna, videoStd, audioStd};
-        return sendCmdIntArray(DTV_SCAN_AUTO_ATSC, val);
     }
 
     public int DtvManualScan(int beginFreq, int endFreq, int modulation) {
