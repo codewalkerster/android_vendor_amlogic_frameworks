@@ -74,6 +74,22 @@ public interface ISubTitleService extends android.os.IInterface {
                         return true;
                     }
 
+                    case TRANSACTION_getInnerSubTotal: {
+                        data.enforceInterface(DESCRIPTOR);
+                        int _result = this.getInnerSubTotal();
+                        reply.writeNoException();
+                        reply.writeInt(_result);
+                        return true;
+                    }
+
+                    case TRANSACTION_getExternalSubTotal: {
+                        data.enforceInterface(DESCRIPTOR);
+                        int _result = this.getExternalSubTotal();
+                        reply.writeNoException();
+                        reply.writeInt(_result);
+                        return true;
+                    }
+
                     case TRANSACTION_nextSub: {
                         data.enforceInterface (DESCRIPTOR);
                         this.nextSub();
@@ -253,6 +269,21 @@ public interface ISubTitleService extends android.os.IInterface {
                         reply.writeInt ( ( (_result) ? (1) : (0) ) );
                         return true;
                     }
+
+                    case TRANSACTION_setSurfaceViewParam: {
+                        data.enforceInterface(DESCRIPTOR);
+                        int _arg0;
+                        _arg0 = data.readInt();
+                        int _arg1;
+                        _arg1 = data.readInt();
+                        int _arg2;
+                        _arg2 = data.readInt();
+                        int _arg3;
+                        _arg3 = data.readInt();
+                        this.setSurfaceViewParam(_arg0, _arg1, _arg2, _arg3);
+                        reply.writeNoException();
+                        return true;
+                    }
                 }
 
                 return super.onTransact (code, data, reply, flags);
@@ -341,6 +372,43 @@ public interface ISubTitleService extends android.os.IInterface {
                             _data.recycle();
                         }
                         return _result;
+                    }
+
+                    @Override
+                    public int getInnerSubTotal() throws android.os.RemoteException{
+                        android.os.Parcel _data = android.os.Parcel.obtain();
+                        android.os.Parcel _reply = android.os.Parcel.obtain();
+                        int _result;
+                        try {
+                            _data.writeInterfaceToken(DESCRIPTOR);
+                            mRemote.transact(Stub.TRANSACTION_getInnerSubTotal, _data, _reply, 0);
+                            _reply.readException();
+                            _result = _reply.readInt();
+                        }
+                        finally {
+                            _reply.recycle();
+                            _data.recycle();
+                        }
+                        return _result;
+                    }
+
+                    @Override
+                    public int getExternalSubTotal() throws android.os.RemoteException{
+                        android.os.Parcel _data = android.os.Parcel.obtain();
+                        android.os.Parcel _reply = android.os.Parcel.obtain();
+                        int _result;
+                        try {
+                            _data.writeInterfaceToken(DESCRIPTOR);
+                            mRemote.transact(Stub.TRANSACTION_getExternalSubTotal, _data, _reply, 0);
+                            _reply.readException();
+                            _result = _reply.readInt();
+                        }
+                        finally {
+                            _reply.recycle();
+                            _data.recycle();
+                        }
+                        return _result;
+
                     }
 
                     @Override
@@ -714,39 +782,63 @@ public interface ISubTitleService extends android.os.IInterface {
                         }
                         return _result;
                     }
+
+                    @Override
+                    public void setSurfaceViewParam(int x, int y, int w, int h) throws android.os.RemoteException{
+                        android.os.Parcel _data = android.os.Parcel.obtain();
+                        android.os.Parcel _reply = android.os.Parcel.obtain();
+                        try {
+                            _data.writeInterfaceToken(DESCRIPTOR);
+                            _data.writeInt(x);
+                            _data.writeInt(y);
+                            _data.writeInt(w);
+                            _data.writeInt(h);
+                            mRemote.transact(Stub.TRANSACTION_setSurfaceViewParam, _data, _reply, 0);
+                            _reply.readException();
+                        }
+                        finally {
+                            _reply.recycle();
+                            _data.recycle();
+                        }
+                    }
             }
 
             static final int TRANSACTION_open = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
             static final int TRANSACTION_openIdx = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
             static final int TRANSACTION_close = (android.os.IBinder.FIRST_CALL_TRANSACTION + 2);
             static final int TRANSACTION_getSubTotal = (android.os.IBinder.FIRST_CALL_TRANSACTION + 3);
-            static final int TRANSACTION_nextSub = (android.os.IBinder.FIRST_CALL_TRANSACTION + 4);
-            static final int TRANSACTION_preSub = (android.os.IBinder.FIRST_CALL_TRANSACTION + 5);
-            static final int TRANSACTION_showSub = (android.os.IBinder.FIRST_CALL_TRANSACTION + 6);
-            static final int TRANSACTION_option = (android.os.IBinder.FIRST_CALL_TRANSACTION + 7);
-            static final int TRANSACTION_getSubType = (android.os.IBinder.FIRST_CALL_TRANSACTION + 8);
-            static final int TRANSACTION_getSubTypeStr = (android.os.IBinder.FIRST_CALL_TRANSACTION + 9);
-            static final int TRANSACTION_getSubTypeDetial = (android.os.IBinder.FIRST_CALL_TRANSACTION + 10);
-            static final int TRANSACTION_setTextColor = (android.os.IBinder.FIRST_CALL_TRANSACTION + 11);
-            static final int TRANSACTION_setTextSize = (android.os.IBinder.FIRST_CALL_TRANSACTION + 12);
-            static final int TRANSACTION_setGravity = (android.os.IBinder.FIRST_CALL_TRANSACTION + 13);
-            static final int TRANSACTION_setTextStyle = (android.os.IBinder.FIRST_CALL_TRANSACTION + 14);
-            static final int TRANSACTION_setPosHeight = (android.os.IBinder.FIRST_CALL_TRANSACTION + 15);
-            static final int TRANSACTION_setImgSubRatio = (android.os.IBinder.FIRST_CALL_TRANSACTION + 16);
-            static final int TRANSACTION_clear = (android.os.IBinder.FIRST_CALL_TRANSACTION + 17);
-            static final int TRANSACTION_resetForSeek = (android.os.IBinder.FIRST_CALL_TRANSACTION + 18);
-            static final int TRANSACTION_hide = (android.os.IBinder.FIRST_CALL_TRANSACTION + 19);
-            static final int TRANSACTION_display = (android.os.IBinder.FIRST_CALL_TRANSACTION + 20);
-            static final int TRANSACTION_getCurName = (android.os.IBinder.FIRST_CALL_TRANSACTION + 21);
-            static final int TRANSACTION_getSubName = (android.os.IBinder.FIRST_CALL_TRANSACTION + 22);
-            static final int TRANSACTION_getSubLanguage = (android.os.IBinder.FIRST_CALL_TRANSACTION + 23);
-            static final int TRANSACTION_load = (android.os.IBinder.FIRST_CALL_TRANSACTION + 24);
+            static final int TRANSACTION_getInnerSubTotal = (android.os.IBinder.FIRST_CALL_TRANSACTION + 4);
+            static final int TRANSACTION_getExternalSubTotal = (android.os.IBinder.FIRST_CALL_TRANSACTION + 5);
+            static final int TRANSACTION_nextSub = (android.os.IBinder.FIRST_CALL_TRANSACTION + 6);
+            static final int TRANSACTION_preSub = (android.os.IBinder.FIRST_CALL_TRANSACTION + 7);
+            static final int TRANSACTION_showSub = (android.os.IBinder.FIRST_CALL_TRANSACTION + 8);
+            static final int TRANSACTION_option = (android.os.IBinder.FIRST_CALL_TRANSACTION + 9);
+            static final int TRANSACTION_getSubType = (android.os.IBinder.FIRST_CALL_TRANSACTION + 10);
+            static final int TRANSACTION_getSubTypeStr = (android.os.IBinder.FIRST_CALL_TRANSACTION + 11);
+            static final int TRANSACTION_getSubTypeDetial = (android.os.IBinder.FIRST_CALL_TRANSACTION + 12);
+            static final int TRANSACTION_setTextColor = (android.os.IBinder.FIRST_CALL_TRANSACTION + 13);
+            static final int TRANSACTION_setTextSize = (android.os.IBinder.FIRST_CALL_TRANSACTION + 14);
+            static final int TRANSACTION_setGravity = (android.os.IBinder.FIRST_CALL_TRANSACTION + 15);
+            static final int TRANSACTION_setTextStyle = (android.os.IBinder.FIRST_CALL_TRANSACTION + 16);
+            static final int TRANSACTION_setPosHeight = (android.os.IBinder.FIRST_CALL_TRANSACTION + 17);
+            static final int TRANSACTION_setImgSubRatio = (android.os.IBinder.FIRST_CALL_TRANSACTION + 18);
+            static final int TRANSACTION_clear = (android.os.IBinder.FIRST_CALL_TRANSACTION + 19);
+            static final int TRANSACTION_resetForSeek = (android.os.IBinder.FIRST_CALL_TRANSACTION + 20);
+            static final int TRANSACTION_hide = (android.os.IBinder.FIRST_CALL_TRANSACTION + 21);
+            static final int TRANSACTION_display = (android.os.IBinder.FIRST_CALL_TRANSACTION + 22);
+            static final int TRANSACTION_getCurName = (android.os.IBinder.FIRST_CALL_TRANSACTION + 23);
+            static final int TRANSACTION_getSubName = (android.os.IBinder.FIRST_CALL_TRANSACTION + 24);
+            static final int TRANSACTION_getSubLanguage = (android.os.IBinder.FIRST_CALL_TRANSACTION + 25);
+            static final int TRANSACTION_load = (android.os.IBinder.FIRST_CALL_TRANSACTION + 26);
+            static final int TRANSACTION_setSurfaceViewParam = (android.os.IBinder.FIRST_CALL_TRANSACTION + 27);
     }
 
     public void open (java.lang.String path) throws android.os.RemoteException;
     public void openIdx (int idx) throws android.os.RemoteException;
     public void close() throws android.os.RemoteException;
     public int getSubTotal() throws android.os.RemoteException;
+    public int getInnerSubTotal() throws android.os.RemoteException;
+    public int getExternalSubTotal() throws android.os.RemoteException;
     public void nextSub() throws android.os.RemoteException;
     public void preSub() throws android.os.RemoteException;
     //void startInSubThread();
@@ -771,4 +863,5 @@ public interface ISubTitleService extends android.os.IInterface {
     public java.lang.String getSubName (int idx) throws android.os.RemoteException;
     public java.lang.String getSubLanguage (int idx) throws android.os.RemoteException;
     public boolean load (java.lang.String path) throws android.os.RemoteException;
+    public void setSurfaceViewParam(int x, int y, int w, int h) throws android.os.RemoteException;
 }
