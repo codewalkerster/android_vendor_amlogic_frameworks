@@ -496,6 +496,28 @@ public class SubtitleManager {
             }
         }
 
+        public void load(String path) {
+            LOGI("[load] path:" + path);
+            try {
+                if (mService != null) {
+                    mService.load(path);
+                }
+            } catch (RemoteException e) {
+                throw new RuntimeException (e);
+            }
+        }
+
+        public void setSurfaceViewParam(int x, int y, int w, int h) {
+            LOGI("[setSurfaceViewParam] x:" + x + ", y:" + y + ", w:" + w + ",h:" + h);
+            try {
+                if (mService != null) {
+                    mService.setSurfaceViewParam(x, y, w, h);
+                }
+            } catch (RemoteException e) {
+                throw new RuntimeException (e);
+            }
+        }
+
         private static final int AML_SUBTITLE_START = 800; // random value
         private class EventHandler extends Handler {
                 public EventHandler (Looper looper) {
