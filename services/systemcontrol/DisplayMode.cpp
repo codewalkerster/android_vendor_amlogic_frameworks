@@ -644,15 +644,10 @@ void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
             }
 
             getHdmiOutputMode(outputmode, &data);
-            setBootEnv(UBOOTENV_HDMIMODE, outputmode);
-        }
-        else {
+        } else {
             getBootEnv(UBOOTENV_CVBSMODE, outputmode);
         }
-
-        setBootEnv(UBOOTENV_OUTPUTMODE, outputmode);
-    }
-    else {
+    } else {
         getBootEnv(UBOOTENV_OUTPUTMODE, outputmode);
     }
 
@@ -668,7 +663,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
             data.current_mode,
             outputmode);
     if (strlen(outputmode) == 0)
-        strcpy(outputmode, mDefaultUI);
+        strcpy(outputmode, DEFAULT_OUTPUT_MODE);
 
     if (OUPUT_MODE_STATE_INIT == state) {
         if (!strncmp(mDefaultUI, "720", 3)) {
@@ -710,7 +705,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode){
 
 void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state state) {
     char value[MAX_STR_LEN] = {0};
-    char preMode[MODE_LEN] = {0};
+    char finalMode[MODE_LEN] = {0};
     int outputx = 0;
     int outputy = 0;
     int outputwidth = 0;
@@ -729,22 +724,29 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
         }
     }
 
-    memset(preMode, 0, sizeof(preMode));
-    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, preMode);
+    strcpy(finalMode, outputmode);
+    addSuffixForMode(finalMode);
+    if (state == OUPUT_MODE_STATE_SWITCH) {
+        char curDisplayMode[MODE_LEN] = {0};
+        pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
+        if (!strcmp(finalMode, curDisplayMode)) {
+            return;
+        }
+    }
 
-    getPosition(outputmode, position);
+    getPosition(finalMode, position);
     outputx = position[0];
     outputy = position[1];
     outputwidth = position[2];
     outputheight = position[3];
 
-    if ((!strcmp(outputmode, MODE_480I) || !strcmp(outputmode, MODE_576I)) &&
+    if ((!strcmp(finalMode, MODE_480I) || !strcmp(finalMode, MODE_576I)) &&
             (pSysWrite->getPropertyBoolean(PROP_HAS_CVBS_MODE, false))) {
         const char *mode = "";
-        if (!strcmp(outputmode, MODE_480I)) {
+        if (!strcmp(finalMode, MODE_480I)) {
             mode = MODE_480CVBS;
         }
-        else if (!strcmp(outputmode, MODE_576I)) {
+        else if (!strcmp(finalMode, MODE_576I)) {
             mode = MODE_576CVBS;
         }
 
@@ -753,10 +755,10 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE2, "null");
     }
     else {
-        if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS))
+        if (!strcmp(finalMode, MODE_480CVBS) || !strcmp(finalMode, MODE_576CVBS))
             cvbsMode = true;
 
-        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
+        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, finalMode);
     }
 
     char axis[MAX_STR_LEN] = {0};
@@ -788,7 +790,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
     } else {
         pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
         pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-        setOsdMouse(outputmode);
+        setOsdMouse(finalMode);
     }
 
 #ifndef RECOVERY_MODE
@@ -803,7 +805,13 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
     }
 
-    SYS_LOGI("set output mode:%s done\n", outputmode);
+    setBootEnv(UBOOTENV_OUTPUTMODE, finalMode);
+    if (strstr(finalMode, "cvbs") != NULL) {
+        setBootEnv(UBOOTENV_CVBSMODE, finalMode);
+    } else {
+        setBootEnv(UBOOTENV_HDMIMODE, finalMode);
+    }
+    SYS_LOGI("set output mode:%s done\n", finalMode);
 }
 
 void DisplayMode::setDigitalMode(const char* mode) {
@@ -999,6 +1007,48 @@ void DisplayMode::standardMode(char* mode) {
     }
 }
 
+void DisplayMode::addSuffixForMode(char* mode) {
+    char save_mode[MODE_LEN] = {0};
+
+    strcpy(save_mode, mode);
+    standardMode(mode);
+    int index = modeToIndex(mode);
+    //only support 4 modes for 10bit now
+    switch (index) {
+        case DISPLAY_MODE_4K2K24HZ:
+        case DISPLAY_MODE_4K2K30HZ:
+        case DISPLAY_MODE_4K2K50HZ420:
+        case DISPLAY_MODE_4K2K60HZ420:
+            pSysWrite->writeSysfs(DISPLAY_HDMI_MIC, "0");
+            if (isDeepColor()) {
+#if 0
+                char deepColor[MAX_STR_LEN];
+                pSysWrite->readSysfsOriginal(DISPLAY_HDMI_DEEP_COLOR, deepColor);
+                char *pCmp = deepColor;
+                while ((pCmp - deepColor) < (int)strlen(deepColor)) {
+                    char *pos = strchr(pCmp, 0x0a);
+                    if (NULL == pos) {
+                        break;
+                    } else {
+                        *pos = 0;
+                    }
+                    if ((strstr(pCmp, "420") != NULL && strstr(pCmp, SUFFIX_10BIT) != NULL && strstr(mode, "420") != NULL)
+                            ||(strstr(pCmp, "422") != NULL && strstr(pCmp, SUFFIX_10BIT) != NULL && strstr(mode, "422") != NULL)
+                            ||(strstr(pCmp, "444") != NULL && strstr(pCmp, SUFFIX_10BIT) != NULL)) {
+                        strcat(mode, SUFFIX_10BIT);
+                        break;
+                    }
+                    *pos = 0x0a;
+                    pCmp = pos + 1;
+                }
+#else
+                strcat(mode, SUFFIX_10BIT);
+#endif
+            }
+            break;
+    }
+}
+
 void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
     if (strstr(data->edid, "null") != NULL) {
         pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, mode, DEFAULT_OUTPUT_MODE);
@@ -1043,6 +1093,7 @@ void DisplayMode::initHdmiData(hdmi_data_t* data, char* hpdstate){
     }
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, data->current_mode);
     getBootEnv(UBOOTENV_HDMIMODE, data->ubootenv_hdmimode);
+    standardMode(data->ubootenv_hdmimode);
 }
 
 void DisplayMode::startBootanimDetectThread() {
@@ -1124,6 +1175,11 @@ bool DisplayMode::isBestOutputmode() {
     return !getBootEnv(UBOOTENV_ISBESTMODE, isBestMode) || strcmp(isBestMode, "true") == 0;
 }
 
+bool DisplayMode::isDeepColor() {
+    char isDeepColor[MODE_LEN] = {0};
+    return getBootEnv(UBOOTENV_DEEPCOLOR, isDeepColor) && strcmp(isDeepColor, "true") == 0;
+}
+
 //this function only running in bootup time
 void DisplayMode::setTVOutputMode(const char* outputmode, bool initState) {
     int outputx = 0;
@@ -1132,10 +1188,7 @@ void DisplayMode::setTVOutputMode(const char* outputmode, bool initState) {
     int outputheight = 0;
     int position[4] = { 0, 0, 0, 0 };
 
-    char std_mode[MODE_LEN] = {0};
-    strcpy(std_mode, outputmode);
-    standardMode(std_mode);
-    getPosition(std_mode, position);
+    getPosition(outputmode, position);
     outputx = position[0];
     outputy = position[1];
     outputwidth = position[2];
@@ -1268,7 +1321,11 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
 }
 
 void DisplayMode::getPosition(const char* curMode, int *position) {
-    int index = modeToIndex(curMode);
+    char std_mode[MODE_LEN] = {0};
+    strcpy(std_mode, curMode);
+    standardMode(std_mode);
+
+    int index = modeToIndex(std_mode);
     switch (index) {
         case DISPLAY_MODE_480I:
         case DISPLAY_MODE_480CVBS: // 480cvbs
@@ -1384,6 +1441,7 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
 
     char curMode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curMode);
+    standardMode(curMode);
     int index = modeToIndex(curMode);
     switch (index) {
         case DISPLAY_MODE_480I: // 480i
@@ -1434,7 +1492,7 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
             setBootEnv(ENV_1080P_W, w);
             setBootEnv(ENV_1080P_H, h);
             break;
-        case DISPLAY_MODE_4K2K24HZ:    //4k2k24hz
+        case DISPLAY_MODE_4K2K24HZ:      //4k2k24hz
             setBootEnv(ENV_4K2K24HZ_X, x);
             setBootEnv(ENV_4K2K24HZ_Y, y);
             setBootEnv(ENV_4K2K24HZ_W, w);

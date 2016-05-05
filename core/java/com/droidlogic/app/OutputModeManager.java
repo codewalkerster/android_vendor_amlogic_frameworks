@@ -64,6 +64,7 @@ public class OutputModeManager {
     public static final String ENV_OUTPUT_MODE              = "ubootenv.var.outputmode";
     public static final String ENV_DIGIT_AUDIO              = "ubootenv.var.digitaudiooutput";
     public static final String ENV_IS_BEST_MODE             = "ubootenv.var.is.bestmode";
+    public static final String ENV_DEEPCOLOR                = "ubootenv.var.use.deepcolor";
 
     public static final String PROP_BEST_OUTPUT_MODE        = "ro.platform.best_outputmode";
     public static final String PROP_HDMI_ONLY               = "ro.platform.hdmionly";
@@ -147,6 +148,15 @@ public class OutputModeManager {
         }
     }
 
+    public void setDeepColorMode() {
+        if (isDeepColor()) {
+            mSystenControl.setBootenv(ENV_DEEPCOLOR, "false");
+        } else {
+            mSystenControl.setBootenv(ENV_DEEPCOLOR, "true");
+        }
+        setOutputModeNowLocked(getCurrentOutputMode());
+    }
+
     public void setOutputModeNowLocked(final String newMode){
         synchronized (mLock) {
             String oldMode = currentOutputmode;
@@ -160,15 +170,7 @@ public class OutputModeManager {
             if (DEBUG)
                 Log.d(TAG, "change mode from " + oldMode + " -> " + newMode);
 
-            if (newMode.equals(oldMode)) {
-                if (DEBUG)
-                    Log.d(TAG,"The same mode as current , do nothing !");
-                return ;
-            }
-
-            shadowScreen();
             mSystenControl.setMboxOutputMode(newMode);
-            saveNewModeProp(newMode);
 
             Intent intent = new Intent(ACTION_HDMI_MODE_CHANGED);
             //intent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT);
@@ -187,18 +189,9 @@ public class OutputModeManager {
         mSystenControl.setOsdMousePara(x, y, w, h);
     }
 
-    private void saveNewModeProp(String newMode) {
-        setBootenv(ENV_OUTPUT_MODE, newMode);
-        if ((newMode != null) && newMode.contains("cvbs")) {
-            setBootenv(ENV_CVBS_MODE, newMode);
-        }
-        else {
-            setBootenv(ENV_HDMI_MODE, newMode);
-        }
-    }
-
     public String getCurrentOutputMode(){
-        return readSysfs(DISPLAY_MODE);
+        return readSysfs(DISPLAY_MODE).replace("10bit", "").replace("12bit", "")
+                .replace("14bit", "").replace("rgb", "");
     }
 
     public int[] getPosition(String mode) {
@@ -378,6 +371,10 @@ public class OutputModeManager {
 
     public boolean isBestOutputmode() {
         return Boolean.parseBoolean(mSystenControl.getBootenv(ENV_IS_BEST_MODE, "true"));
+    }
+
+    public boolean isDeepColor() {
+        return Boolean.parseBoolean(mSystenControl.getBootenv(ENV_DEEPCOLOR, "false"));
     }
 
     public boolean isHDMIPlugged() {
