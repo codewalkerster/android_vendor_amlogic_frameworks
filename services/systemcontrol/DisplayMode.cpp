@@ -713,6 +713,16 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
     int position[4] = { 0, 0, 0, 0 };
     bool cvbsMode = false;
 
+    strcpy(finalMode, outputmode);
+    addSuffixForMode(finalMode);
+    if (state == OUPUT_MODE_STATE_SWITCH) {
+        char curDisplayMode[MODE_LEN] = {0};
+        pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
+        if (!strcmp(finalMode, curDisplayMode)) {
+            return;
+        }
+    }
+
     if (OUPUT_MODE_STATE_INIT != state) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
         if (OUPUT_MODE_STATE_POWER != state) {
@@ -721,16 +731,6 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
             usleep(100000);//100ms
             pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); /* Turn off TMDS PHY */
             usleep(50000);//50ms
-        }
-    }
-
-    strcpy(finalMode, outputmode);
-    addSuffixForMode(finalMode);
-    if (state == OUPUT_MODE_STATE_SWITCH) {
-        char curDisplayMode[MODE_LEN] = {0};
-        pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
-        if (!strcmp(finalMode, curDisplayMode)) {
-            return;
         }
     }
 
