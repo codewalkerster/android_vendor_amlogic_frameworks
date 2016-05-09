@@ -1061,11 +1061,10 @@ int ImagePlayerService::release() {
         mDisplayFd = -1;
     }
 
-    if (mMovieThread->isRunning())
-        mMovieThread->requestExitAndWait();
-    mMovieThread.clear();
-
     if (NULL != mSkMovie) {
+        if (mMovieThread->isRunning())
+            mMovieThread->requestExitAndWait();
+        mMovieThread.clear();
         delete mSkMovie;
         mSkMovie = NULL;
     }
