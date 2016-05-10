@@ -89,7 +89,7 @@ using namespace android;
 
 #define DISPLAY_HPD_STATE               "/sys/class/amhdmitx/amhdmitx0/hpd_state"
 #define DISPLAY_HDMI_EDID               "/sys/class/amhdmitx/amhdmitx0/disp_cap"//RX support display mode
-#define DISPLAY_HDMI_DEEP_COLOR        "/sys/class/amhdmitx/amhdmitx0/dc_cap"//RX supoort deep color
+#define DISPLAY_HDMI_DEEP_COLOR         "/sys/class/amhdmitx/amhdmitx0/dc_cap"//RX supoort deep color
 #define DISPLAY_HDMI_MIC                "/sys/class/amhdmitx/amhdmitx0/vic"//if switch between 8bit and 10bit, clear mic first
 
 #define DISPLAY_HDMI_AVMUTE             "/sys/devices/virtual/amhdmitx/amhdmitx0/avmute"
@@ -190,7 +190,7 @@ using namespace android;
 #define UBOOTENV_OUTPUTMODE             "ubootenv.var.outputmode"
 #define UBOOTENV_ISBESTMODE             "ubootenv.var.is.bestmode"
 #define UBOOTENV_EDIDCRCVALUE           "ubootenv.var.edid.crcvalue"
-#define UBOOTENV_DEEPCOLOR               "ubootenv.var.use.deepcolor"
+#define UBOOTENV_DEEPCOLOR              "ubootenv.var.use.deepcolor"
 
 #define FULL_WIDTH_480                  720
 #define FULL_HEIGHT_480                 480
@@ -421,6 +421,8 @@ private:
     sem_t pthreadSem;
     pthread_t pthreadIdHdcp;
     bool mExitHdcpThread;
+    sem_t pthreadBootDetectSem;
+    bool mBootAnimDetectFinished;
 
 #ifndef RECOVERY_MODE
     sp<ISystemControlNotify> mNotifyListener;

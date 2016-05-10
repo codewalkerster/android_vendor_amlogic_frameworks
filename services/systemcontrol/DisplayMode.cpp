@@ -324,7 +324,9 @@ DisplayMode::DisplayMode(const char *path)
     mDisplayWidth(FULL_WIDTH_1080),
     mDisplayHeight(FULL_HEIGHT_1080),
     mLogLevel(LOG_LEVEL_DEFAULT),
-    pthreadIdHdcp(0) {
+    pthreadIdHdcp(0),
+    mExitHdcpThread(false),
+    mBootAnimDetectFinished(false) {
 
     if (NULL == path) {
         pConfigPath = DISPLAY_CFG_FILE;
@@ -343,10 +345,11 @@ DisplayMode::~DisplayMode() {
     delete pSysWrite;
 
     sem_destroy(&pthreadSem);
+    sem_destroy(&pthreadBootDetectSem);
 }
 
 void DisplayMode::init() {
-    if (sem_init(&pthreadSem, 0, 0) < 0) {
+    if ((sem_init(&pthreadSem, 0, 0) < 0) || (sem_init(&pthreadBootDetectSem, 0, 0) < 0)) {
         SYS_LOGE("display mode, sem_init failed\n");
         exit(0);
     }
@@ -1150,6 +1153,8 @@ void* DisplayMode::bootanimDetect(void* data) {
     }
 
     pThiz->setOsdMouse(outputmode);
+    pThiz->mBootAnimDetectFinished = true;
+    sem_post(&pThiz->pthreadBootDetectSem);
     return NULL;
 }
 
@@ -1774,6 +1779,15 @@ void* DisplayMode::hdcpTxThreadLoop(void* data) {
 
     SYS_LOGI("HDCP thread loop entry\n");
     sem_post(&pThiz->pthreadSem);
+
+    if (!pThiz->mBootAnimDetectFinished) {
+        SYS_LOGI("HDCP tx thread, boot animation detect do not finished, wait for it\n");
+        int ret = sem_wait(&pThiz->pthreadBootDetectSem);
+        if (ret < 0) SYS_LOGE("HDCP tx thread, sem_wait failed\n");
+
+        SYS_LOGI("HDCP tx thread, boot animation detect finished, begin to authenticate\n");
+    }
+
     if (pThiz->hdcpTxInit(&hdcp22, &hdcp14)) {
         //first close osd, after HDCP authenticate completely, then open osd
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
