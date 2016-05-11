@@ -758,8 +758,11 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE2, "null");
     }
     else {
-        if (!strcmp(finalMode, MODE_480CVBS) || !strcmp(finalMode, MODE_576CVBS))
+        if (!strcmp(finalMode, MODE_480CVBS) || !strcmp(finalMode, MODE_576CVBS)) {
+            //close deepcolor if HDMI not plugged in, because the next TV maybe not support deepcolor
+            pSysWrite->setProperty(PROP_DEEPCOLOR, "false");
             cvbsMode = true;
+        }
 
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, finalMode);
     }
@@ -1182,7 +1185,7 @@ bool DisplayMode::isBestOutputmode() {
 
 bool DisplayMode::isDeepColor() {
     char isDeepColor[MODE_LEN] = {0};
-    return getBootEnv(UBOOTENV_DEEPCOLOR, isDeepColor) && strcmp(isDeepColor, "true") == 0;
+    return pSysWrite->getProperty(PROP_DEEPCOLOR, isDeepColor) && strcmp(isDeepColor, "true") == 0;
 }
 
 //this function only running in bootup time

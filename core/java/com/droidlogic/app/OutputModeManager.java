@@ -64,10 +64,10 @@ public class OutputModeManager {
     public static final String ENV_OUTPUT_MODE              = "ubootenv.var.outputmode";
     public static final String ENV_DIGIT_AUDIO              = "ubootenv.var.digitaudiooutput";
     public static final String ENV_IS_BEST_MODE             = "ubootenv.var.is.bestmode";
-    public static final String ENV_DEEPCOLOR                = "ubootenv.var.use.deepcolor";
 
     public static final String PROP_BEST_OUTPUT_MODE        = "ro.platform.best_outputmode";
     public static final String PROP_HDMI_ONLY               = "ro.platform.hdmionly";
+    public static final String PROP_DEEPCOLOR               = "sys.open.deepcolor";
 
     public static final String FULL_WIDTH_480               = "720";
     public static final String FULL_HEIGHT_480              = "480";
@@ -150,9 +150,9 @@ public class OutputModeManager {
 
     public void setDeepColorMode() {
         if (isDeepColor()) {
-            mSystenControl.setBootenv(ENV_DEEPCOLOR, "false");
+            mSystenControl.setProperty(PROP_DEEPCOLOR, "false");
         } else {
-            mSystenControl.setBootenv(ENV_DEEPCOLOR, "true");
+            mSystenControl.setProperty(PROP_DEEPCOLOR, "true");
         }
         setOutputModeNowLocked(getCurrentOutputMode());
     }
@@ -374,7 +374,7 @@ public class OutputModeManager {
     }
 
     public boolean isDeepColor() {
-        return Boolean.parseBoolean(mSystenControl.getBootenv(ENV_DEEPCOLOR, "false"));
+        return getPropertyBoolean(PROP_DEEPCOLOR, false);
     }
 
     public boolean isHDMIPlugged() {

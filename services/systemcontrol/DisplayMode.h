@@ -124,7 +124,7 @@ using namespace android;
 #define PROP_FS_MODE                    "const.filesystem.mode"
 #define PROP_BOOTANIM_DELAY             "const.bootanim.delay"
 #define PROP_BOOTVIDEO_SERVICE          "service.bootvideo"
-
+#define PROP_DEEPCOLOR                  "sys.open.deepcolor" //default close this function, when reboot
 
 #define ENV_480I_X                      "ubootenv.var.480i_x"
 #define ENV_480I_Y                      "ubootenv.var.480i_y"
@@ -190,7 +190,6 @@ using namespace android;
 #define UBOOTENV_OUTPUTMODE             "ubootenv.var.outputmode"
 #define UBOOTENV_ISBESTMODE             "ubootenv.var.is.bestmode"
 #define UBOOTENV_EDIDCRCVALUE           "ubootenv.var.edid.crcvalue"
-#define UBOOTENV_DEEPCOLOR              "ubootenv.var.use.deepcolor"
 
 #define FULL_WIDTH_480                  720
 #define FULL_HEIGHT_480                 480
