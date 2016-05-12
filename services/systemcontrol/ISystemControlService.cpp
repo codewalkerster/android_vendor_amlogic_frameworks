@@ -280,6 +280,177 @@ public:
         return reply.readInt32();
     }
 
+    virtual void init3DSetting(void)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        ALOGV("init3DSetting\n");
+
+        if (remote()->transact(INIT_3D_SETTING, data, &reply) != NO_ERROR) {
+            ALOGE("init 3D setting could not contact remote\n");
+            return;
+        }
+    }
+
+    virtual int getVideo3DFormat(void)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+
+        if (remote()->transact(GET_VIDEO_3D_FORMAT, data, &reply) != NO_ERROR) {
+            ALOGE("get video 3D format could not contact remote\n");
+            return -1;
+        }
+
+        ALOGV("getVideo3DFormat format:%d\n", reply.readInt32());
+        return reply.readInt32();
+    }
+
+    virtual int getDisplay3DTo2DFormat(void)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+
+        if (remote()->transact(GET_VIDEO_3DTO2D_FORMAT, data, &reply) != NO_ERROR) {
+            ALOGE("get display 3D to 2D format could not contact remote\n");
+            return -1;
+        }
+
+        ALOGV("getDisplay3DTo2DFormat format:%d\n", reply.readInt32());
+        return reply.readInt32();
+    }
+
+    virtual bool setDisplay3DTo2DFormat(int format)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(format);
+        ALOGV("setDisplay3DTo2DFormat format:%d\n", format);
+
+        if (remote()->transact(SET_VIDEO_3DTO2D_FORMAT, data, &reply) != NO_ERROR) {
+            ALOGE("set display 3D to 2D format could not contact remote\n");
+            return false;
+        }
+
+        int32_t err = reply.readInt32();
+        if (err == 0) {
+            ALOGE("set display 3D to 2D format caught exception\n");
+            return false;
+        }
+
+        return true;
+    }
+
+    virtual bool setDisplay3DFormat(int format)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(format);
+        ALOGV("setDisplay3DFormat format:%d\n", format);
+
+        if (remote()->transact(SET_DISPLAY_3D_FORMAT, data, &reply) != NO_ERROR) {
+            ALOGE("set display 3D format could not contact remote\n");
+            return false;
+        }
+
+        int32_t err = reply.readInt32();
+        if (err == 0) {
+            ALOGE("set display 3D format caught exception\n");
+            return false;
+        }
+
+        return true;
+    }
+
+    virtual int getDisplay3DFormat(void)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+
+        if (remote()->transact(GET_DISPLAY_3D_FORMAT, data, &reply) != NO_ERROR) {
+            ALOGE("get display 3D format could not contact remote\n");
+            return -1;
+        }
+
+        ALOGV("getDisplay3DFormat format:%d\n", reply.readInt32());
+        return reply.readInt32();
+    }
+
+    virtual bool setOsd3DFormat(int format)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(format);
+        ALOGV("setOsd3DFormat format:%d\n", format);
+
+        if (remote()->transact(SET_OSD_3D_FORMAT, data, &reply) != NO_ERROR) {
+            ALOGE("set OSD 3D format could not contact remote\n");
+            return false;
+        }
+
+        int32_t err = reply.readInt32();
+        if (err == 0) {
+            ALOGE("set OSD 3D format caught exception\n");
+            return false;
+        }
+
+        return true;
+    }
+
+    virtual bool switch3DTo2D(int format)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(format);
+        ALOGV("switch3DTo2D format:%d\n", format);
+
+        if (remote()->transact(SWITCH_3DTO2D, data, &reply) != NO_ERROR) {
+            ALOGE("switch 3D to 2D format could not contact remote\n");
+            return false;
+        }
+
+        int32_t err = reply.readInt32();
+        if (err == 0) {
+            ALOGE("switch 3D to 2D format caught exception\n");
+            return false;
+        }
+
+        return true;
+    }
+
+    virtual bool switch2DTo3D(int format)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(format);
+        ALOGV("switch2DTo3D format:%d\n", format);
+
+        if (remote()->transact(SWITCH_2DTO3D, data, &reply) != NO_ERROR) {
+            ALOGE("switch 2D to 3D format could not contact remote\n");
+            return false;
+        }
+
+        int32_t err = reply.readInt32();
+        if (err == 0) {
+            ALOGE("switch 2D to 3D format caught exception\n");
+            return false;
+        }
+
+        return true;
+    }
+
+    virtual void autoDetect3DForMbox()
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        ALOGV("autoDetect3DForMbox\n");
+
+        if (remote()->transact(AUTO_DETECT_3D, data, &reply) != NO_ERROR) {
+            ALOGE("auto detect 3D could not contact remote\n");
+            return;
+        }
+    }
+
     virtual void setDigitalMode(const String16& mode)
     {
         Parcel data, reply;
@@ -617,6 +788,70 @@ status_t BnISystemControlService::onTransact(
             CHECK_INTERFACE(ISystemControlService, data, reply);
             sp<ISystemControlNotify> listener = interface_cast<ISystemControlNotify>(data.readStrongBinder());
             setListener(listener);
+            return NO_ERROR;
+        }
+
+        case INIT_3D_SETTING: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            init3DSetting();
+            return NO_ERROR;
+        }
+        case GET_VIDEO_3D_FORMAT: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int result = getVideo3DFormat();
+            reply->writeInt32(result);
+            return NO_ERROR;
+        }
+        case GET_VIDEO_3DTO2D_FORMAT: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int result = getDisplay3DTo2DFormat();
+            reply->writeInt32(result);
+            return NO_ERROR;
+        }
+        case SET_VIDEO_3DTO2D_FORMAT: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int32_t format = data.readInt32();
+            int result = setDisplay3DTo2DFormat(format);
+            reply->writeInt32(result);
+            return NO_ERROR;
+        }
+        case SET_DISPLAY_3D_FORMAT: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int32_t format = data.readInt32();
+            int result = setDisplay3DFormat(format);
+            reply->writeInt32(result);
+            return NO_ERROR;
+        }
+        case GET_DISPLAY_3D_FORMAT: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int result = getDisplay3DFormat();
+            reply->writeInt32(result);
+            return NO_ERROR;
+        }
+        case SET_OSD_3D_FORMAT: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int32_t format = data.readInt32();
+            int result = setOsd3DFormat(format);
+            reply->writeInt32(result);
+            return NO_ERROR;
+        }
+        case SWITCH_3DTO2D: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int32_t format = data.readInt32();
+            int result = switch3DTo2D(format);
+            reply->writeInt32(result);
+            return NO_ERROR;
+        }
+        case SWITCH_2DTO3D: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int32_t format = data.readInt32();
+            int result = switch2DTo3D(format);
+            reply->writeInt32(result);
+            return NO_ERROR;
+        }
+        case AUTO_DETECT_3D: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            autoDetect3DForMbox();
             return NO_ERROR;
         }
 

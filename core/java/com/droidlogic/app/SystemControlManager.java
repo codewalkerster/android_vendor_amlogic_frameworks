@@ -16,6 +16,16 @@ public class SystemControlManager {
     public static final int DISPLAY_TYPE_MBOX       = 2;
     public static final int DISPLAY_TYPE_TV         = 3;
 
+    //must sync with SystemControl.h
+    public static final int FORMAT_3D_OFF                   = 0;
+    public static final int FORMAT_3D_AUTO                  = 1;
+    public static final int FORMAT_3D_SIDE_BY_SIDE          = 2;
+    public static final int FORMAT_3D_TOP_AND_BOTTOM        = 3;
+    public static final int FORMAT_3D_LINE_ALTERNATIVE      = 4;
+    public static final int FORMAT_3D_FRAME_ALTERNATIVE     = 5;
+    public static final int FORMAT_3D_TO_2D_LEFT_EYE        = 6;
+    public static final int FORMAT_3D_TO_2D_RIGHT_EYE       = 7;
+
     private static final String SYS_TOKEN           = "droidlogic.ISystemControlService";
     private static final int REMOTE_EXCEPTION       = -0xffff;
 
@@ -47,6 +57,16 @@ public class SystemControlManager {
     private static final int SET_DIGITAL_MODE        = IBinder.FIRST_CALL_TRANSACTION + 22;
     private static final int SET_3D_MODE             = IBinder.FIRST_CALL_TRANSACTION + 23;
     private static final int SET_LISTENER            = IBinder.FIRST_CALL_TRANSACTION + 24;
+    private static final int INIT_3D_SETTING                = IBinder.FIRST_CALL_TRANSACTION + 25;
+    private static final int GET_VIDEO_3D_FORMAT            = IBinder.FIRST_CALL_TRANSACTION + 26;
+    private static final int GET_VIDEO_3DTO2D_FORMAT        = IBinder.FIRST_CALL_TRANSACTION + 27;
+    private static final int SET_VIDEO_3DTO2D_FORMAT        = IBinder.FIRST_CALL_TRANSACTION + 28;
+    private static final int SET_DISPLAY_3D_FORMAT          = IBinder.FIRST_CALL_TRANSACTION + 29;
+    private static final int GET_DISPLAY_3D_FORMAT          = IBinder.FIRST_CALL_TRANSACTION + 30;
+    private static final int SET_OSD_3D_FORMAT_HOLDER       = IBinder.FIRST_CALL_TRANSACTION + 31;
+    private static final int SET_OSD_3D_FORMAT              = IBinder.FIRST_CALL_TRANSACTION + 32;
+    private static final int SWITCH_3DTO2D                  = IBinder.FIRST_CALL_TRANSACTION + 33;
+    private static final int SWITCH_2DTO3D                  = IBinder.FIRST_CALL_TRANSACTION + 34;
 
     private Context mContext;
     private IBinder mIBinder = null;
@@ -335,7 +355,7 @@ public class SystemControlManager {
 
     public int set3DMode(String mode3d) {
         int ret = -1;
-        Log.e(TAG, "[set3DMode]mode3d:" + mode3d);
+        Log.i(TAG, "[set3DMode]mode3d:" + mode3d);
         try {
             if (null != mIBinder) {
                 Parcel data = Parcel.obtain();
@@ -349,6 +369,291 @@ public class SystemControlManager {
             }
         } catch (RemoteException ex) {
             Log.e(TAG, "set 3d mode:" + ex);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Close 3D mode, include 3D setting and OSD display setting.
+     */
+    public void init3DSettings() {
+        //Log.i(TAG, "[init3DSettings]");
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                mIBinder.transact(INIT_3D_SETTING, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "[init3DSettings]ex:" + ex);
+        }
+    }
+
+    /**
+     * Get 3D format for current playing video, include local, streaming and HDMI input.
+     * return format is setted by video parser, such as libplayer for amlogic
+     *
+     * @return 3D format
+     * FORMAT_3D_OFF
+     * FORMAT_3D_AUTO
+     * FORMAT_3D_SIDE_BY_SIDE
+     * FORMAT_3D_TOP_AND_BOTTOM
+     */
+    public int getVideo3DFormat() {
+        int ret = -1;
+        //Log.i(TAG, "[getVideo3DFormat]");
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                mIBinder.transact(GET_VIDEO_3D_FORMAT, data, reply, 0);
+                ret = reply.readInt();
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "[getVideo3DFormat]ex:" + ex);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Get display 3D format setted by setDisplay3DTo2DFormat.
+     *
+     * @return 3D format
+     * FORMAT_3D_OFF
+     * FORMAT_3D_AUTO
+     * FORMAT_3D_SIDE_BY_SIDE
+     * FORMAT_3D_TOP_AND_BOTTOM
+     */
+    public int getDisplay3DTo2DFormat() {
+        int ret = -1;
+        //Log.i(TAG, "[getDisplay3DTo2DFormat]");
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                mIBinder.transact(GET_VIDEO_3DTO2D_FORMAT, data, reply, 0);
+                ret = reply.readInt();
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "[getDisplay3DTo2DFormat]ex:" + ex);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Set 3D format for video, this format is decided by user,
+     * if LCD isn't support 3D and you wanna play a 3D file, use the api to show part picture of the video,
+     * such as the left side of the 3D video source or the top side one.
+     *
+     * @param 3D format
+     * FORMAT_3D_OFF
+     * FORMAT_3D_AUTO
+     * FORMAT_3D_SIDE_BY_SIDE
+     * FORMAT_3D_TOP_AND_BOTTOM
+     *
+     * @return set status
+     */
+    public boolean setDisplay3DTo2DFormat(int format) {
+        boolean ret = false;
+        int rettmp = -1;
+        //Log.i(TAG, "[setDisplay3DTo2DFormat]format:" + format);
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeInt(format);
+                mIBinder.transact(SET_VIDEO_3DTO2D_FORMAT, data, reply, 0);
+                rettmp = reply.readInt();
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "[setDisplay3DTo2DFormat]ex:" + ex);
+        }
+
+        if (rettmp == 1) {
+            ret = true;
+        }
+
+        return ret;
+    }
+
+    /**
+     * Set 3D format for OSD and video, this format is decided by user,
+     * if LCD is support 3D, use the api to set OSD and video 3D format.
+     *
+     * @param 3D format
+     * FORMAT_3D_OFF
+     * FORMAT_3D_AUTO
+     * FORMAT_3D_SIDE_BY_SIDE
+     * FORMAT_3D_TOP_AND_BOTTOM
+     *
+     * @return set status
+     */
+    public boolean setDisplay3DFormat(int format) {
+        boolean ret = false;
+        int rettmp = -1;
+        //Log.i(TAG, "[setDisplay3DFormat]format:" + format);
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeInt(format);
+                mIBinder.transact(SET_DISPLAY_3D_FORMAT, data, reply, 0);
+                rettmp = reply.readInt();
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "[setDisplay3DFormat]ex:" + ex);
+        }
+
+        if (rettmp == 1) {
+            ret = true;
+        }
+
+        return ret;
+    }
+
+    /**
+     * Get display 3D format setted by setDisplay3DFormat.
+     *
+     * @return 3D format
+     * FORMAT_3D_OFF
+     * FORMAT_3D_AUTO
+     * FORMAT_3D_SIDE_BY_SIDE
+     * FORMAT_3D_TOP_AND_BOTTOM
+     */
+    public int getDisplay3DFormat() {
+        int ret = -1;
+        //Log.i(TAG, "[getDisplay3DFormat]");
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                mIBinder.transact(GET_DISPLAY_3D_FORMAT, data, reply, 0);
+                ret = reply.readInt();
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "[getDisplay3DFormat]ex:" + ex);
+        }
+
+        return ret;
+    }
+
+    /**
+     * for subtitle // TODO:
+     */
+    public boolean setOsd3DFormat(android.view.SurfaceHolder holder) {
+        return true;
+    }
+
+    /**
+     * for subtitle, maybe unnecessary
+     */
+    public boolean setOsd3DFormat(int format) {
+        boolean ret = false;
+        int rettmp = -1;
+        //Log.i(TAG, "[setOsd3DFormat]format:" + format);
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeInt(format);
+                mIBinder.transact(SET_OSD_3D_FORMAT, data, reply, 0);
+                rettmp = reply.readInt();
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "[setOsd3DFormat]ex:" + ex);
+        }
+
+        if (rettmp == 1) {
+            ret = true;
+        }
+
+        return ret;
+    }
+
+    /**
+     * Switch 3D to 2D for video, this api is used for tv platform if user wanna watch movie part of 3D files,
+     * take left side or top side for example
+     *
+     * @param 3D format
+     * FORMAT_3D_TO_2D_LEFT_EYE
+     * FORMAT_3D_TO_2D_RIGHT_EYE
+     *
+     * @return set status
+     */
+    public boolean switch3DTo2D(int format) {
+        boolean ret = false;
+        int rettmp = -1;
+        //Log.i(TAG, "[switch3DTo2D]format:" + format);
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeInt(format);
+                mIBinder.transact(SWITCH_3DTO2D, data, reply, 0);
+                rettmp = reply.readInt();
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "[switch3DTo2D]ex:" + ex);
+        }
+
+        if (rettmp == 1) {
+            ret = true;
+        }
+
+        return ret;
+    }
+
+    /**
+     * // TODO: haven't implemented yet
+     */
+    public boolean switch2DTo3D(int format) {
+        boolean ret = false;
+        int rettmp = -1;
+        //Log.i(TAG, "[switch2DTo3D]format:" + format);
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeInt(format);
+                mIBinder.transact(SWITCH_2DTO3D, data, reply, 0);
+                rettmp = reply.readInt();
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "[switch2DTo3D]ex:" + ex);
+        }
+
+        if (rettmp == 1) {
+            ret = true;
         }
 
         return ret;
