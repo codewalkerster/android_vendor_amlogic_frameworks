@@ -573,6 +573,8 @@ int DisplayMode::set3DMode(const char* mode3d) {
         return 0;
     }
 
+    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
+    usleep(100 * 1000);
     hdcpTxStop();
 
     char curDisplayMode[MODE_LEN] = {0};
@@ -602,8 +604,6 @@ int DisplayMode::set3DMode(const char* mode3d) {
 }
 
 void DisplayMode::mode3DImpl(const char* mode3d) {
-    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
-    usleep(100 * 1000);
     pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, "-1"); // "-1" means stop hdcp 14/22
     usleep(100 * 1000);
     pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); // Turn off TMDS PHY
