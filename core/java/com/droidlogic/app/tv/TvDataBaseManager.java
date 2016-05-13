@@ -37,7 +37,7 @@ public class TvDataBaseManager {
     private static final String TAG = "TvDataBaseManager";
     private static final boolean DEBUG = true;
     private static final int UPDATE_SUCCESS = -1;
-
+    private static final int ATV_FREQUENCE_RANGE = 1000000; // 1Mhz
     private static final SparseArray<String> CHANNEL_MODE_TO_TYPE_MAP = new SparseArray<String>();
 
     static {
@@ -167,6 +167,63 @@ public class TvDataBaseManager {
 
                 if (found) {
                     Uri uri = TvContract.buildChannelUri(rowId);
+                    mContentResolver.update(uri, buildAtvChannelData(channel), null, null);
+                    insertLogo(channel.getLogoUrl(), uri);
+                    ret = UPDATE_SUCCESS;
+                    break;
+                }
+            }
+            if (ret != UPDATE_SUCCESS)
+                ret = cursor.getCount();
+        } catch (Exception e) {
+            //TODO
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+
+        if (DEBUG)
+            Log.d(TAG, "update " + ((ret == UPDATE_SUCCESS) ? "found" : "notfound")
+                +" ATV CH: [_id:"+channel.getId()
+                +"][freq:"+channel.getFrequency()
+                +"][name:"+channel.getDisplayName()
+                +"][num:"+channel.getNumber()
+                +"]");
+        return ret;
+    }
+
+    /*update atv channel:
+          if getId() == -1 (from searching): update that with frequncy diff less than 1Mhz
+          else               (from database): update that with same _ID
+      */
+    private int updateAtvChannelFuzzy(ChannelInfo channel) {
+        int ret = 0;
+
+        Uri channelsUri = TvContract.buildChannelsUriForInput(channel.getInputId());
+        String[] projection = {Channels._ID, Channels.COLUMN_DISPLAY_NUMBER, Channels.COLUMN_INTERNAL_PROVIDER_DATA};
+
+        Cursor cursor = null;
+        try {
+            boolean found = false;
+            cursor = mContentResolver.query(channelsUri, projection, null, null, null);
+            while (cursor != null && cursor.moveToNext()) {
+                long rowId = cursor.getLong(findPosition(projection, Channels._ID));
+
+                if (channel.getId() == -1) {
+                    Map<String, String> parsedMap = parseInternalProviderData(cursor.getString(
+                                findPosition(projection, Channels.COLUMN_INTERNAL_PROVIDER_DATA)));
+                    int frequency = Integer.parseInt(parsedMap.get(ChannelInfo.KEY_FREQUENCY));
+                    int diff = frequency - channel.getFrequency();
+                    if ((diff < ATV_FREQUENCE_RANGE) && (diff > -ATV_FREQUENCE_RANGE))
+                        found = true;
+                } else if (rowId == channel.getId()) {
+                    found = true;
+                }
+
+                if (found) {
+                    Uri uri = TvContract.buildChannelUri(rowId);
+                    channel.setDisplayNumber(cursor.getString(findPosition(projection, Channels.COLUMN_DISPLAY_NUMBER)));
                     mContentResolver.update(uri, buildAtvChannelData(channel), null, null);
                     insertLogo(channel.getLogoUrl(), uri);
                     ret = UPDATE_SUCCESS;
@@ -592,6 +649,15 @@ public class TvDataBaseManager {
     // If a channel exists, update it. If not, insert a new one.
     public void updateOrinsertAtvChannel(ChannelInfo channel) {
         int updateRet = updateAtvChannel(channel);
+        if (updateRet != UPDATE_SUCCESS) {
+            insertAtvChannel(channel, updateRet);
+        }
+    }
+
+    // If a channel exists, update it. If not, insert a new one.
+    // if the freq diff less than 1Mhz, then it is the same channel
+    public void updateOrinsertAtvChannelFuzzy(ChannelInfo channel) {
+        int updateRet = updateAtvChannelFuzzy(channel);
         if (updateRet != UPDATE_SUCCESS) {
             insertAtvChannel(channel, updateRet);
         }
