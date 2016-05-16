@@ -343,6 +343,7 @@ public interface TvControlCommand {
 
     //Extra
     int HDMIRX_GET_KSV_INFO = 810;
+    int HANDLE_GPIO = 816;
 
     //Fac_FBC
     int FACTORY_FBC_UPGRADE = 900;

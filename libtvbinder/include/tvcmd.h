@@ -344,6 +344,7 @@ enum tvcmd_e {
     HDMIRX_GET_KSV_INFO = 810,
     DO_SUSPEND = 814,
     DO_RESUME = 815,
+    HANDLE_GPIO = 816,
 
     //Fac_FBC
     FACTORY_FBC_UPGRADE = 900,
