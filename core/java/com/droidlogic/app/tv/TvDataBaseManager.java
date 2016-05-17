@@ -81,6 +81,8 @@ public class TvDataBaseManager {
         Uri channelsUri = TvContract.buildChannelsUriForInput(channel.getInputId());
         String[] projection = {Channels._ID,
             Channels.COLUMN_SERVICE_ID,
+            Channels.COLUMN_ORIGINAL_NETWORK_ID,
+            Channels.COLUMN_TRANSPORT_STREAM_ID,
             Channels.COLUMN_DISPLAY_NUMBER,
             Channels.COLUMN_DISPLAY_NAME,
             Channels.COLUMN_INTERNAL_PROVIDER_DATA};
@@ -94,6 +96,8 @@ public class TvDataBaseManager {
 
                 if (channel.getId() == -1) {
                     int serviceId = cursor.getInt(findPosition(projection, Channels.COLUMN_SERVICE_ID));
+                    int originalNetworkId = cursor.getInt(findPosition(projection, Channels.COLUMN_ORIGINAL_NETWORK_ID));
+                    int transportStreamId = cursor.getInt(findPosition(projection, Channels.COLUMN_TRANSPORT_STREAM_ID));
                     String name = cursor.getString(findPosition(projection, Channels.COLUMN_DISPLAY_NAME));
                     int frequency = 0;
                     int index = cursor.getColumnIndex(Channels.COLUMN_INTERNAL_PROVIDER_DATA);
@@ -101,7 +105,10 @@ public class TvDataBaseManager {
                         Map<String, String> parsedMap = ChannelInfo.stringToMap(cursor.getString(index));
                         frequency = Integer.parseInt(parsedMap.get(ChannelInfo.KEY_FREQUENCY));
                     }
-                    if (serviceId == channel.getServiceId() && frequency == channel.getFrequency()
+                    if (serviceId == channel.getServiceId()
+                        && originalNetworkId == channel.getOriginalNetworkId()
+                        && transportStreamId == channel.getTransportStreamId()
+                        && frequency == channel.getFrequency()
                         && name.equals(channel.getDisplayName()))
                         found = true;
                 } else if (rowId == channel.getId()) {
@@ -646,6 +653,13 @@ public class TvDataBaseManager {
         }
     }
 
+    public void updateOrinsertDtvChannelWithNumber(ChannelInfo channel) {
+        int updateRet = updateDtvChannel(channel);
+        if (updateRet != UPDATE_SUCCESS) {
+            insertDtvChannel(channel, channel.getNumber());
+        }
+    }
+
     // If a channel exists, update it. If not, insert a new one.
     public void updateOrinsertAtvChannel(ChannelInfo channel) {
         int updateRet = updateAtvChannel(channel);
@@ -660,6 +674,13 @@ public class TvDataBaseManager {
         int updateRet = updateAtvChannelFuzzy(channel);
         if (updateRet != UPDATE_SUCCESS) {
             insertAtvChannel(channel, updateRet);
+        }
+    }
+
+    public void updateOrinsertAtvChannelWithNumber(ChannelInfo channel) {
+        int updateRet = updateAtvChannel(channel);
+        if (updateRet != UPDATE_SUCCESS) {
+            insertAtvChannel(channel, channel.getNumber());
         }
     }
 

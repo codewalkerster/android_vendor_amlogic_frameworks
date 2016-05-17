@@ -338,7 +338,7 @@ public class DroidLogicTvInputService extends TvInputService implements
                .setServiceType(Channels.SERVICE_TYPE_AUDIO_VIDEO)//default is SERVICE_TYPE_AUDIO_VIDEO
                .setServiceId(0)
                .setDisplayNumber(Integer.toString(c_displayNum))
-               .setDisplayName(ATVName)
+               .setDisplayName(ATVName+" "+Integer.toString(c_displayNum))
                .setLogoUrl(null)
                .setOriginalNetworkId(0)
                .setTransportStreamId(0)
@@ -463,6 +463,10 @@ public class DroidLogicTvInputService extends TvInputService implements
         public boolean isATVManualScan() {
             return (getATVMode() == 0x2) && (getDTVMode() == 0x7);
         }
+
+        public boolean isATVAutoScan() {
+            return (getATVMode() == 0x1) && (getDTVMode() == 0x7);
+        }
     }
 
     private ScanMode mScanMode = null;
@@ -487,6 +491,11 @@ public class DroidLogicTvInputService extends TvInputService implements
 
     private ArrayList<TvControlManager.ScannerLcnInfo> mLcnInfo = null;
 
+    /*for store in search*/
+    private Integer c_displayNum2 = null;
+    private boolean isFinalStoreStage = false;
+    private boolean isRealtimeStore = false;
+
     @Override
     public void StorDBonEvent(TvControlManager.ScannerEvent event) {
         ChannelInfo channel = null;
@@ -496,79 +505,156 @@ public class DroidLogicTvInputService extends TvInputService implements
         switch (event.type) {
         case TvControlManager.EVENT_SCAN_BEGIN:
             Log.d(TAG, "Scan begin");
+
             mScanMode = new ScanMode(event.scan_mode);
             mSortMode = new SortMode(event.sort_mode);
             c_displayNum = 0;
-            onTVChannelStoreBegin();// for ATV
+            c_displayNum2 = new Integer(0);
+            isFinalStoreStage = false;
+            isRealtimeStore = false;
+
             bundle = getBundleByScanEvent(event);
             mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_SCAN_BEGIN_EVENT, bundle);
             break;
+
         case TvControlManager.EVENT_LCN_INFO_DATA:
             if (mLcnInfo == null)
                 mLcnInfo = new ArrayList<TvControlManager.ScannerLcnInfo>();
+            mLcnInfo.add(event.lcnInfo);
             Log.d(TAG, "Lcn["+event.lcnInfo.netId+":"+event.lcnInfo.tsId+":"+event.lcnInfo.serviceId+"]");
             Log.d(TAG, "\t[0:"+event.lcnInfo.lcn[0]+":"+event.lcnInfo.visible[0]+":"+event.lcnInfo.valid[0]+"]");
             Log.d(TAG, "\t[1:"+event.lcnInfo.lcn[1]+":"+event.lcnInfo.visible[1]+":"+event.lcnInfo.valid[1]+"]");
-            mLcnInfo.add(event.lcnInfo);
             break;
+
         case TvControlManager.EVENT_DTV_PROG_DATA:
-            channel = createDtvChannelInfo(event);
-            onDTVChannelStore(event, channel);
-            Log.d(TAG, "onEvent,displayNum: " + c_displayNum);
-            channel.print();
-            bundle = GetDisplayNumBunlde(c_displayNum);
-            mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_DISPLAYNUM_EVENT, bundle);
-            c_displayNum++;
-            break;
-        case TvControlManager.EVENT_SCAN_PROGRESS:
-            Log.d(TAG, event.precent + "%\tfreq[" + event.freq + "] lock[" + event.lock + "] strength[" + event.strength + "] quality[" + event.quality + "]");
-            bundle = getBundleByScanEvent(event);
-            if ((event.mode == TVChannelParams.MODE_ANALOG) && (event.lock == 0x11)) {
-                bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_DISPLAYNUM, c_displayNum);
-                c_displayNum++;
+            Log.d(TAG, "dtv prog data");
+
+            if (!isFinalStoreStage)
+                isRealtimeStore = true;
+
+            if (mScanMode == null) {
+                Log.d(TAG, "mScanMode is null, store return.");
+                return;
             }
-            mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_PROCESS_EVENT, bundle);
+
+            if (mScanMode.isDTVManulScan())
+                initChannelsExist();
+
+            channel = createDtvChannelInfo(event);
+
+            if (c_displayNum2 != null)
+                channel.setDisplayNumber(Integer.toString(c_displayNum2));
+            else
+                channel.setDisplayNumber(String.valueOf(c_displayNum));
+
+            Log.d(TAG, "reset number to " + channel.getDisplayNumber());
+
+            channel.print();
+            onDTVChannelStore(event, channel);
+
+            if (c_displayNum2 != null) {
+                Log.d(TAG, "mid store, num:"+c_displayNum2);
+                c_displayNum2++;//count for realtime stage
+            } else {
+                Log.d(TAG, "final store, num: " + c_displayNum);
+                bundle = GetDisplayNumBunlde(c_displayNum);
+                mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_DISPLAYNUM_EVENT, bundle);
+                c_displayNum++;//count for store stage
+            }
             break;
+
         case TvControlManager.EVENT_ATV_PROG_DATA:
+            Log.d(TAG, "atv prog data");
+
+            if (!isFinalStoreStage)
+                isRealtimeStore = true;
+
+            initChannelsExist();
+
             channel = createAtvChannelInfo(event);
+            channel.print();
+
             if (mScanMode.isATVManualScan())
                 onUpdateCurrentChannel(channel, true);
             else
-                mTvDataBaseManager.insertAtvChannel(channel, c_displayNum);
+                mTvDataBaseManager.updateOrinsertAtvChannelWithNumber(channel);
+
             Log.d(TAG, "onEvent,displayNum:" + c_displayNum);
-            channel.print();
-            bundle = GetDisplayNumBunlde(c_displayNum);
-            mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_DISPLAYNUM_EVENT, bundle);
-            c_displayNum++;
+
+            if (isFinalStoreStage) {
+                bundle = GetDisplayNumBunlde(c_displayNum);
+                mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_DISPLAYNUM_EVENT, bundle);
+                c_displayNum++;//count for storestage
+            }
             break;
+
+        case TvControlManager.EVENT_SCAN_PROGRESS:
+            Log.d(TAG, event.precent + "%\tfreq[" + event.freq + "] lock[" + event.lock + "] strength[" + event.strength + "] quality[" + event.quality + "]");
+
+            //take evt:progress as a store-loop end.
+            if (!isFinalStoreStage
+                && (event.mode != TVChannelParams.MODE_ANALOG)
+                && !mScanMode.isDTVManulScan()) {
+                onTVChannelStoreEnd(isRealtimeStore, isFinalStoreStage);
+                c_displayNum2 = 0;//dtv pop all channels scanned every store-loop
+            }
+
+            bundle = getBundleByScanEvent(event);
+            if ((event.mode == TVChannelParams.MODE_ANALOG) && (event.lock == 0x11)) {
+                bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_DISPLAYNUM, c_displayNum);
+                c_displayNum++;//count for progress stage
+            }
+            mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_PROCESS_EVENT, bundle);
+            break;
+
         case TvControlManager.EVENT_STORE_BEGIN:
             Log.d(TAG, "Store begin");
+
+            //reset for store stage
+            isFinalStoreStage = true;
             c_displayNum = 0;
-            onTVChannelStoreBegin();
+            c_displayNum2 = null;
+            if (mLcnInfo != null)
+                mLcnInfo.clear();
+
             bundle = getBundleByScanEvent(event);
             mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_STORE_BEGIN_EVENT, bundle);
             break;
 
         case TvControlManager.EVENT_STORE_END:
             Log.d(TAG, "Store end");
-            c_displayNum = 0;
-            onTVChannelStoreEnd();
+
+            onTVChannelStoreEnd(isRealtimeStore, isFinalStoreStage);
+
             bundle = getBundleByScanEvent(event);
             mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_STORE_END_EVENT, bundle);
             break;
+
         case TvControlManager.EVENT_SCAN_END:
             Log.d(TAG, "Scan end");
-            c_displayNum = 0;
-            bundle = getBundleByScanEvent(event);
+
             mTvControlManager.DtvStopScan();
+
+            bundle = getBundleByScanEvent(event);
             mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_SCAN_END_EVENT, bundle);
             break;
+
         case TvControlManager.EVENT_SCAN_EXIT:
             Log.d(TAG, "Scan exit.");
+
+            isFinalStoreStage = false;
+            isRealtimeStore = false;
             c_displayNum = 0;
+            c_displayNum2 = null;
+            if (mLcnInfo != null) {
+                mLcnInfo.clear();
+                mLcnInfo = null;
+            }
+
             bundle = getBundleByScanEvent(event);
             mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_SCAN_EXIT_EVENT, bundle);
             break;
+
         default:
             break;
         }
@@ -629,101 +715,117 @@ public class DroidLogicTvInputService extends TvInputService implements
         return bundle;
     }
 
-    public static final int LCN_OVERFLOW_INIT_START = 900;
+    public static final int LCN_OVERFLOW_INIT_START = 0;//900;
 
-    private boolean need_delete_channel = false;
-    private ArrayList<ChannelInfo> mChannels = null;
+    private ArrayList<ChannelInfo> mChannelsOld = null;
 
-    private boolean on_dtv_channel_store_firsttime = true;
+    private boolean on_dtv_channel_store_tschanged = true;
 
     private ArrayList<ChannelInfo> mChannelsNew = null;
     private int lcn_overflow_start = LCN_OVERFLOW_INIT_START;
+    private int display_number_start = 0;
 
-    private void onTVChannelStoreBegin() {
+    private void initChannelsExist() {
+        //get all old channles exist.
+        //init display number count.
+        if (mChannelsOld == null) {
+            String InputId = mSession.getInputId();
+            mChannelsOld = mTvDataBaseManager.getChannelList(InputId, Channels.SERVICE_TYPE_AUDIO_VIDEO);
+            mChannelsOld.addAll(mTvDataBaseManager.getChannelList(InputId, Channels.SERVICE_TYPE_AUDIO));
 
-        mChannelsNew = new ArrayList();
-
-        if (mScanMode == null || (!mScanMode.isDTVManulScan() && !mScanMode.isATVScan()))
-            return;
-
-        String InputId = mSession.getInputId();
-        mChannels = mTvDataBaseManager.getChannelList(InputId, Channels.SERVICE_TYPE_AUDIO_VIDEO);
-        mChannels.addAll(mTvDataBaseManager.getChannelList(InputId, Channels.SERVICE_TYPE_AUDIO));
-
-        on_dtv_channel_store_firsttime = true;
-
-        c_displayNum = mChannels.size();
-        Log.d(TAG, "Store> channels exist:" + c_displayNum);
+            c_displayNum = mChannelsOld.size();
+            Log.d(TAG, "Store> channels exist:" + c_displayNum);
+        }
     }
 
     private void onDTVChannelStore(TvControlManager.ScannerEvent event, ChannelInfo channel) {
 
-        //if (mSortMode.isLCNSort())
-        //    updateChannelLCN(channel);
+        if (mScanMode == null) {
+            Log.d(TAG, "mScanMode is null, store return.");
+            return;
+        }
 
-        channel.setDisplayNumber(String.valueOf(c_displayNum));
+        if (mChannelsNew == null)
+            mChannelsNew = new ArrayList();
+
         mChannelsNew.add(channel);
 
-        Log.d(TAG, "insert [" + channel.getNumber() + "][" + channel.getFrequency() + "][" + channel.getServiceType() + "][" + channel.getDisplayName() + "]");
+        Log.d(TAG, "store save [" + channel.getNumber() + "][" + channel.getFrequency() + "][" + channel.getServiceType() + "][" + channel.getDisplayName() + "]");
 
-        //mTvDataBaseManager.insertDtvChannel(channel, c_displayNum);
-
-        if (mScanMode == null || !mScanMode.isDTVManulScan())
-            return;
-
-        if (on_dtv_channel_store_firsttime) {
-
-            on_dtv_channel_store_firsttime = false;
-
-            Iterator<ChannelInfo> iter = mChannels.iterator();
-            while (iter.hasNext()) {
-                ChannelInfo c = iter.next();
-                if (c.getFrequency() != channel.getFrequency())
-                    iter.remove();
+        if (mScanMode.isDTVManulScan()) {
+            if (on_dtv_channel_store_tschanged) {
+                on_dtv_channel_store_tschanged = false;
+                if (mChannelsOld != null) {
+                    Log.d(TAG, "remove channels with freq!="+channel.getFrequency());
+                    //remove channles with diff freq from old channles
+                    Iterator<ChannelInfo> iter = mChannelsOld.iterator();
+                    while (iter.hasNext()) {
+                        ChannelInfo c = iter.next();
+                        if (c.getFrequency() != channel.getFrequency())
+                            iter.remove();
+                    }
+                }
             }
-
-            need_delete_channel = true;
         }
-   }
+    }
 
-    private void onTVChannelStoreEnd() {
+    private void onTVChannelStoreEnd(boolean isRealtimeStore, boolean isFinalStore) {
         Bundle bundle = null;
-        int num;
 
-        for (ChannelInfo c : mChannelsNew) {
+        Log.d(TAG, "isRealtimeStore:" + isRealtimeStore + " isFinalStore:"+ isFinalStore);
 
-            if (mSortMode.isLCNSort()) {
-                updateChannelLCN(c);
-                c.setDisplayNumber(String.valueOf(c.getLCN()));
-                Log.d(TAG, "DisplayNumber:"+ c.getDisplayNumber());
-                Settings.System.putString(this.getContentResolver(), DroidLogicTvUtils.TV_KEY_DTV_NUMBER_MODE, "lcn");
+        if (mChannelsNew != null) {
+            ArrayList<ChannelInfo> mChannels = new ArrayList();
 
-                num = c.getNumber();
-            } else
-                num = c_displayNum;
+            for (ChannelInfo c : mChannelsNew) {
 
-            mTvDataBaseManager.insertDtvChannel(c, c.getNumber());
+                //Calc display number / LCN
+                if (mSortMode.isLCNSort()) {
+                    if (isRealtimeStore)
+                        updateChannelLCN(c, mChannels);
+                    else
+                        updateChannelLCN(c);
+                    c.setDisplayNumber(String.valueOf(c.getLCN()));
+                    Log.d(TAG, "LCN DisplayNumber:"+ c.getDisplayNumber());
+                    Settings.System.putString(this.getContentResolver(), DroidLogicTvUtils.TV_KEY_DTV_NUMBER_MODE, "lcn");
+                } else {
+                    if (isRealtimeStore)
+                        updateChannelNumber(c, mChannels);
+                    else
+                        updateChannelNumber(c);
+                    Log.d(TAG, "NUM DisplayNumber:"+ c.getDisplayNumber());
+                }
 
-            bundle = GetDisplayNumBunlde(num);
-            mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_DISPLAYNUM_EVENT, bundle);
+                if (isRealtimeStore)
+                    mTvDataBaseManager.updateOrinsertDtvChannelWithNumber(c);
+                else
+                    mTvDataBaseManager.insertDtvChannel(c, c.getNumber());
+
+                Log.d(TAG, ((isRealtimeStore) ? "update/insert [" : "insert [") + c.getNumber()
+                    + "][" + c.getFrequency() + "][" + c.getServiceType() + "][" + c.getDisplayName() + "]");
+
+                if (isFinalStore) {
+                    bundle = GetDisplayNumBunlde(c.getNumber());
+                    mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_DISPLAYNUM_EVENT, bundle);
+                }
+            }
         }
 
-        if (mScanMode == null || (!mScanMode.isDTVManulScan() && !mScanMode.isATVScan()))
-            return;
-
-        if (need_delete_channel) {
-            mTvDataBaseManager.deleteChannels(mChannels);
-
-            for (ChannelInfo c : mChannels)
-                Log.d(TAG, "rm ch[" + c.getNumber() + "][" + c.getDisplayName() + "][" + c.getFrequency() + "]");
+        if (mScanMode != null) {
+            if (mScanMode.isDTVManulScan()) {
+                if (mChannelsOld != null) {
+                    mTvDataBaseManager.deleteChannels(mChannelsOld);
+                    for (ChannelInfo c : mChannelsOld)
+                        Log.d(TAG, "rm ch[" + c.getNumber() + "][" + c.getDisplayName() + "][" + c.getFrequency() + "]");
+                }
+            }
         }
 
-        on_dtv_channel_store_firsttime = true;
-        need_delete_channel = false;
-        mChannels = null;
-        mChannelsNew = null;
-        mLcnInfo = null;
         lcn_overflow_start = LCN_OVERFLOW_INIT_START;
+        display_number_start = 0;
+        on_dtv_channel_store_tschanged = true;
+        mChannelsOld = null;
+        mChannelsNew = null;
     }
 
     private boolean isChannelInListbyId(ChannelInfo channel, ArrayList<ChannelInfo> list) {
@@ -737,8 +839,68 @@ public class DroidLogicTvInputService extends TvInputService implements
         return false;
     }
 
+    private void updateChannelNumber(ChannelInfo channel) {
+        updateChannelNumber(channel, null);
+    }
+
+    private void updateChannelNumber(ChannelInfo channel, ArrayList<ChannelInfo> channels) {
+        boolean ignoreDBCheck = false;//mScanMode.isDTVAutoScan();
+        int number = -1;
+        String InputId = mSession.getInputId();
+        ArrayList<ChannelInfo> chs = null;
+
+        if (!ignoreDBCheck) {
+            if (channels != null)
+                chs = channels;
+            else
+                chs = mTvDataBaseManager.getChannelList(InputId, ChannelInfo.COMMON_PROJECTION,
+                        null, null);
+            for (ChannelInfo c : chs) {
+                if ((c.getNumber() >= display_number_start) && !isChannelInListbyId(c, mChannelsOld)) {
+                    display_number_start = c.getNumber() + 1;
+                }
+            }
+        }
+        Log.d(TAG, "display number start from:" + display_number_start);
+
+        Log.d(TAG, "Service["+channel.getOriginalNetworkId()+":"+channel.getTransportStreamId()+":"+channel.getServiceId()+"]");
+
+        if (channel.getServiceType() == Channels.SERVICE_TYPE_OTHER) {
+            Log.d(TAG, "Service["+channel.getServiceId()+"] is Type OTHER, ignore NUMBER update and set to unbrowsable");
+            channel.setBrowsable(false);
+            return;
+        }
+
+        if (mChannelsOld != null) {//may only in manual search
+            for (ChannelInfo c : mChannelsOld) {
+                if ((c.getOriginalNetworkId() == channel.getOriginalNetworkId())
+                    && (c.getTransportStreamId() == channel.getTransportStreamId())
+                    && (c.getServiceId() == channel.getServiceId())) {
+                    //same freq, reuse number if old channel is identical
+                    Log.d(TAG, "found num:" + c.getDisplayNumber() + " by same old service["+c.getOriginalNetworkId()+":"+c.getTransportStreamId()+":"+c.getServiceId()+"]");
+                    number = c.getNumber();
+                }
+            }
+        }
+
+        //service totally new
+        if (number < 0)
+            number = display_number_start++;
+
+        Log.d(TAG, "update displayer number["+number+"]");
+
+        channel.setDisplayNumber(String.valueOf(number));
+
+        if (channels != null)
+            channels.add(channel);
+    }
+
     private void updateChannelLCN(ChannelInfo channel) {
-        boolean ignoreDBCheck = mScanMode.isDTVAutoScan();
+        updateChannelLCN(channel, null);
+    }
+
+    private void updateChannelLCN(ChannelInfo channel, ArrayList<ChannelInfo> channels) {
+        boolean ignoreDBCheck = false;//mScanMode.isDTVAutoScan();
 
         int lcn = -1;
         int lcn_1 = -1;
@@ -751,11 +913,16 @@ public class DroidLogicTvInputService extends TvInputService implements
         ArrayList<ChannelInfo> chs = null;
 
         if (!ignoreDBCheck) {
-            chs = mTvDataBaseManager.getChannelList(InputId, new String[]{ChannelInfo.COLUMN_LCN},
-                    null, null);
-            for (ChannelInfo c : chs)
-                if ((c.getNumber() > lcn_overflow_start) && !isChannelInListbyId(c, mChannels))
-                    lcn_overflow_start = c.getLCN();
+            if (channels != null)
+                chs = channels;
+            else
+                chs = mTvDataBaseManager.getChannelList(InputId, ChannelInfo.COMMON_PROJECTION,
+                        null, null);
+            for (ChannelInfo c : chs) {
+                if ((c.getLCN() >= lcn_overflow_start) && !isChannelInListbyId(c, mChannelsOld)) {
+                    lcn_overflow_start = c.getLCN() + 1;
+                }
+            }
         }
         Log.d(TAG, "lcn overflow start from:"+lcn_overflow_start);
 
@@ -786,22 +953,33 @@ public class DroidLogicTvInputService extends TvInputService implements
                     if ((lcn_1 != -1) && (lcn_2 != -1) && !ignoreDBCheck) {
                         // check for lcn already exist just on Maunual Scan
                         // look for service with sdlcn equal to l's hdlcn, if found, change the service's lcn to it's hdlcn
-                        chs = mTvDataBaseManager.getChannelList(InputId, ChannelInfo.COMMON_PROJECTION,
-                                ChannelInfo.COLUMN_LCN+"=?",
-                                new String[]{String.valueOf(lcn_2)});
-                        for (ChannelInfo c : chs) {
-                            if (!isChannelInListbyId(c, mChannels)) {// do not check those will be deleted.
-                                Log.d(TAG, "swap exist lcn["+c.getLCN()+"] -> ["+c.getLCN2()+"]");
-                                Log.d(TAG, "\t for Service["+c.getOriginalNetworkId()+":"+c.getTransportStreamId()+":"+c.getServiceId()+"]");
-
-                                c.setLCN(c.getLCN2());
-                                c.setLCN1(c.getLCN2());
-                                c.setLCN2(lcn_2);
-                                mTvDataBaseManager.updateChannelInfo(c);
-
-                                swapped = true;
-                                break;
+                        ChannelInfo ch = null;
+                        if (channels != null) {
+                            for (ChannelInfo c : channels) {
+                                if (c.getLCN() == lcn_2)
+                                    ch = c;
                             }
+                        } else {
+                            chs = mTvDataBaseManager.getChannelList(InputId, ChannelInfo.COMMON_PROJECTION,
+                                    ChannelInfo.COLUMN_LCN+"=?",
+                                    new String[]{String.valueOf(lcn_2)});
+                            if (chs.size() > 0) {
+                                if (chs.size() > 1)
+                                    Log.d(TAG, "Warning: found " + chs.size() + "channels with lcn="+lcn_2);
+                                ch = chs.get(0);
+                            }
+                        }
+                        if ((ch != null) && !isChannelInListbyId(ch, mChannelsOld)) {// do not check those will be deleted.
+                            Log.d(TAG, "swap exist lcn["+ch.getLCN()+"] -> ["+ch.getLCN2()+"]");
+                            Log.d(TAG, "\t for Service["+ch.getOriginalNetworkId()+":"+ch.getTransportStreamId()+":"+ch.getServiceId()+"]");
+
+                            ch.setLCN(ch.getLCN2());
+                            ch.setLCN1(ch.getLCN2());
+                            ch.setLCN2(lcn_2);
+                            if (channels == null)
+                                mTvDataBaseManager.updateChannelInfo(ch);
+
+                            swapped = true;
                         }
                     } else if (lcn_1 == -1) {
                         lcn = lcn_2;
@@ -817,27 +995,55 @@ public class DroidLogicTvInputService extends TvInputService implements
 
         if (!swapped) {
             if (lcn >= 0) {
-                chs = mTvDataBaseManager.getChannelList(InputId, ChannelInfo.COMMON_PROJECTION,
-                        ChannelInfo.COLUMN_LCN+"=?",
-                        new String[]{String.valueOf(lcn)});
-                for (ChannelInfo c : chs) {
-                    if (!isChannelInListbyId(c, mChannels)) {//do not check those will be deleted.
-                        Log.d(TAG, "found lcn conflct:" + lcn + " by service["+c.getOriginalNetworkId()+":"+c.getTransportStreamId()+":"+c.getServiceId()+"]");
+                ChannelInfo ch = null;
+                if (channels != null) {
+                    for (ChannelInfo c : channels) {
+                        if (c.getLCN() == lcn)
+                            ch = c;
+                    }
+                } else {
+                    chs = mTvDataBaseManager.getChannelList(InputId, ChannelInfo.COMMON_PROJECTION,
+                            ChannelInfo.COLUMN_LCN+"=?",
+                            new String[]{String.valueOf(lcn)});
+                    if (chs.size() > 0) {
+                        if (chs.size() > 1)
+                            Log.d(TAG, "Warning: found " + chs.size() + "channels with lcn="+lcn);
+                        ch = chs.get(0);
+                    }
+                }
+                if (ch != null) {
+                    if (!isChannelInListbyId(ch, mChannelsOld)) {//do not check those will be deleted.
+                        Log.d(TAG, "found lcn conflct:" + lcn + " by service["+ch.getOriginalNetworkId()+":"+ch.getTransportStreamId()+":"+ch.getServiceId()+"]");
                         lcn = lcn_overflow_start++;
-                        break;
                     }
                 }
             } else {
                 Log.d(TAG, "no LCN info found for service");
-                lcn = lcn_overflow_start++;
+                if (mChannelsOld != null) {//may only in manual search
+                    for (ChannelInfo c : mChannelsOld) {
+                        if ((c.getOriginalNetworkId() == channel.getOriginalNetworkId())
+                            && (c.getTransportStreamId() == channel.getTransportStreamId())
+                            && (c.getServiceId() == channel.getServiceId())) {
+                            //same freq, reuse lcn if old channel is identical
+                            Log.d(TAG, "found lcn:" + c.getLCN() + " by same old service["+c.getOriginalNetworkId()+":"+c.getTransportStreamId()+":"+c.getServiceId()+"]");
+                            lcn = c.getLCN();
+                        }
+                    }
+                }
+                //service totally new
+                if (lcn < 0)
+                    lcn = lcn_overflow_start++;
             }
-
-            Log.d(TAG, "update LCN[0:"+lcn+" 1:"+lcn_1+" 2:"+lcn_2+"]");
-
-            channel.setLCN(lcn);
-            channel.setLCN1(lcn_1);
-            channel.setLCN2(lcn_2);
         }
+
+        Log.d(TAG, "update LCN[0:"+lcn+" 1:"+lcn_1+" 2:"+lcn_2+"]");
+
+        channel.setLCN(lcn);
+        channel.setLCN1(lcn_1);
+        channel.setLCN2(lcn_2);
+
+        if (channels != null)
+            channels.add(channel);
     }
 
     @Override
@@ -851,3 +1057,4 @@ public class DroidLogicTvInputService extends TvInputService implements
     public void onUpdateCurrentChannel(ChannelInfo channel, boolean store) {}
 
 }
+

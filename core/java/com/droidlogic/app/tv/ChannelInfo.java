@@ -309,15 +309,15 @@ public class ChannelInfo {
         if (index >= 0)
             builder.setBrowsable(cursor.getInt(index)==1 ? true : false);
 
-        index = cursor.getColumnIndex(Channels.COLUMN_INTERNAL_PROVIDER_FLAG1);
+        index = cursor.getColumnIndex(COLUMN_LCN);
         if (index >= 0)
             builder.setLCN(cursor.getInt(index));
 
-        index = cursor.getColumnIndex(Channels.COLUMN_INTERNAL_PROVIDER_FLAG2);
+        index = cursor.getColumnIndex(COLUMN_LCN1);
         if (index >= 0)
             builder.setLCN1(cursor.getInt(index));
 
-        index = cursor.getColumnIndex(Channels.COLUMN_INTERNAL_PROVIDER_FLAG3);
+        index = cursor.getColumnIndex(COLUMN_LCN2);
         if (index >= 0)
             builder.setLCN2(cursor.getInt(index));
 
