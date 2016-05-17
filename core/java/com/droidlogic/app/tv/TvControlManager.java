@@ -5413,5 +5413,22 @@ public class TvControlManager {
             return this.val;
         }
     }
+
+    /**
+     * @description set gpio
+     * @param portName name of gpio, e.g "GPIOAO_14"
+     * @param isOut true set gpio as out.
+     * @param edge validly when {@param is_out} is true, 1/0 high/low
+     */
+    public int handleGPIO(String portName, boolean isOut, int edge) {
+        Parcel cmd = Parcel.obtain();
+        Parcel r = Parcel.obtain();
+        cmd.writeInt(HANDLE_GPIO);
+        cmd.writeString(portName);
+        cmd.writeInt(isOut ? 1 : 0);
+        cmd.writeInt(edge);
+        sendCmdToTv(cmd, r);
+        return r.readInt();
+    }
 }
 
