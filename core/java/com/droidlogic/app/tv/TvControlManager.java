@@ -33,6 +33,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Parcel;
+import android.graphics.Matrix;
 
 //import android.media.audiofx.Srs;
 //import android.media.audiofx.Hpeq;
@@ -120,7 +121,7 @@ public class TvControlManager {
     private native int processCmd(Parcel p, Parcel r);
     private native final void native_create_video_frame_bitmap(Object bmp);
     private native final void native_create_subtitle_bitmap(Object bmp);
-    private static native Bitmap native_GetFrameBitmap(int left, int top, int width, int height, int type);
+    private static native Bitmap native_GetFrameBitmap(int width, int hight, int type);
 
     private static void postEventFromNative(Object tv_ref, int what, Parcel ext) {
         ext.setDataPosition(0);
@@ -3793,15 +3794,25 @@ public class TvControlManager {
         native_create_subtitle_bitmap(subtitleFrame);
         return subtitleFrame;
     }
-    /*
-      * Using this func, you can capture a sub-buffer on the paticular layer
-      * type : determine which layer you will capture
-      * left & top & width & height : determine the sub-buffer's location on the choosen layer
-      * If you want get full screen, set all as -1 ; If you want to get a part, set them.
-      */
-    public Bitmap captureFrame(int left, int top, int width, int height, int type){
-        return native_GetFrameBitmap(left, top, width, height, type);
-    }
+
+    /**
+     * @param width The desired width of the returned bitmap;
+     * @param height The desired height of the returned bitmap;
+     * @return Returns a Bitmap containing the video layer contents, or null
+     * if an error occurs. Make sure to call Bitmap.recycle() as soon as
+     * possible, once its content is not needed anymore.
+     */
+     public Bitmap captureFrame(int width, int hight, int type){
+         Bitmap mBitmap = native_GetFrameBitmap(width, hight, type);
+         if (mBitmap != null && (width != mBitmap.getWidth() || hight != mBitmap.getHeight())) {
+             float mW_F = ((float)width)/mBitmap.getWidth();
+             float mH_F = ((float)hight)/mBitmap.getHeight();
+             Matrix matrix = new Matrix();
+             matrix.postScale(mW_F, mH_F);
+             mBitmap = Bitmap.createBitmap(mBitmap,0,0,mBitmap.getWidth(),mBitmap.getHeight(),matrix,true);
+         }
+         return mBitmap;
+     }
 
     public void setSubtitleUpdateListener(SubtitleUpdateListener l) {
         libtv_log_open();
