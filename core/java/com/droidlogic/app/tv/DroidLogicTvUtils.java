@@ -160,6 +160,12 @@ public class DroidLogicTvUtils
     public static final String EXTRA_SUBTITLE_SWITCH_VALUE = "sub_switch_val";
 
     /**
+     * used for TvSettings to switch hdmi source
+     * {@link #SOURCE_NAME}
+     */
+    public static final String SOURCE_NAME = "source";
+
+    /**
      * used for table {@link Settings#System}.
      * {@link #TV_START_UP_ENTER_APP} indicates whether enter into TV but not home activity,
      * and enter into it when value is {@value >0}.
