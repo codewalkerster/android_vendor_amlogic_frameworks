@@ -280,7 +280,6 @@ static void* HdmiPlugDetectThread(void* data) {
         }
         SYS_LOGI("Received uevent message: %s", printBuf);
     #endif
-
         if (isMatch(&u_data, HDMI_UEVENT)
             || isMatch(&u_data, HDMI_POWER_UEVENT)) {
             SYS_LOGI("HDMI switch_state: %s switch_name: %s\n", u_data.state, u_data.name);
@@ -291,7 +290,7 @@ static void* HdmiPlugDetectThread(void* data) {
             }
             if (//0: hdmi suspend 1:hdmi resume
                 (!strcmp(u_data.name, "hdmi_power") && !strcmp(u_data.state, "0"))) {
-                pThiz->hdcpTxStop();
+                pThiz->hdcpTxSuspend();
             }
         }
 
@@ -1662,8 +1661,8 @@ void DisplayMode::hdcpRxAuthenticate(bool plugIn) {
 }
 
 void DisplayMode::hdcpTxStop() {
-    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_TEST, "1");
-    usleep(10000);
+    //pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_POWER, "1");
+    //usleep(10000);
     //stop HDCP 2.2
     SYS_LOGI("stop hdcp_tx22 and hdcp 1.4\n");
     pSysWrite->setProperty("ctl.stop", "hdcp_tx22");
@@ -1671,6 +1670,11 @@ void DisplayMode::hdcpTxStop() {
     pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_CONF, DISPLAY_HDMI_HDCP_STOP);
     pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_CONF, "stop22");
     usleep(2000);
+}
+
+void DisplayMode::hdcpTxSuspend() {
+    SYS_LOGI("hdcpTxSuspend\n");
+    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_POWER, "1");
 }
 
 bool DisplayMode::hdcpTxInit(bool *pHdcp22, bool *pHdcp14) {
@@ -1731,15 +1735,17 @@ bool DisplayMode::hdcpTxInit(bool *pHdcp22, bool *pHdcp14) {
 
 void DisplayMode::hdcpTxAuthenticate(bool useHdcp22, bool useHdcp14) {
 #ifdef HDCP_AUTHENTICATION
-    SYS_LOGI("begin to authenticate\n");
+    SYS_LOGI("begin to tx authenticate\n");
     int count = 0;
     while (!mExitHdcpThread) {
         usleep(200*1000);//sleep 200ms
 
         char auth[MODE_LEN] = {0};
         pSysWrite->readSysfs(DISPLAY_HDMI_HDCP_AUTH, auth);
-        if (_strstr(auth, (char *)"1")) //Authenticate is OK
+        if (_strstr(auth, (char *)"1")) {//Authenticate is OK
+            SYS_LOGI("tx authenticate succeed\n");
             break;
+        }
 
         count++;
         if (count > 40) { //max 200msx40 = 8s it will authenticate completely
@@ -1761,7 +1767,7 @@ void DisplayMode::hdcpTxAuthenticate(bool useHdcp22, bool useHdcp14) {
             break;
         }
     }
-    SYS_LOGI("authenticate finish\n");
+    SYS_LOGI("tx authenticate finish\n");
 #else
     useHdcp22 = useHdcp22;
     useHdcp14 = useHdcp14;
