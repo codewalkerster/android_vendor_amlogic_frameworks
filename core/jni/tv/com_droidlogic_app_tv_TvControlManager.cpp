@@ -329,17 +329,17 @@ static void com_droidlogic_app_tv_TvControlManager_create_subtitle_bitmap(JNIEnv
 
 
 static jobject com_droidlogic_app_tv_TvControlManager_nativeGetFrameBitmap(JNIEnv *env, jobject thiz, jint width, jint hight, jint type) {
-    ALOGE("[%s %d]", __FUNCTION__, __LINE__);
+    ALOGD("[%s %d]", __FUNCTION__, __LINE__);
     if (type == CAPTURE_GRAPHICS) {
-        ALOGE("CAPTURE_GRAPHICS is not support now");
+        ALOGD("CAPTURE_GRAPHICS is not support now");
         return NULL;
     }
 
     jobject ret1 = NULL;
     //int mBufferSize = width * height * 2; // V4L2_PIX_FMT_NV21:*3/2  ; V4L2_PIX_FMT_RGB24: *3
 
-    int mCustomW = 0;
-    int mCustomH = 0;
+    int custom_w = 0;
+    int custom_h = 0;
 
     //-----------------getVideoBuffer--------------//
     aml_screen_module_t* screenModule = NULL;
@@ -348,28 +348,27 @@ static jobject com_droidlogic_app_tv_TvControlManager_nativeGetFrameBitmap(JNIEn
         hw_get_module(AML_SCREEN_HARDWARE_MODULE_ID, (const hw_module_t **)&screenModule);
 
     if (screenModule)
-        screenModule->common.methods->open((const hw_module_t *)screenModule, AML_SCREEN_SOURCE,
+        screenModule->common.methods->open((const hw_module_t *)screenModule, "0",
                 (struct hw_device_t **)&screenDev);
 
     if (screenDev) {
         if (width*9 == hight*16) {
-            mCustomW = width;
-            mCustomH = hight;
-            ALOGD("set_screen_mode:AML_SCREEN_MODE_ADAPTIVE");
+            custom_w = width;
+            custom_h = hight;
             screenDev->ops.set_screen_mode(screenDev,2);
         } else {
-            mCustomW = CAPTURE_MAX_BITMAP_W;
-            mCustomH = CAPTURE_MAX_BITMAP_H;
-            ALOGD("!!!!!request bitmap w:h != 16:9, resize mCustomW:mCustomH = 1920:1080");
+            custom_w = CAPTURE_MAX_BITMAP_W;
+            custom_h = CAPTURE_MAX_BITMAP_H;
+            ALOGD("!!!!!request bitmap w:h != 16:9, resize custom_w:custom_h = 1920:1080");
             screenDev->ops.set_screen_mode(screenDev,2);
         }
 
-        if (mCustomW > CAPTURE_MAX_BITMAP_W || mCustomH > CAPTURE_MAX_BITMAP_H) {
-            mCustomW = CAPTURE_MAX_BITMAP_W;
-            mCustomH = CAPTURE_MAX_BITMAP_H;
+        if (custom_w > CAPTURE_MAX_BITMAP_W || custom_h > CAPTURE_MAX_BITMAP_H) {
+            custom_w = CAPTURE_MAX_BITMAP_W;
+            custom_h = CAPTURE_MAX_BITMAP_H;
         }
 
-        screenDev->ops.set_format(screenDev, mCustomW, mCustomH, V4L2_PIX_FMT_RGB565X); // V4L2_PIX_FMT_NV21 ,V4L2_PIX_FMT_RGB24
+        screenDev->ops.set_format(screenDev, custom_w, custom_h, V4L2_PIX_FMT_RGB565X); // V4L2_PIX_FMT_NV21 ,V4L2_PIX_FMT_RGB24
         screenDev->ops.set_port_type(screenDev, (int)0x4000); //TVIN_PORT_HDMI0 = 0x4000
         screenDev->ops.start_v4l2_device(screenDev);
 
@@ -383,9 +382,8 @@ static jobject com_droidlogic_app_tv_TvControlManager_nativeGetFrameBitmap(JNIEn
             ret = screenDev->ops.aquire_buffer(screenDev, &buff_info);
             ALOGD("ret = %d",ret);
             if (ret != 0 || (buff_info.buffer_mem == 0)) {
-                ALOGD("Get V4l2 buffer failed");
                 framecount++;
-                ALOGD("retry,sleep 10ms");
+                ALOGD("Get V4l2 buffer failed,retry,sleep 10ms");
                 usleep(10000);
                 continue;
             } else {
@@ -402,8 +400,8 @@ static jobject com_droidlogic_app_tv_TvControlManager_nativeGetFrameBitmap(JNIEn
         if (src) {
             if (createdBitmap != NULL) {
                 //-----------------setPinxels for bitmap--------------//
-                ALOGD("final bitmap size: %dX%d",mCustomW,mCustomH);
-                SkImageInfo info = SkImageInfo::Make(mCustomW, mCustomH,kRGB_565_SkColorType,kPremul_SkAlphaType); //  kRGBA_8888_SkColorType
+                ALOGD("final bitmap size: %dX%d",custom_w,custom_h);
+                SkImageInfo info = SkImageInfo::Make(custom_w, custom_h,kRGB_565_SkColorType,kPremul_SkAlphaType); //  kRGBA_8888_SkColorType
                 createdBitmap->setInfo(info);
                 createdBitmap->setPixels(src);
 
