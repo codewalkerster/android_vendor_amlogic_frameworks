@@ -376,6 +376,7 @@ private:
     int modeToIndex(const char *mode);
     void startHdmiPlugDetectThread();
     void startBootanimDetectThread();
+    static void* HdmiPlugDetectThread(void* data);
     void setTVDisplay(bool initState);
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
 

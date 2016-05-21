@@ -223,92 +223,6 @@ static void sfRepaintEverything() {
 }
 #endif
 
-// all the hdmi plug checking complete in this loop
-static void* HdmiPlugDetectThread(void* data) {
-    DisplayMode *pThiz = (DisplayMode*)data;
-
-    char status[PROPERTY_VALUE_MAX] = {0};
-#if 0
-    char oldHpdstate[MAX_STR_LEN] = {0};
-    char currentHpdstate[MAX_STR_LEN] = {0};
-
-    pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, oldHpdstate);
-    while (1) {
-        if (property_get("instaboot.status", status, "completed") &&
-           !strcmp("booting", status)){
-            usleep(2000000);
-            continue;
-        }
-
-        pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, currentHpdstate);
-        if (strcmp(oldHpdstate, currentHpdstate)) {
-            SYS_LOGI("HdmiPlugDetectLoop: detected HDMI plug: change state from %s to %s\n", oldHpdstate, currentHpdstate);
-
-            pThiz->setMboxDisplay(currentHpdstate, false);
-            strcpy(oldHpdstate, currentHpdstate);
-        }
-        usleep(2000000);
-    }
-#endif
-
-    //use uevent instead of usleep, because it's has some delay
-    uevent_data_t u_data;
-
-    memset(&u_data, 0, sizeof(uevent_data_t));
-    int fd = uevent_init();
-    while (fd >= 0) {
-        if (property_get("instaboot.status", status, "completed") &&
-           !strcmp("booting", status)) {
-            usleep(2000000);
-            continue;
-        }
-
-        u_data.len= uevent_next_event(fd, u_data.buf, sizeof(u_data.buf) - 1);
-        if (u_data.len <= 0)
-            continue;
-
-        u_data.buf[u_data.len] = '\0';
-
-    #if 0
-        //change@/devices/virtual/switch/hdmi ACTION=change DEVPATH=/devices/virtual/switch/hdmi
-        //SUBSYSTEM=switch SWITCH_NAME=hdmi SWITCH_STATE=0 SEQNUM=2791
-        char printBuf[1024] = {0};
-        memcpy(printBuf, u_data.buf, u_data.len);
-        for (int i = 0; i < u_data.len; i++) {
-            if (printBuf[i] == 0x0)
-                printBuf[i] = ' ';
-        }
-        SYS_LOGI("Received uevent message: %s", printBuf);
-    #endif
-        if (isMatch(&u_data, HDMI_UEVENT)
-            || isMatch(&u_data, HDMI_POWER_UEVENT)) {
-            SYS_LOGI("HDMI switch_state: %s switch_name: %s\n", u_data.state, u_data.name);
-            if (!strcmp(u_data.name, "hdmi") ||
-                //0: hdmi suspend 1:hdmi resume
-                (!strcmp(u_data.name, "hdmi_power") && !strcmp(u_data.state, "1"))) {
-                pThiz->setMboxDisplay(u_data.state, OUPUT_MODE_STATE_POWER);
-            }
-            if (//0: hdmi suspend 1:hdmi resume
-                (!strcmp(u_data.name, "hdmi_power") && !strcmp(u_data.state, "0"))) {
-                pThiz->hdcpTxSuspend();
-            }
-        }
-
-
-#ifndef RECOVERY_MODE
-        if (isMatch(&u_data, VIDEO_LAYER1_UEVENT)) {
-            //0: no aml video data, 1: aml video data aviliable
-            if (!strcmp(u_data.name, "video_layer1") && !strcmp(u_data.state, "1")) {
-                SYS_LOGI("Video Layer1 switch_state: %s switch_name: %s\n", u_data.state, u_data.name);
-                sfRepaintEverything();
-            }
-        }
-#endif
-    }
-
-    return NULL;
-}
-
 DisplayMode::DisplayMode(const char *path)
     :mDisplayType(DISPLAY_TYPE_MBOX),
     mFb0Width(-1),
@@ -1099,6 +1013,102 @@ void DisplayMode::initHdmiData(hdmi_data_t* data, char* hpdstate){
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, data->current_mode);
     getBootEnv(UBOOTENV_HDMIMODE, data->ubootenv_hdmimode);
     standardMode(data->ubootenv_hdmimode);
+}
+
+// all the hdmi plug checking complete in this loop
+void* DisplayMode::HdmiPlugDetectThread(void* data) {
+    DisplayMode *pThiz = (DisplayMode*)data;
+
+    char status[PROPERTY_VALUE_MAX] = {0};
+#if 0
+    char oldHpdstate[MAX_STR_LEN] = {0};
+    char currentHpdstate[MAX_STR_LEN] = {0};
+
+    pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, oldHpdstate);
+    while (1) {
+        if (property_get("instaboot.status", status, "completed") &&
+           !strcmp("booting", status)){
+            usleep(2000000);
+            continue;
+        }
+
+        pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, currentHpdstate);
+        if (strcmp(oldHpdstate, currentHpdstate)) {
+            SYS_LOGI("HdmiPlugDetectLoop: detected HDMI plug: change state from %s to %s\n", oldHpdstate, currentHpdstate);
+
+            pThiz->setMboxDisplay(currentHpdstate, false);
+            strcpy(oldHpdstate, currentHpdstate);
+        }
+        usleep(2000000);
+    }
+#endif
+
+    // reset mode, because hdcp init need too much time, it maybe miss the HDMI plug event
+    char curMode[MODE_LEN] = {0};
+    char hpdState[MODE_LEN] = {0};
+    pThiz->pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curMode);
+    pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, hpdState);
+    if (!strstr(curMode, "cvbs") && !strcmp(hpdState, "1")) {
+        SYS_LOGI("current mode is cvbs, but detect HDMI plugged, reset mode");
+        pThiz->setMboxDisplay(hpdState, OUPUT_MODE_STATE_POWER);
+    }
+
+    //use uevent instead of usleep, because it's has some delay
+    uevent_data_t u_data;
+
+    memset(&u_data, 0, sizeof(uevent_data_t));
+    int fd = uevent_init();
+    while (fd >= 0) {
+        if (property_get("instaboot.status", status, "completed") &&
+           !strcmp("booting", status)) {
+            usleep(2000000);
+            continue;
+        }
+
+        u_data.len= uevent_next_event(fd, u_data.buf, sizeof(u_data.buf) - 1);
+        if (u_data.len <= 0)
+            continue;
+
+        u_data.buf[u_data.len] = '\0';
+
+    #if 0
+        //change@/devices/virtual/switch/hdmi ACTION=change DEVPATH=/devices/virtual/switch/hdmi
+        //SUBSYSTEM=switch SWITCH_NAME=hdmi SWITCH_STATE=0 SEQNUM=2791
+        char printBuf[1024] = {0};
+        memcpy(printBuf, u_data.buf, u_data.len);
+        for (int i = 0; i < u_data.len; i++) {
+            if (printBuf[i] == 0x0)
+                printBuf[i] = ' ';
+        }
+        SYS_LOGI("Received uevent message: %s", printBuf);
+    #endif
+        if (isMatch(&u_data, HDMI_UEVENT)
+            || isMatch(&u_data, HDMI_POWER_UEVENT)) {
+            SYS_LOGI("HDMI switch_state: %s switch_name: %s\n", u_data.state, u_data.name);
+            if (!strcmp(u_data.name, "hdmi") ||
+                //0: hdmi suspend 1:hdmi resume
+                (!strcmp(u_data.name, "hdmi_power") && !strcmp(u_data.state, "1"))) {
+                pThiz->setMboxDisplay(u_data.state, OUPUT_MODE_STATE_POWER);
+            }
+            if (//0: hdmi suspend 1:hdmi resume
+                (!strcmp(u_data.name, "hdmi_power") && !strcmp(u_data.state, "0"))) {
+                pThiz->hdcpTxSuspend();
+            }
+        }
+
+
+#ifndef RECOVERY_MODE
+        if (isMatch(&u_data, VIDEO_LAYER1_UEVENT)) {
+            //0: no aml video data, 1: aml video data aviliable
+            if (!strcmp(u_data.name, "video_layer1") && !strcmp(u_data.state, "1")) {
+                SYS_LOGI("Video Layer1 switch_state: %s switch_name: %s\n", u_data.state, u_data.name);
+                sfRepaintEverything();
+            }
+        }
+#endif
+    }
+
+    return NULL;
 }
 
 void DisplayMode::startBootanimDetectThread() {
