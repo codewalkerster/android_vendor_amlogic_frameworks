@@ -1405,7 +1405,7 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
     else if (!strncmp(mDefaultUI, "800x600", 7))
 	    displaySize = "800 600";
     else if (!strncmp(mDefaultUI, "800x480", 7))
-	    displaySize = "800, 480";
+	    displaySize = "800 480";
     else if (!strncmp(mDefaultUI, "1024x600", 8))
 	    displaySize = "1024 600";
     else if (!strncmp(mDefaultUI, "1024x768", 8))
