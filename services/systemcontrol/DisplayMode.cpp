@@ -41,6 +41,7 @@
 #include "SysTokenizer.h"
 
 #include "HDCPKey/hdcp22_key.h"
+#include "HDCPKey/HdcpRx22Key.h"
 
 #ifndef RECOVERY_MODE
 #include <binder/IBinder.h>
@@ -1622,6 +1623,8 @@ void* DisplayMode::hdcpRxThreadLoop(void* data) {
         remove(HDCP_NEW_KEY_CREATED);
     }
 #else
+
+    #if 0
     if (access(HDCP_RX_DES_FW_PATH, F_OK)) {
         SYS_LOGI("HDCP rx 2.2 firmware do not exist, first create it\n");
         int ret = generateHdcpFwFromStorage(HDCP_RX_SRC_FW_PATH, HDCP_RX_DES_FW_PATH);
@@ -1630,6 +1633,11 @@ void* DisplayMode::hdcpRxThreadLoop(void* data) {
             SYS_LOGE("HDCP rx 2.2 generate firmware fail\n");
         }
     }
+    #else
+    HdcpRx22Key hdcpRxFw;
+    hdcpRxFw.generateHdcpRxFw();
+    #endif
+
 #endif
 
     while (true) {
