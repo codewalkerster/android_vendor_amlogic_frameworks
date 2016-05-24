@@ -74,7 +74,10 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_1440X900P60HZ,
     MODE_1600X900P60HZ,
     MODE_1680X1050P60HZ,
-    MODE_1920X1200P60HZ
+    MODE_1920X1200P60HZ,
+    MODE_2560X1440P60HZ,
+    MODE_2560X1600P60HZ,
+    MODE_2560X1080P60HZ
 };
 
 /**
@@ -555,6 +558,12 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
 	    fbset(1680, 1050, 32);
     else if (!strncmp(data.ubootenv_hdmimode, "1920x1200", 9))
 	    fbset(1920, 1200, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "2560x1440", 9))
+	    fbset(2560, 1440, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "2560x1600", 9))
+	    fbset(2560, 1600, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "2560x1080", 9))
+	    fbset(2560, 1080, 32);
     else if (!strncmp(data.ubootenv_hdmimode, "480p", 4))
 	    fbset(720, 480, 32);
     else if (!strncmp(data.ubootenv_hdmimode, "576p", 4))
@@ -708,6 +717,24 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
             pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_1920x1200P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1200");
+	} else if (!strncmp(mDefaultUI, "2560x1440", 9)) {
+            mDisplayWidth = 2560;
+            mDisplayHeight = 1440;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_2560x1440P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "2560");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1440");
+	} else if (!strncmp(mDefaultUI, "2560x1600", 9)) {
+            mDisplayWidth = 2560;
+            mDisplayHeight = 1600;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_2560x1600P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "2560");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1600");
+	} else if (!strncmp(mDefaultUI, "2560x1080", 9)) {
+            mDisplayWidth = 2560;
+            mDisplayHeight = 1080;
+            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_2560x1080P);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "2560");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
         } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
             mDisplayWidth = FULL_WIDTH_4K2K;
             mDisplayHeight = FULL_HEIGHT_4K2K;
@@ -1426,6 +1453,12 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
 	    displaySize = "1680 1050";
     else if (!strncmp(mDefaultUI, "1920x1200", 9))
 	    displaySize = "1920 1200";
+    else if (!strncmp(mDefaultUI, "2560x1440", 9))
+	    displaySize = "2560 1440";
+    else if (!strncmp(mDefaultUI, "2560x1600", 9))
+	    displaySize = "2560 1600";
+    else if (!strncmp(mDefaultUI, "2560x1080", 9))
+	    displaySize = "2560 1080";
 
     char cur_mode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, cur_mode);
@@ -1615,6 +1648,24 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
             position[1] = 0;
             position[2] = 1920;
             position[3] = 1200;
+	    break;
+	case DISPLAY_MODE_2560X1440P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 2560;
+            position[3] = 1440;
+	    break;
+	case DISPLAY_MODE_2560X1600P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 2560;
+            position[3] = 1600;
+	    break;
+	case DISPLAY_MODE_2560X1080P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 2560;
+            position[3] = 1080;
 	    break;
         default: //1080p
             position[0] = getBootenvInt(ENV_1080P_X, 0);
