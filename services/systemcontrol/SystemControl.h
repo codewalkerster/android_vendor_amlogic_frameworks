@@ -35,6 +35,7 @@
 //should sync with vendor\amlogic\frameworks\av\LibPlayer\amcodec\include\amports\Amstream.h
 #define VIDEO_PATH              "/dev/amvideo"
 #define DI_BYPASS_ALL           "/sys/module/di/parameters/bypass_all"
+#define DI_BYPASS_POST          "/sys/module/di/parameters/bypass_post"
 #define DET3D_MODE_SYSFS        "/sys/module/di/parameters/det3d_mode"
 #define PROG_PROC_SYSFS         "/sys/module/di/parameters/prog_proc_config"
 
@@ -65,8 +66,8 @@
 #define MODE_3D_LA          (0x00000010 | MODE_3D_ENABLE)
 #define MODE_3D_FA          (0x00000020 | MODE_3D_ENABLE)
 #define MODE_3D_LR_SWITCH   (0x00000100 | MODE_3D_ENABLE)
-#define MODE_3D_TO_2D_L     (0x00000200 | MODE_3D_ENABLE | MODE_3D_OUT_FA_MASK)
-#define MODE_3D_TO_2D_R     (0x00000400 | MODE_3D_ENABLE | MODE_3D_OUT_FA_MASK)
+#define MODE_3D_TO_2D_L     (0x00000200 | MODE_3D_ENABLE)
+#define MODE_3D_TO_2D_R     (0x00000400 | MODE_3D_ENABLE)
 #define MODE_3D_MVC         (0x00000800 | MODE_3D_ENABLE)
 #define MODE_3D_OUT_TB      (0x00010000 | MODE_3D_ENABLE)
 #define MODE_3D_OUT_LR      (0x00020000 | MODE_3D_ENABLE)
