@@ -345,6 +345,7 @@ enum tvcmd_e {
     DO_SUSPEND = 814,
     DO_RESUME = 815,
     HANDLE_GPIO = 816,
+    SET_LCD_ENABLE = 817,
 
     //Fac_FBC
     FACTORY_FBC_UPGRADE = 900,
