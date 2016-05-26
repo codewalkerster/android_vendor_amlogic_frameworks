@@ -99,6 +99,13 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     public int doTune(Uri uri) {
         Log.d(TAG, "doTune, uri = " + uri);
 
+        if (getConfigs() == null) {
+            Log.d(TAG, "StreamConfig unavailable! waiting 200ms and then tune again...");
+            Message msg = mSessionHandler.obtainMessage(MSG_DO_TUNE, uri);
+            mSessionHandler.sendMessageDelayed(msg, 200);
+            return ACTION_FAILED;
+        }
+
         return startTvPlay();
     }
 
