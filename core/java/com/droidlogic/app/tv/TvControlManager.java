@@ -3120,7 +3120,7 @@ public class TvControlManager {
      * @Return: 0 success, -1 fail
      */
     public int SSMSaveHdmiEdidVer(HdmiPortID port_id, HdmiEdidVer ver) {
-        int val[] = new int[]{port_id.toInt(), port_id.toInt()};
+        int val[] = new int[]{port_id.toInt(), ver.toInt()};
         return sendCmdIntArray(SSM_SAVE_HDMI_EDID_VER, val);
     }
 
