@@ -615,6 +615,8 @@ public class TvControlManager {
         info.sigFmt = TVInSignalInfo.SignalFmt.valueOf(r.readInt());
         info.sigStatus = TVInSignalInfo.SignalStatus.values()[r.readInt()];
         info.reserved = r.readInt();
+        cmd.recycle();
+        r.recycle();
         return info;
     }
 
@@ -683,7 +685,10 @@ public class TvControlManager {
         Parcel r = Parcel.obtain();
         cmd.writeInt(GET_SOURCE_INPUT_LIST);
         sendCmdToTv(cmd, r);
-        return r.readString();
+        String str = r.readString();
+        cmd.recycle();
+        r.recycle();
+        return str;
     }
     // Tv function END
 
@@ -1472,6 +1477,8 @@ public class TvControlManager {
         noline_params.osd50 = r.readInt();
         noline_params.osd75 = r.readInt();
         noline_params.osd100 = r.readInt();
+        cmd.recycle();
+        r.recycle();
         return noline_params;
     }
 
@@ -1511,6 +1518,8 @@ public class TvControlManager {
         cutwin_t.he = r.readInt();
         cutwin_t.vs = r.readInt();
         cutwin_t.ve = r.readInt();
+        cmd.recycle();
+        r.recycle();
         return cutwin_t;
     }
 
@@ -2205,6 +2214,8 @@ public class TvControlManager {
         range_buf[0] = r.readInt();
         range_buf[1] = r.readInt();
         int ret = r.readInt();
+        cmd.recycle();
+        r.recycle();
         return ret;
     }
 
@@ -2245,8 +2256,10 @@ public class TvControlManager {
         for (int i = 0; i < size; i++) {
             gain_buf[i] = r.readInt();
         }
-
-        return r.readInt();
+        int ret = r.readInt();
+        cmd.recycle();
+        r.recycle();
+        return ret;
     }
 
     /**
@@ -2276,8 +2289,10 @@ public class TvControlManager {
         for (int i = 0; i < size; i++) {
             gain_buf[i] = r.readInt();
         }
-
-        return r.readInt();
+        int ret = r.readInt();
+        cmd.recycle();
+        r.recycle();
+        return ret;
     }
 
     /**
@@ -2528,7 +2543,10 @@ public class TvControlManager {
         }
 
         sendCmdToTv(cmd, r);
-        return r.readInt();
+        int ret = r.readInt();;
+        cmd.recycle();
+        r.recycle();
+        return ret;
     }
 
     /**
@@ -2555,6 +2573,8 @@ public class TvControlManager {
         }
 
         ret = r.readInt();
+        cmd.recycle();
+        r.recycle();
         return ret;
     }
 
@@ -2693,6 +2713,8 @@ public class TvControlManager {
 
         sendCmdToTv(cmd, r);
         ret = r.readInt();
+        cmd.recycle();
+        r.recycle();
         return ret;
     }
 
@@ -2717,6 +2739,8 @@ public class TvControlManager {
         }
 
         ret = r.readInt();
+        cmd.recycle();
+        r.recycle();
         return ret;
     }
 
@@ -2741,6 +2765,8 @@ public class TvControlManager {
 
         sendCmdToTv(cmd, r);
         ret = r.readInt();
+        cmd.recycle();
+        r.recycle();
         return ret;
     }
 
@@ -2761,8 +2787,10 @@ public class TvControlManager {
         for (int i = 0; i < size; i++) {
             data_buf[i] = r.readInt();
         }
-
-        return r.readInt();
+        int ret = r.readInt();
+        cmd.recycle();
+        r.recycle();
+        return ret;
     }
 
     /**
@@ -3175,7 +3203,10 @@ public class TvControlManager {
         }
 
         sendCmdToTv(cmd, r);
-        return r.readInt();
+        int ret = r.readInt();
+        cmd.recycle();
+        r.recycle();
+        return ret;
     }
 
     /**
@@ -3195,8 +3226,10 @@ public class TvControlManager {
         for (int i = 0; i < size; i++) {
             data_buf[i] = r.readInt();
         }
-
-        return r.readInt();
+        int ret = r.readInt();
+        cmd.recycle();
+        r.recycle();
+        return ret;
     }
     // SSM END
 
@@ -3226,7 +3259,10 @@ public class TvControlManager {
         cmd.writeString(key_str);
         cmd.writeString(def_str);
         sendCmdToTv(cmd, r);
-        return r.readString();
+        String str = r.readString();
+        cmd.recycle();
+        r.recycle();
+        return str;
     }
 
     /**
@@ -3402,6 +3438,8 @@ public class TvControlManager {
         tmpInfo.last_change_time_info = r.readString();
         tmpInfo.build_time_info = r.readString();
         tmpInfo.build_usr_info = r.readString();
+        cmd.recycle();
+        r.recycle();
 
         return tmpInfo;
     }
@@ -3426,6 +3464,8 @@ public class TvControlManager {
         tmpInfo.last_change_time_info = r.readString();
         tmpInfo.build_time_info = r.readString();
         tmpInfo.build_usr_info = r.readString();
+        cmd.recycle();
+        r.recycle();
 
         return tmpInfo;
     }
@@ -3502,8 +3542,11 @@ public class TvControlManager {
         }
 
         sendCmdToTv(cmd, r);
-        return r.readInt();
-    }
+        int ret = r.readInt();
+        cmd.recycle();
+        r.recycle();
+        return ret;
+     }
     //MISC END
 
     public int DtvAutoScan() {
@@ -3579,6 +3622,8 @@ public class TvControlManager {
         cmd.writeInt(DTV_SET_TEXT_CODING);
         cmd.writeString(coding);
         sendCmdToTv(cmd, r);
+        cmd.recycle();
+        r.recycle();
         return 0;
     }
 
@@ -3630,6 +3675,8 @@ public class TvControlManager {
         for (int i = 0; i < size; i++) {
             data[i] = r.readInt();
         }
+        cmd.recycle();
+        r.recycle();
 
         return size;
     }
@@ -3678,6 +3725,8 @@ public class TvControlManager {
         dataBuf[4] = r.readInt();
 
         tmpRet = r.readInt();
+        cmd.recycle();
+        r.recycle();
         return tmpRet;
     }
 
@@ -3726,6 +3775,8 @@ public class TvControlManager {
         dataBuf[0] = r.readInt();
         dataBuf[1] = r.readInt();
         int tmpRet = r.readInt();
+        cmd.recycle();
+        r.recycle();
         return tmpRet;
     }
 
@@ -3755,6 +3806,8 @@ public class TvControlManager {
             pl.freq= r.readInt();
             FList.add(pl);
         }
+        cmd.recycle();
+        r.recycle();
         return FList;
 
     }
@@ -3785,6 +3838,8 @@ public class TvControlManager {
         dataBuf[3] = r.readInt();
 
         tmpRet = r.readInt();
+        cmd.recycle();
+        r.recycle();
         return tmpRet;
     }
 
@@ -4034,6 +4089,8 @@ public class TvControlManager {
         DtvAudioTrackInfo tmpRet = new DtvAudioTrackInfo();
         tmpRet.audio_fmt = r.readInt();
         tmpRet.language = r.readString();
+        cmd.recycle();
+        r.recycle();
 
         return tmpRet;
     }
@@ -4092,6 +4149,8 @@ public class TvControlManager {
         epgInfoEvent.endTime = r.readInt();
         epgInfoEvent.subFlag = r.readInt();
         epgInfoEvent.evtId =  r.readInt();
+        cmd.recycle();
+        r.recycle();
         return epgInfoEvent;
     }
 
@@ -4117,6 +4176,8 @@ public class TvControlManager {
             pl.evtId =  r.readInt();
             pEpgInfoList.add(pl);
         }
+        cmd.recycle();
+        r.recycle();
         return pEpgInfoList;
     }
 
@@ -4154,6 +4215,8 @@ public class TvControlManager {
         pVideoFormatInfo.fps= r.readInt();
         pVideoFormatInfo.interlace= r.readInt();
         pVideoFormatInfo.width = r.readInt();
+        cmd.recycle();
+        r.recycle();
         return pVideoFormatInfo;
     }
 
@@ -4172,6 +4235,7 @@ public class TvControlManager {
         Parcel cmd = Parcel.obtain();
         Parcel r = Parcel.obtain();
         cmd.writeInt(DTV_GET_BOOKED_EVENT);
+        sendCmdToTv(cmd, r);
 
         int size = r.readInt();
         ArrayList<BookEventInfo> pBookEventInfoList = new ArrayList<BookEventInfo>();
@@ -4186,6 +4250,8 @@ public class TvControlManager {
             pl.evtId = r.readInt();
             pBookEventInfoList.add(pl);
         }
+        cmd.recycle();
+        r.recycle();
         return pBookEventInfoList;
     }
 
@@ -4197,6 +4263,8 @@ public class TvControlManager {
         cmd.writeInt(id);
         cmd.writeString(name);
         sendCmdToTv(cmd, r);
+        cmd.recycle();
+        r.recycle();
         return 0;
     }
 
@@ -4484,6 +4552,8 @@ public class TvControlManager {
             pList.add(pl);
         }
         Log.i(TAG,"get prog list size = "+pList.size());
+        cmd.recycle();
+        r.recycle();
         return pList;
     }
 
@@ -4497,6 +4567,8 @@ public class TvControlManager {
         ret = r.readInt();
         data_buf[0] = r.readInt();
         data_buf[1] = r.readInt();
+        cmd.recycle();
+        r.recycle();
         return ret;
     }
 
@@ -4563,6 +4635,8 @@ public class TvControlManager {
         cmd.writeInt(upgrade_blk_size);
         sendCmdToTv(cmd, r);
         tmpRet = r.readInt();
+        cmd.recycle();
+        r.recycle();
         return tmpRet;
     }
 
@@ -4953,6 +5027,8 @@ public class TvControlManager {
         info.GitVersion = r.readString();
         info.GitBranch = r.readString();
         info.BuildName = r.readString();
+        cmd.recycle();
+        r.recycle();
         return info;
     }
 
@@ -4983,7 +5059,10 @@ public class TvControlManager {
         Parcel r = Parcel.obtain();
         cmd.writeInt(FACTORY_GET_SN);
         sendCmdToTv(cmd, r);
-        return r.readString();
+        String str = r.readString();
+        cmd.recycle();
+        r.recycle();
+        return str;
     }
 
     public String FactorySet_FBC_Panel_Get_Info() {
@@ -4991,7 +5070,10 @@ public class TvControlManager {
         Parcel r = Parcel.obtain();
         cmd.writeInt(FACTORY_FBC_PANEL_GET_INFO);
         sendCmdToTv(cmd, r);
-        return r.readString();
+        String str = r.readString();
+        cmd.recycle();
+        r.recycle();
+        return str;
     }
 
     //@:value ,default 0
@@ -5118,6 +5200,8 @@ public class TvControlManager {
             params.g_offset = r.readInt();
             params.b_offset = r.readInt();
         }
+        cmd.recycle();
+        r.recycle();
 
         return params;
     }
@@ -5439,7 +5523,10 @@ public class TvControlManager {
         cmd.writeInt(isOut ? 1 : 0);
         cmd.writeInt(edge);
         sendCmdToTv(cmd, r);
-        return r.readInt();
+        int ret = r.readInt();
+        cmd.recycle();
+        r.recycle();
+        return ret;
     }
 
     /**
@@ -5452,7 +5539,10 @@ public class TvControlManager {
         cmd.writeInt(SET_LCD_ENABLE);
         cmd.writeInt(enable ? 1 : 0);
         sendCmdToTv(cmd, r);
-        return r.readInt();
+        int ret = r.readInt();
+        cmd.recycle();
+        r.recycle();
+        return ret;
     }
 }
 
