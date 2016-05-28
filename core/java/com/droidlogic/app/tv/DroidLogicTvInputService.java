@@ -34,6 +34,8 @@ public class DroidLogicTvInputService extends TvInputService implements
     private static final String TAG = DroidLogicTvInputService.class.getSimpleName();
     private static final boolean DEBUG = true;
 
+    private static final int DISPLAY_NUM_START_DEF = 1;
+
     private SparseArray<TvInputInfo> mInfoList = new SparseArray<>();
 
     private TvInputBaseSession mSession;
@@ -43,7 +45,7 @@ public class DroidLogicTvInputService extends TvInputService implements
     private int mDeviceId = -1;
     private String mInputId;
 
-    private int c_displayNum = 0;
+    private int c_displayNum = DISPLAY_NUM_START_DEF;
     private TvDataBaseManager mTvDataBaseManager;
     private TvControlManager mTvControlManager;
     private HardwareCallback mHardwareCallback = new HardwareCallback(){
@@ -508,8 +510,8 @@ public class DroidLogicTvInputService extends TvInputService implements
 
             mScanMode = new ScanMode(event.scan_mode);
             mSortMode = new SortMode(event.sort_mode);
-            c_displayNum = 0;
-            c_displayNum2 = new Integer(0);
+            c_displayNum = DISPLAY_NUM_START_DEF;
+            c_displayNum2 = new Integer(DISPLAY_NUM_START_DEF);
             isFinalStoreStage = false;
             isRealtimeStore = false;
 
@@ -596,7 +598,7 @@ public class DroidLogicTvInputService extends TvInputService implements
                 && (event.mode != TVChannelParams.MODE_ANALOG)
                 && !mScanMode.isDTVManulScan()) {
                 onTVChannelStoreEnd(isRealtimeStore, isFinalStoreStage);
-                c_displayNum2 = 0;//dtv pop all channels scanned every store-loop
+                c_displayNum2 = DISPLAY_NUM_START_DEF;//dtv pop all channels scanned every store-loop
             }
 
             bundle = getBundleByScanEvent(event);
@@ -612,7 +614,7 @@ public class DroidLogicTvInputService extends TvInputService implements
 
             //reset for store stage
             isFinalStoreStage = true;
-            c_displayNum = 0;
+            c_displayNum = DISPLAY_NUM_START_DEF;
             c_displayNum2 = null;
             if (mLcnInfo != null)
                 mLcnInfo.clear();
@@ -644,7 +646,7 @@ public class DroidLogicTvInputService extends TvInputService implements
 
             isFinalStoreStage = false;
             isRealtimeStore = false;
-            c_displayNum = 0;
+            c_displayNum = DISPLAY_NUM_START_DEF;
             c_displayNum2 = null;
             if (mLcnInfo != null) {
                 mLcnInfo.clear();
@@ -715,7 +717,7 @@ public class DroidLogicTvInputService extends TvInputService implements
         return bundle;
     }
 
-    public static final int LCN_OVERFLOW_INIT_START = 0;//900;
+    public static final int LCN_OVERFLOW_INIT_START = DISPLAY_NUM_START_DEF;//900;
 
     private ArrayList<ChannelInfo> mChannelsOld = null;
 
@@ -723,7 +725,7 @@ public class DroidLogicTvInputService extends TvInputService implements
 
     private ArrayList<ChannelInfo> mChannelsNew = null;
     private int lcn_overflow_start = LCN_OVERFLOW_INIT_START;
-    private int display_number_start = 0;
+    private int display_number_start = DISPLAY_NUM_START_DEF;
 
     private void initChannelsExist() {
         //get all old channles exist.
@@ -733,8 +735,8 @@ public class DroidLogicTvInputService extends TvInputService implements
             mChannelsOld = mTvDataBaseManager.getChannelList(InputId, Channels.SERVICE_TYPE_AUDIO_VIDEO);
             mChannelsOld.addAll(mTvDataBaseManager.getChannelList(InputId, Channels.SERVICE_TYPE_AUDIO));
 
-            c_displayNum = mChannelsOld.size();
-            Log.d(TAG, "Store> channels exist:" + c_displayNum);
+            c_displayNum = mChannelsOld.size() + 1;
+            Log.d(TAG, "Store> channel next:" + c_displayNum);
         }
     }
 
@@ -822,7 +824,7 @@ public class DroidLogicTvInputService extends TvInputService implements
         }
 
         lcn_overflow_start = LCN_OVERFLOW_INIT_START;
-        display_number_start = 0;
+        display_number_start = DISPLAY_NUM_START_DEF;
         on_dtv_channel_store_tschanged = true;
         mChannelsOld = null;
         mChannelsNew = null;
