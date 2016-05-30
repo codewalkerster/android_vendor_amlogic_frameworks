@@ -43,7 +43,9 @@ public:
     virtual int setSampleSurfaceSize(int sampleSize, int surfaceW, int surfaceH) = 0;
     virtual int setRotate(float degrees, int autoCrop) = 0;
     virtual int setScale(float sx, float sy, int autoCrop) = 0;
+    virtual int setHWScale(float sc) = 0;
     virtual int setRotateScale(float degrees, float sx, float sy, int autoCrop) = 0;
+    virtual int setTranslate(float tx, float ty) = 0;
     virtual int setCropRect(int cropX, int cropY, int cropWidth, int cropHeight) = 0;
     virtual int prepareBuf(const char *uri) = 0;
     virtual int showBuf() = 0;
@@ -74,6 +76,8 @@ public:
         IMAGE_SHOW_BUF,
         IMAGE_SET_DATA_SOURCE_URL,
         IMAGE_NOTIFY_PROCESSDIED,
+        IMAGE_SET_TRANSLATE,
+        IMAGE_SET_HWSCALE,
     };
 
     virtual status_t onTransact(uint32_t code, const Parcel& data,
