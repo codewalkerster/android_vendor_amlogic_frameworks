@@ -1945,7 +1945,7 @@ bool ImagePlayerService::MovieInit(const char path[]) {
 
     mMovieTime = 0;
     mSkMovie = SkMovie::DecodeFile(path);
-    if (mSkMovie) {
+    if (mSkMovie && mSkMovie->width() > 0 && mSkMovie->height() > 0) {
         int duration = mSkMovie->duration();
         ALOGI("MovieInit duration:%d, w:%d, h:%d", duration, mSkMovie->width(), mSkMovie->height());
         return true;
