@@ -1373,6 +1373,26 @@ public class TvControlManager {
     }
 
     /**
+     * @Function: FactorySetRGBScreen
+     * @Description: set test pattern with rgb.
+     * @Param r,g,b int 0~255
+     * @Return: -1 failed, otherwise success
+     */
+    public int FactorySetRGBScreen(int r, int g, int b) {
+        int val[] = new int[]{r, g, b};
+        return sendCmdIntArray(FACTORY_SET_RGB_PATTERN, val);
+    }
+
+    /**
+     * @Function: FactoryGetRGBScreen
+     * @Description: get rgb screen pattern
+     * @Return: rgb(0xrrggbb)
+     */
+    public int FactoryGetRGBScreen() {
+        return sendCmd(FACTORY_GET_RGB_PATTERN);
+    }
+
+    /**
      * @Function: FactoryResetPQMode
      * @Description: Reset all values of PQ mode for factory menu conctrol
      * @Param:
@@ -2078,6 +2098,11 @@ public class TvControlManager {
      */
     public int SetAudioSoundMode(Sound_Mode tmp_val) {
         int val[] = new int[]{tmp_val.toInt()};
+        return sendCmdIntArray(SET_AUDIO_SOUND_MODE, val);
+    }
+
+    public int SetAudioSoundMode(int tmp_val) {
+        int val[] = new int[]{tmp_val};
         return sendCmdIntArray(SET_AUDIO_SOUND_MODE, val);
     }
 
