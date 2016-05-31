@@ -618,127 +618,106 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
         if (!strncmp(mDefaultUI, "720", 3)) {
             mDisplayWidth= FULL_WIDTH_720;
             mDisplayHeight = FULL_HEIGHT_720;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_720P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "720");
         } else if (!strncmp(mDefaultUI, "480", 3)) {
             mDisplayWidth = 720;
             mDisplayHeight = 480;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_480P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "720");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "480");
         } else if (!strncmp(mDefaultUI, "576", 3)) {
             mDisplayWidth = 720;
             mDisplayHeight = 576;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_576P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "720");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "576");
         } else if (!strncmp(mDefaultUI, "1080", 4)) {
             mDisplayWidth = FULL_WIDTH_1080;
             mDisplayHeight = FULL_HEIGHT_1080;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_1080P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
 	} else if (!strncmp(mDefaultUI, "640x480", 7)) {
             mDisplayWidth = 640;
             mDisplayHeight = 480;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_640x480P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "640");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "480");
 	} else if (!strncmp(mDefaultUI, "800x600", 7)) {
             mDisplayWidth = 800;
             mDisplayHeight = 600;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_800x600P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "800");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "600");
 	} else if (!strncmp(mDefaultUI, "800x480", 7)) {
             mDisplayWidth = 800;
             mDisplayHeight = 480;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_800x480P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "800");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "480");
 	} else if (!strncmp(mDefaultUI, "1024x600", 8)) {
             mDisplayWidth = 1024;
             mDisplayHeight = 600;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_1024x600P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1024");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "600");
 	} else if (!strncmp(mDefaultUI, "1024x768", 8)) {
             mDisplayWidth = 1024;
             mDisplayHeight = 768;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_1024x768P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1024");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "768");
 	} else if (!strncmp(mDefaultUI, "1280x800", 8)) {
             mDisplayWidth = 1280;
             mDisplayHeight = 800;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_1280x800P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "800");
 	} else if (!strncmp(mDefaultUI, "1280x1024", 9)) {
             mDisplayWidth = 1280;
             mDisplayHeight = 1024;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_1280x1024P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1024");
 	} else if (!strncmp(mDefaultUI, "1360x768", 8)) {
             mDisplayWidth = 1360;
             mDisplayHeight = 768;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_1360x768P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1360");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "768");
 	} else if (!strncmp(mDefaultUI, "1366x768", 8)) {
             mDisplayWidth = 1366;
             mDisplayHeight = 768;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_1366x768P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1366");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "768");
 	} else if (!strncmp(mDefaultUI, "1440x900", 8)) {
             mDisplayWidth = 1440;
             mDisplayHeight = 900;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_1440x900P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1440");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "900");
 	} else if (!strncmp(mDefaultUI, "1600x900", 8)) {
             mDisplayWidth = 1600;
             mDisplayHeight = 900;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_1600x900P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1600");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "900");
 	} else if (!strncmp(mDefaultUI, "1680x1050", 9)) {
             mDisplayWidth = 1680;
             mDisplayHeight = 1050;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_1680x1050P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1680");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1050");
 	} else if (!strncmp(mDefaultUI, "1920x1200", 9)) {
             mDisplayWidth = 1920;
             mDisplayHeight = 1200;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_1920x1200P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1200");
 	} else if (!strncmp(mDefaultUI, "2560x1440", 9)) {
             mDisplayWidth = 2560;
             mDisplayHeight = 1440;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_2560x1440P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "2560");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1440");
 	} else if (!strncmp(mDefaultUI, "2560x1600", 9)) {
             mDisplayWidth = 2560;
             mDisplayHeight = 1600;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_2560x1600P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "2560");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1600");
 	} else if (!strncmp(mDefaultUI, "2560x1080", 9)) {
             mDisplayWidth = 2560;
             mDisplayHeight = 1080;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_2560x1080P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "2560");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
         } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
             mDisplayWidth = FULL_WIDTH_4K2K;
             mDisplayHeight = FULL_HEIGHT_4K2K;
-            pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_2160P);
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "3840");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "2160");
         }
@@ -1346,19 +1325,16 @@ void DisplayMode::setTVDisplay() {
     if (!strncmp(mDefaultUI, "720", 3)) {
         mDisplayWidth= FULL_WIDTH_720;
         mDisplayHeight = FULL_HEIGHT_720;
-        pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_720P);
         pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
         pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "720");
     } else if (!strncmp(mDefaultUI, "1080", 4)) {
         mDisplayWidth = FULL_WIDTH_1080;
         mDisplayHeight = FULL_HEIGHT_1080;
-        pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_1080P);
         pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
         pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
     } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
         mDisplayWidth = FULL_WIDTH_1080;
         mDisplayHeight = FULL_HEIGHT_1080;
-        pSysWrite->setProperty(PROP_LCD_DENSITY, DENSITY_1080P);
         pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
         pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
     }
