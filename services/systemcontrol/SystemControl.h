@@ -58,19 +58,21 @@
     (MODE_3D_OUT_FA_L_FIRST | \
     MODE_3D_OUT_FA_R_FIRST|MODE_3D_OUT_FA_LB_FIRST|MODE_3D_OUT_FA_RB_FIRST)
 
-#define MODE_3D_DISABLE     0x00000000
-#define MODE_3D_ENABLE      0x00000001
-#define MODE_3D_AUTO        (0x00000002 | MODE_3D_ENABLE)
-#define MODE_3D_LR          (0x00000004 | MODE_3D_ENABLE)
-#define MODE_3D_TB          (0x00000008 | MODE_3D_ENABLE)
-#define MODE_3D_LA          (0x00000010 | MODE_3D_ENABLE)
-#define MODE_3D_FA          (0x00000020 | MODE_3D_ENABLE)
-#define MODE_3D_LR_SWITCH   (0x00000100 | MODE_3D_ENABLE)
-#define MODE_3D_TO_2D_L     (0x00000200 | MODE_3D_ENABLE)
-#define MODE_3D_TO_2D_R     (0x00000400 | MODE_3D_ENABLE)
-#define MODE_3D_MVC         (0x00000800 | MODE_3D_ENABLE)
-#define MODE_3D_OUT_TB      (0x00010000 | MODE_3D_ENABLE)
-#define MODE_3D_OUT_LR      (0x00020000 | MODE_3D_ENABLE)
+#define MODE_3D_DISABLE             0x00000000
+#define MODE_3D_ENABLE              0x00000001
+#define MODE_3D_AUTO                (0x00000002 | MODE_3D_ENABLE)
+#define MODE_3D_LR                  (0x00000004 | MODE_3D_ENABLE)
+#define MODE_3D_TB                  (0x00000008 | MODE_3D_ENABLE)
+#define MODE_3D_LA                  (0x00000010 | MODE_3D_ENABLE)
+#define MODE_3D_FA                  (0x00000020 | MODE_3D_ENABLE)
+#define MODE_3D_LR_SWITCH           (0x00000100 | MODE_3D_ENABLE)
+#define MODE_3D_TO_2D_L             (0x00000200 | MODE_3D_ENABLE)
+#define MODE_3D_TO_2D_R             (0x00000400 | MODE_3D_ENABLE)
+#define MODE_3D_MVC                 (0x00000800 | MODE_3D_ENABLE)
+#define MODE_3D_OUT_TB              (0x00010000 | MODE_3D_ENABLE)
+#define MODE_3D_OUT_LR              (0x00020000 | MODE_3D_ENABLE)
+#define MODE_FORCE_3D_TO_2D_LR      (0x00100000 | MODE_3D_ENABLE)
+#define MODE_FORCE_3D_TO_2D_TB      (0x00200000 | MODE_3D_ENABLE)
 
 #define VPP_3D_MODE_NULL 0x0
 #define VPP_3D_MODE_LR 0x1
@@ -81,14 +83,16 @@
 #define RETRY_MAX 5
 
 enum {
-    FORMAT_3D_OFF                       = 0,
-    FORMAT_3D_AUTO                      = 1,
-    FORMAT_3D_SIDE_BY_SIDE              = 2,
-    FORMAT_3D_TOP_AND_BOTTOM            = 3,
-    FORMAT_3D_LINE_ALTERNATIVE          = 4,
-    FORMAT_3D_FRAME_ALTERNATIVE         = 5,
-    FORMAT_3D_TO_2D_LEFT_EYE            = 6,
-    FORMAT_3D_TO_2D_RIGHT_EYE           = 7
+    FORMAT_3D_OFF                           = 0,
+    FORMAT_3D_AUTO                          = 1,
+    FORMAT_3D_SIDE_BY_SIDE                  = 2,
+    FORMAT_3D_TOP_AND_BOTTOM                = 3,
+    FORMAT_3D_LINE_ALTERNATIVE              = 4,
+    FORMAT_3D_FRAME_ALTERNATIVE             = 5,
+    FORMAT_3D_TO_2D_LEFT_EYE                = 6,
+    FORMAT_3D_TO_2D_RIGHT_EYE               = 7,
+    FORMAT_3D_SIDE_BY_SIDE_FORCE            = 8,
+    FORMAT_3D_TOP_AND_BOTTOM_FORCE          = 9
 };
 
 extern "C" int vdc_loop(int argc, char **argv);
