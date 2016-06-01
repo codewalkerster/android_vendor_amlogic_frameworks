@@ -3,6 +3,8 @@ package com.droidlogic.app.tv;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Collections;
+import java.util.Comparator;
 
 import com.droidlogic.app.tv.ChannelInfo;
 import com.droidlogic.app.tv.DroidLogicTvUtils;
@@ -777,6 +779,18 @@ public class DroidLogicTvInputService extends TvInputService implements
         Log.d(TAG, "isRealtimeStore:" + isRealtimeStore + " isFinalStore:"+ isFinalStore);
 
         if (mChannelsNew != null) {
+
+            /*sort channels by serviceId*/
+            Collections.sort(mChannelsNew, new Comparator<ChannelInfo> () {
+                @Override
+                public int compare(ChannelInfo a, ChannelInfo b) {
+                    /*sort: frequency 1st, serviceId 2nd*/
+                    int A = a.getFrequency();
+                    int B = b.getFrequency();
+                    return (A > B) ? 1 : ((A == B) ? (a.getServiceId() - b.getServiceId()) : -1);
+                }
+            });
+
             ArrayList<ChannelInfo> mChannels = new ArrayList();
 
             for (ChannelInfo c : mChannelsNew) {
