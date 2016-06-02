@@ -259,6 +259,11 @@ bool SystemControl::setDisplay3DTo2DFormat(int format) {
         ALOGI("setDisplay3DTo2DFormat format:%d\n", format);
     }
 
+    //add for xiaomi customize 20160523
+    if (format == FORMAT_3D_AUTO || format == FORMAT_3D_SIDE_BY_SIDE || format == FORMAT_3D_TOP_AND_BOTTOM || format == FORMAT_3D_FRAME_ALTERNATIVE) {
+        format = FORMAT_3D_TO_2D_LEFT_EYE;
+    }
+
     setDiBypassAll(format);
     int video_fd = open(VIDEO_PATH, O_RDWR);
     if (video_fd < 0) {
@@ -403,10 +408,10 @@ void SystemControl::autoDetect3DForMbox() {
 
 void SystemControl::setDiBypassAll(int format) {
     if (FORMAT_3D_OFF == format) {
-        writeSysfs(String16(DI_BYPASS_ALL), String16("0"));
+        writeSysfs(String16(DI_BYPASS_POST), String16("0"));
     }
     else {
-        writeSysfs(String16(DI_BYPASS_ALL), String16("1"));
+        writeSysfs(String16(DI_BYPASS_POST), String16("1"));
     }
 }
 
