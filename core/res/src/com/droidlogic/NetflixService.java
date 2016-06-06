@@ -25,7 +25,7 @@ public class NetflixService extends Service {
      * Feature for {@link #getSystemAvailableFeatures} and {@link #hasSystemFeature}:
      * This device supports netflix
      */
-    public static final String FEATURE_SOFTWARE_NETFLIX     = "android.software.netflix";
+    public static final String FEATURE_SOFTWARE_NETFLIX     = "droidlogic.software.netflix";
 
     public static final String NETFLIX_PKG_NAME             = "com.netflix.ninja";
     public static final String NETFLIX_STATUS_CHANGE        = "com.netflix.action.STATUS_CHANGE";
