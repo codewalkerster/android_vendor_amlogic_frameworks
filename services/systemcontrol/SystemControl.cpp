@@ -260,11 +260,17 @@ bool SystemControl::setDisplay3DTo2DFormat(int format) {
     }
 
     //add for xiaomi customize 20160523
-    if (format == FORMAT_3D_AUTO || format == FORMAT_3D_SIDE_BY_SIDE || format == FORMAT_3D_TOP_AND_BOTTOM || format == FORMAT_3D_FRAME_ALTERNATIVE) {
+    if (format == FORMAT_3D_AUTO) {
         format = FORMAT_3D_TO_2D_LEFT_EYE;
     }
+    else if (format == FORMAT_3D_SIDE_BY_SIDE) {
+        format = FORMAT_3D_SIDE_BY_SIDE_FORCE;
+    }
+    else if (format == FORMAT_3D_TOP_AND_BOTTOM || format == FORMAT_3D_FRAME_ALTERNATIVE) {
+        format = FORMAT_3D_TOP_AND_BOTTOM_FORCE;
+    }
 
-    setDiBypassAll(format);
+    //setDiBypassAll(format);
     int video_fd = open(VIDEO_PATH, O_RDWR);
     if (video_fd < 0) {
         ALOGE("setDisplay3DTo2DFormat video_fd:%d\n", video_fd);
@@ -322,7 +328,7 @@ bool SystemControl::switch3DTo2D(int format) {
         ALOGI("switch3DTo2D format:%d\n", format);
     }
 
-    setDiBypassAll(format);
+    //setDiBypassAll(format);
     int video_fd = open(VIDEO_PATH, O_RDWR);
     if (video_fd < 0) {
         return false;
@@ -443,6 +449,12 @@ unsigned int SystemControl::get3DOperationByFormat(int format) {
         case FORMAT_3D_TO_2D_RIGHT_EYE:
             operation = MODE_3D_TO_2D_R;
             break;
+        case FORMAT_3D_SIDE_BY_SIDE_FORCE:
+            operation = MODE_FORCE_3D_TO_2D_LR;
+            break;
+        case FORMAT_3D_TOP_AND_BOTTOM_FORCE:
+            operation = MODE_FORCE_3D_TO_2D_TB;
+            break;
         default:
             operation = MODE_3D_DISABLE;
             break;
@@ -478,6 +490,12 @@ int SystemControl::get3DFormatByOperation(unsigned int operation) {
             break;
         case MODE_3D_TO_2D_R:
             format = FORMAT_3D_TO_2D_RIGHT_EYE;
+            break;
+        case MODE_FORCE_3D_TO_2D_LR:
+            format = FORMAT_3D_SIDE_BY_SIDE_FORCE;
+            break;
+        case MODE_FORCE_3D_TO_2D_TB:
+            format = FORMAT_3D_TOP_AND_BOTTOM_FORCE;
             break;
         default:
             format = FORMAT_3D_OFF;

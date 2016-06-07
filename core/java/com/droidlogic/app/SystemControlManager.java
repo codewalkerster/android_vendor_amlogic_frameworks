@@ -25,6 +25,8 @@ public class SystemControlManager {
     public static final int FORMAT_3D_FRAME_ALTERNATIVE     = 5;
     public static final int FORMAT_3D_TO_2D_LEFT_EYE        = 6;
     public static final int FORMAT_3D_TO_2D_RIGHT_EYE       = 7;
+    public static final int FORMAT_3D_SIDE_BY_SIDE_FORCE    = 8;
+    public static final int FORMAT_3D_TOP_AND_BOTTOM_FORCE  = 9;
 
     private static final String SYS_TOKEN           = "droidlogic.ISystemControlService";
     private static final int REMOTE_EXCEPTION       = -0xffff;
