@@ -23,7 +23,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.FileNotFoundException;
-import com.droidlogic.SubTitleService.ISubTitleService;
 
 public class SubtitleManager {
         private String TAG = "SubtitleManager";

@@ -1,9 +1,9 @@
-package com.droidlogic.SubTitleService;
+package com.droidlogic.app;
 
 public interface ISubTitleService extends android.os.IInterface {
     /** Local-side IPC implementation stub class. */
-    public static abstract class Stub extends android.os.Binder implements com.droidlogic.SubTitleService.ISubTitleService{
-            private static final java.lang.String DESCRIPTOR = "com.droidlogic.SubTitleService.ISubTitleService";
+    public static abstract class Stub extends android.os.Binder implements com.droidlogic.app.ISubTitleService{
+            private static final java.lang.String DESCRIPTOR = "com.droidlogic.app.ISubTitleService";
 
             /** Construct the stub at attach it to the interface. */
             public Stub() {
@@ -11,21 +11,21 @@ public interface ISubTitleService extends android.os.IInterface {
             }
 
             /**
-             * Cast an IBinder object into an com.droidlogic.SubTitleService.ISubTitleService interface,
+             * Cast an IBinder object into an com.droidlogic.app.ISubTitleService interface,
              * generating a proxy if needed.
              */
-            public static com.droidlogic.SubTitleService.ISubTitleService asInterface (android.os.IBinder obj) {
+            public static com.droidlogic.app.ISubTitleService asInterface (android.os.IBinder obj) {
                 if ( (obj == null) ) {
                     return null;
                 }
 
                 android.os.IInterface iin = obj.queryLocalInterface (DESCRIPTOR);
 
-                if ( ( (iin != null) && (iin instanceof com.droidlogic.SubTitleService.ISubTitleService) ) ) {
-                    return ( (com.droidlogic.SubTitleService.ISubTitleService) iin);
+                if ( ( (iin != null) && (iin instanceof com.droidlogic.app.ISubTitleService) ) ) {
+                    return ( (com.droidlogic.app.ISubTitleService) iin);
                 }
 
-                return new com.droidlogic.SubTitleService.ISubTitleService.Stub.Proxy (obj);
+                return new com.droidlogic.app.ISubTitleService.Stub.Proxy (obj);
             }
 
             @Override
@@ -289,7 +289,7 @@ public interface ISubTitleService extends android.os.IInterface {
                 return super.onTransact (code, data, reply, flags);
             }
 
-            private static class Proxy implements com.droidlogic.SubTitleService.ISubTitleService{
+            private static class Proxy implements com.droidlogic.app.ISubTitleService{
                     private android.os.IBinder mRemote;
 
                     Proxy (android.os.IBinder remote) {
