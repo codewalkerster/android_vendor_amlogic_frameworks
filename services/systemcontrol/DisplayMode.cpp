@@ -77,7 +77,8 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_1920X1200P60HZ,
     MODE_2560X1440P60HZ,
     MODE_2560X1600P60HZ,
-    MODE_2560X1080P60HZ
+    MODE_2560X1080P60HZ,
+    MODE_3440X1440P60HZ
 };
 
 /**
@@ -564,7 +565,10 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
 	    fbset(2560, 1600, 32);
     else if (!strncmp(data.ubootenv_hdmimode, "2560x1080", 9))
 	    fbset(2560, 1080, 32);
-    else if (!strncmp(data.ubootenv_hdmimode, "480p", 4))
+    else if (!strncmp(data.ubootenv_hdmimode, "3440x1440", 9)) {
+	    /* 3440x1440 - scaling with 21:9 ratio */
+	    fbset(2560, 1080, 32);
+    } else if (!strncmp(data.ubootenv_hdmimode, "480p", 4))
 	    fbset(720, 480, 32);
     else if (!strncmp(data.ubootenv_hdmimode, "576p", 4))
 	    fbset(720, 576, 32);
@@ -574,6 +578,8 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
     strcpy(outputmode, data.ubootenv_hdmimode);
     if (!strncmp(data.ubootenv_hdmimode, "2160", 3))
 	    strcpy(mDefaultUI, "1080p60hz");
+    else if (!strncmp(data.ubootenv_hdmimode, "3440", 4))
+	    strcpy(mDefaultUI, "2560x1080p60hz");
     else
 	    strcpy(mDefaultUI, outputmode);
 #else
@@ -715,6 +721,11 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
             mDisplayHeight = 1080;
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "2560");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
+	} else if (!strncmp(mDefaultUI, "3440x1440", 9)) {
+            mDisplayWidth = 3440;
+            mDisplayHeight = 1440;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "3440");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1440");
         } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
             mDisplayWidth = FULL_WIDTH_4K2K;
             mDisplayHeight = FULL_HEIGHT_4K2K;
@@ -1304,7 +1315,7 @@ void DisplayMode::setTVOutputMode(const char* outputmode) {
         pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_MODE, "2");//super scale
         pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
         //setOsdMouse(outputmode);
-    } else {
+    }else {
         pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
     }
 
@@ -1336,6 +1347,11 @@ void DisplayMode::setTVDisplay() {
         mDisplayWidth = FULL_WIDTH_1080;
         mDisplayHeight = FULL_HEIGHT_1080;
         pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
+        pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
+    } else if (!strncmp(mDefaultUI, "3440x1440", 9)) {
+        mDisplayWidth = 2560;
+        mDisplayHeight = 1080;
+        pSysWrite->setProperty(PROP_WINDOW_WIDTH, "2560");
         pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
     }
     if (strcmp(current_mode, outputmode)) {
@@ -1435,6 +1451,8 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
 	    displaySize = "2560 1600";
     else if (!strncmp(mDefaultUI, "2560x1080", 9))
 	    displaySize = "2560 1080";
+    else if (!strncmp(mDefaultUI, "3440x1440", 9))
+	    displaySize = "3440 1440";
 
     char cur_mode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, cur_mode);
@@ -1642,6 +1660,12 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
             position[1] = 0;
             position[2] = 2560;
             position[3] = 1080;
+	    break;
+	case DISPLAY_MODE_3440X1440P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 3440;
+            position[3] = 1440;
 	    break;
         default: //1080p
             position[0] = getBootenvInt(ENV_1080P_X, 0);
