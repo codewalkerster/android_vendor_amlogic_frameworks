@@ -19,6 +19,12 @@ import android.view.Surface;
 import com.droidlogic.app.tv.DroidLogicTvUtils;
 import com.droidlogic.app.tv.TvControlManager;
 
+import android.hardware.hdmi.HdmiControlManager;
+import android.hardware.hdmi.HdmiTvClient;
+import android.provider.Settings.Global;
+import android.hardware.hdmi.HdmiDeviceInfo;
+import android.hardware.hdmi.HdmiTvClient.SelectCallback;
+
 public abstract class TvInputBaseSession extends TvInputService.Session implements Handler.Callback {
     private static final boolean DEBUG = true;
     private static final String TAG = "TvInputBaseSession";
@@ -32,13 +38,18 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     private int mDeviceId;
     private Surface mSurface;
     private TvInputManager mTvInputManager;
+    private HdmiControlManager mHdmiManager;
+    private HdmiTvClient mHdmiTvClient = null;
     private boolean mHasRetuned = false;
     private Handler mSessionHandler;
     private TvControlManager mTvControlManager;
     private int timeout = RETUNE_TIMEOUT;
+    private int mCurPort = -1;
 
     protected int ACTION_FAILED = -1;
     protected int ACTION_SUCCESS = 1;
+    private final int TV_SOURCE_EXTERNAL = 0;
+    private final int TV_SOURCE_INTERNAL = 1;
 
     public TvInputBaseSession(Context context, String inputId, int deviceId) {
         super(context);
@@ -48,6 +59,8 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
 
         mTvControlManager = TvControlManager.getInstance();
         mSessionHandler = new Handler(context.getMainLooper(), this);
+        /* add DeviceEventListener for HDMI event */
+        mHdmiManager = (HdmiControlManager) mContext.getSystemService(Context.HDMI_CONTROL_SERVICE);
     }
 
     public void setNumber(int number) {
@@ -75,6 +88,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         Log.d(TAG, "startTvPlay inputId=" + mInputId + " number=" + mNumber + " surface=" + mSurface);
         if (getHardware() != null && mSurface != null && mSurface.isValid()) {
             getHardware().setSurface(mSurface, getConfigs()[0]);
+            selectHdmiDevice(TV_SOURCE_EXTERNAL);
             return ACTION_SUCCESS;
         }
         return ACTION_FAILED;
@@ -164,6 +178,8 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     @Override
     public boolean onSetSurface(Surface surface) {
         doSetSurface(surface);
+        if (surface == null)
+            selectHdmiDevice(TV_SOURCE_INTERNAL);
         return false;
     }
 
@@ -225,5 +241,77 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
                 break;
         }
         return false;
+    }
+
+    private boolean mInHdmi = false;
+    private int mSourcePort = 0;
+
+    private void setCurPort(int port) {
+        mCurPort = port;
+    }
+
+    public void selectHdmiDevice(int mode) {
+        boolean cecOption = (Global.getInt(mContext.getContentResolver(), Global.HDMI_CONTROL_ENABLED, 1) == 1);
+        Log.d(TAG, "CEC selectHdmiDevice, deviceId:" + mDeviceId + ", cecOption:" + cecOption);
+        if (mHdmiTvClient == null) {
+            if (mHdmiManager == null) {
+                Log.d(TAG, "CEC NULL mHdmiManager");
+                return;
+            }
+            mHdmiTvClient = mHdmiManager.getTvClient();
+        }
+        if (!cecOption || mHdmiTvClient == null) {
+            Log.d(TAG, "cec not enabled or null mHdmiTvClient");
+            return ;
+        }
+        Log.d(TAG, "CEC selectHdmiDevice, mode:" + mode + ", mInHdmi:" + mInHdmi);
+        if (mode == TV_SOURCE_EXTERNAL) {
+            int fit = DroidLogicTvUtils.DEVICE_ID_HDMI1 - 1;
+            int id = mDeviceId - fit;
+            Log.d(TAG, "CEC selectHdmiDevice, id:"+ id + ", mInHdmi:" + mInHdmi+ ", curPort:" + mCurPort);
+            for (HdmiDeviceInfo info : mHdmiTvClient.getDeviceList()) {
+                mSourcePort = info.getPhysicalAddress() >> 12;
+                Log.d(TAG, "CEC selectHdmiDevice, id:"+ id + ", port:" + mSourcePort);
+                if (id == mSourcePort && mCurPort != id) {
+                    mHdmiTvClient.deviceSelect(info.getLogicalAddress(), new SelectCallback() {
+                        @Override
+                        public void onComplete(int result) {
+                            Log.d(TAG, "CEC selectHdmiDevice success");
+                            mInHdmi = true;
+                            setCurPort(mSourcePort);
+                        }
+                    });
+                    return;
+                } else if (id == mSourcePort && mCurPort == id) {
+                    Log.d(TAG, "CEC already selected port:" + id);
+                    return ;
+                }
+            }
+            if (mInHdmi) {
+                /* select internal source if no hdmi */
+                Log.d(TAG, "CEC selectHdmiDevice, check to internal source");
+                mHdmiTvClient.deviceSelect(0, new SelectCallback() {
+                    @Override
+                    public void onComplete(int result) {
+                        Log.d(TAG, "CEC selectInternal success");
+                        mInHdmi = false;
+                        setCurPort(-1);
+                    }
+                });
+            }
+        } else if (mode == TV_SOURCE_INTERNAL) {
+            if (mInHdmi) {
+                /* select internal source if no hdmi */
+                Log.d(TAG, "CEC selectHdmiDevice, check to internal source");
+                mHdmiTvClient.deviceSelect(0, new SelectCallback() {
+                    @Override
+                    public void onComplete(int result) {
+                        Log.d(TAG, "CEC selectInternal success");
+                        mInHdmi = false;
+                        setCurPort(-1);
+                    }
+                });
+            }
+        }
     }
 }

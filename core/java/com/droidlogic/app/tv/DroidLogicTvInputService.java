@@ -107,12 +107,17 @@ public class DroidLogicTvInputService extends TvInputService implements
      * @param info {@link TvInputInfo} will be added or removed.
      * @param isRemoved {@code true} if you want to remove info. {@code false} otherwise.
      */
-    protected void updateInfoListIfNeededLocked(TvInputHardwareInfo hInfo, TvInputInfo info,
+    protected void updateInfoListIfNeededLocked(TvInputHardwareInfo hInfo,
+            TvInputInfo info, boolean isRemoved) {
+        updateInfoListIfNeededLocked(hInfo.getDeviceId(), info, isRemoved);
+    }
+
+    protected void updateInfoListIfNeededLocked(int Id, TvInputInfo info,
             boolean isRemoved) {
         if (isRemoved) {
-            mInfoList.remove(hInfo.getDeviceId());
+            mInfoList.remove(Id);
         } else {
-            mInfoList.put(hInfo.getDeviceId(), info);
+            mInfoList.put(Id, info);
         }
 
         if (DEBUG)
@@ -125,6 +130,10 @@ public class DroidLogicTvInputService extends TvInputService implements
 
     protected TvInputInfo getTvInputInfo(TvInputHardwareInfo hardwareInfo) {
         return mInfoList.get(hardwareInfo.getDeviceId());
+    }
+
+    protected TvInputInfo getTvInputInfo(int devId) {
+        return mInfoList.get(devId);
     }
 
     protected int getHardwareDeviceId(String input_id) {
