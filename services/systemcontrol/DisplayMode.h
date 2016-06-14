@@ -204,15 +204,6 @@ using namespace android;
 #define FULL_WIDTH_4K2KSMPTE            4096
 #define FULL_HEIGHT_4K2KSMPTE           2160
 
-//should sync with SurfaceFlinger.h
-#define SURFACE_3D_OFF                  0
-#define SURFACE_3D_SIDE_BY_SIDE         8
-#define SURFACE_3D_TOP_BOTTOM           16
-
-#define VIDEO_3D_OFF                    "3doff"
-#define VIDEO_3D_SIDE_BY_SIDE           "3dlr"
-#define VIDEO_3D_TOP_BOTTOM             "3dtb"
-
 enum {
     EVENT_OUTPUT_MODE_CHANGE            = 0,
     EVENT_DIGITAL_MODE_CHANGE           = 1,
@@ -332,7 +323,6 @@ public:
     void setLogLevel(int level);
     int dump(char *result);
     void setMboxOutputMode(const char* outputmode);
-    int set3DMode(const char* mode3d);
     void setDigitalMode(const char* mode);
     void setOsdMouse(const char* curMode);
     void setOsdMouse(int x, int y, int w, int h);
@@ -349,11 +339,15 @@ public:
     void hdcpTxSuspend();
 
     void hdcpSwitch();
+    int hdcpTxThreadStart();
+    int hdcpTxThreadExit(pthread_t thread_id);
 
 #ifndef RECOVERY_MODE
     void notifyEvent(int event);
     void setListener(const sp<ISystemControlNotify>& listener);
 #endif
+
+    pthread_t pthreadIdHdcp;
 private:
 
     bool getBootEnv(const char* key, char* value);
@@ -385,12 +379,7 @@ private:
     void hdcpTxAuthenticate(bool useHdcp22, bool useHdcp14);
     static void* hdcpTxThreadLoop(void* data);
     static void* hdcpRxThreadLoop(void* data);
-    int hdcpTxThreadStart();
-    int hdcpTxThreadExit(pthread_t thread_id);
     void hdcpRxAuthenticate(bool plugIn);
-
-    int modeToIndex3D(const char *mode3d);
-    void mode3DImpl(const char* mode3d);
 
     const char* pConfigPath;
     int mDisplayType;
@@ -416,12 +405,9 @@ private:
     char mDefaultUI[MAX_STR_LEN];//this used for mbox
     int mLogLevel;
     SysWrite *pSysWrite = NULL;
-    char mMode3d[32];//this used for video 3d set
-    char mLastDisMode[32];//last display mode
 
     pthread_mutex_t pthreadMutex;
     sem_t pthreadSem;
-    pthread_t pthreadIdHdcp;
     bool mExitHdcpThread;
     sem_t pthreadBootDetectSem;
     bool mBootAnimDetectFinished;

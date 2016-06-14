@@ -47,7 +47,6 @@
 #include <binder/IBinder.h>
 #include <binder/IServiceManager.h>
 #include <binder/Parcel.h>
-#include <gui/SurfaceComposerClient.h> //for video 3d mode set
 
 using namespace android;
 #endif
@@ -250,8 +249,6 @@ DisplayMode::DisplayMode(const char *path)
     }
 
     SYS_LOGI("display mode config path: %s", pConfigPath);
-
-    strcpy(mMode3d, VIDEO_3D_OFF);
     pSysWrite = new SysWrite();
 }
 
@@ -473,79 +470,6 @@ void DisplayMode::setTabletDisplay() {
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
 }
 
-int DisplayMode::set3DMode(const char* mode3d) {
-    char is3DSupport[8] = {0}; //"1" means tv support 3d
-
-    pSysWrite->readSysfs(AV_HDMI_3D_SUPPORT, is3DSupport);
-    if (strcmp(is3DSupport, "1")) {
-        SYS_LOGE("[set3DMode]3d is not support.\n");
-        return -1;
-    }
-
-    if (!strcmp(mMode3d, mode3d)) {
-        SYS_LOGE("[set3DMode]mMode3d equals to mode3d:%s\n", mode3d);
-        return 0;
-    }
-
-    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
-    usleep(100 * 1000);
-    hdcpTxStop();
-
-    char curDisplayMode[MODE_LEN] = {0};
-    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
-    if (strcmp(mode3d, VIDEO_3D_OFF)) {
-        if (strstr(curDisplayMode, "2160p") != NULL || strstr(curDisplayMode, "smpte") != NULL) {
-            setMboxOutputMode(MODE_1080P50HZ);
-            strcpy(mLastDisMode, curDisplayMode);
-        }
-    }
-    else {
-        if (strlen(mLastDisMode) != 0) {
-            setMboxOutputMode(mLastDisMode);
-            memset(mLastDisMode, 0, sizeof(mLastDisMode));
-        }
-    }
-
-    strcpy(mMode3d, mode3d);
-    mode3DImpl(mode3d);
-
-    if (0 != pthreadIdHdcp) {
-        hdcpTxThreadExit(pthreadIdHdcp);
-        pthreadIdHdcp = 0;
-    }
-    hdcpTxThreadStart();
-    return 0;
-}
-
-void DisplayMode::mode3DImpl(const char* mode3d) {
-    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, "-1"); // "-1" means stop hdcp 14/22
-    usleep(100 * 1000);
-    pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); // Turn off TMDS PHY
-
-    int format = SURFACE_3D_OFF;
-    if (!strcmp(mode3d, VIDEO_3D_OFF)) {
-        format = SURFACE_3D_OFF;
-    }
-    else if (!strcmp(mode3d, VIDEO_3D_SIDE_BY_SIDE)) {
-        format = SURFACE_3D_SIDE_BY_SIDE;
-    }
-    else if (!strcmp(mode3d, VIDEO_3D_TOP_BOTTOM)) {
-        format = SURFACE_3D_TOP_BOTTOM;
-    }
-
-#ifndef RECOVERY_MODE
-    SurfaceComposerClient::openGlobalTransaction();
-    SurfaceComposerClient::setDisplay2Stereoscopic(0, format);
-    SurfaceComposerClient::closeGlobalTransaction();
-#endif
-
-    pSysWrite->writeSysfs(AV_HDMI_CONFIG, mode3d);
-
-    usleep(100 * 1000);
-    pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); // Turn on TMDS PHY
-    usleep(100 * 1000);
-    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
-}
 void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
     hdmi_data_t data;
     char outputmode[MODE_LEN] = {0};
