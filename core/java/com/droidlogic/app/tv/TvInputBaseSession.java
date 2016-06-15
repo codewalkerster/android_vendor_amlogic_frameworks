@@ -24,6 +24,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     private static final String TAG = "TvInputBaseSession";
     private static final int MSG_DO_TUNE = 0;
     private static final int MSG_DO_PRI_CMD = 9;
+    private static final int RETUNE_TIMEOUT = 20; // 1 second
 
     private Context mContext;
     private int mNumber;
@@ -34,6 +35,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     private boolean mHasRetuned = false;
     private Handler mSessionHandler;
     private TvControlManager mTvControlManager;
+    private int timeout = RETUNE_TIMEOUT;
 
     protected int ACTION_FAILED = -1;
     protected int ACTION_SUCCESS = 1;
@@ -70,7 +72,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     public abstract void setCurrentSession();
 
     private int startTvPlay() {
-        Log.d(TAG, "startTvPlay inputId=" + mInputId + " number=" + mNumber);
+        Log.d(TAG, "startTvPlay inputId=" + mInputId + " number=" + mNumber + " surface=" + mSurface);
         if (getHardware() != null && mSurface != null && mSurface.isValid()) {
             getHardware().setSurface(mSurface, getConfigs()[0]);
             return ACTION_SUCCESS;
@@ -99,14 +101,18 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     public int doTune(Uri uri) {
         Log.d(TAG, "doTune, uri = " + uri);
 
-        if (getConfigs() == null) {
-            Log.d(TAG, "StreamConfig unavailable! waiting 200ms and then tune again...");
-            Message msg = mSessionHandler.obtainMessage(MSG_DO_TUNE, uri);
-            mSessionHandler.sendMessageDelayed(msg, 200);
-            return ACTION_FAILED;
+        if (getConfigs() == null || startTvPlay() == ACTION_FAILED) {
+            Log.d(TAG, "doTune failed, timeout=" + timeout + ", retune 50ms later ...");
+
+            if (timeout > 0) {
+                Message msg = mSessionHandler.obtainMessage(MSG_DO_TUNE, uri);
+                mSessionHandler.sendMessageDelayed(msg, 50);
+                timeout--;
+                return ACTION_FAILED;
+            }
         }
 
-        return startTvPlay();
+        return ACTION_SUCCESS;
     }
 
     public void doAppPrivateCmd(String action, Bundle bundle) {
@@ -133,7 +139,8 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     public void doUnblockContent(TvContentRating rating) {}
 
     public void doSetSurface(Surface surface) {
-        Log.d(TAG, "doSetSurface inputId=" + mInputId + " number=" + mNumber);
+        Log.d(TAG, "doSetSurface inputId=" + mInputId + " number=" + mNumber + " surface=" + surface);
+        timeout = RETUNE_TIMEOUT;
 
         if (surface != null && !surface.isValid()) {
             Log.d(TAG, "onSetSurface get invalid surface");
@@ -156,7 +163,6 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
 
     @Override
     public boolean onSetSurface(Surface surface) {
-        Log.d(TAG, "onSetSurface inputId=" + mInputId + " number=" + mNumber + " surface=" + surface);
         doSetSurface(surface);
         return false;
     }
