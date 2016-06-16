@@ -234,8 +234,11 @@ public class DroidLogicTvInputService extends TvInputService implements
                 || status == TVInSignalInfo.SignalStatus.TVIN_SIG_STATUS_NOTSUP) {
             mSession.notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN);
         } else if (status == TVInSignalInfo.SignalStatus.TVIN_SIG_STATUS_STABLE) {
-            mSession.notifyVideoAvailable();
             int device_id = mSession.getDeviceId();
+            if ((device_id != DroidLogicTvUtils.DEVICE_ID_DTV)
+                || (signal_info.reserved == 1))
+                mSession.notifyVideoAvailable();
+
             String[] strings;
             Bundle bundle = new Bundle();
             switch (device_id) {
