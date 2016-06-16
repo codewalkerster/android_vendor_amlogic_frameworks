@@ -1074,19 +1074,23 @@ void* DisplayMode::bootanimDetect(void* data) {
         usleep(delayMs * 1000);
     }
 
-    pThiz->pSysWrite->writeSysfs(DISPLAY_LOGO_INDEX, "0");
-    pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
-    //need close fb1, because uboot logo show in fb1
-    pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
-    pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
-    pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-
+    pThiz->pSysWrite->writeSysfs(DISPLAY_LOGO_INDEX, "-1");
     pThiz->pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
     SYS_LOGI("boot animation detect boot video:%s\n", bootvideo);
-    //not boot video running, boot animation running
-    if (strcmp(bootvideo, "1")) {
-        //open fb0, let bootanimation show in it
-        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
+    if ((!strcmp(fs_mode, "recovery")) || (!strcmp(bootvideo, "1"))) {
+        //recovery or bootvideo mode
+        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
+        //need close fb1, because uboot logo show in fb1
+        pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
+        pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
+        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+        //not boot video running
+        if (strcmp(bootvideo, "1")) {
+            //open fb0, let bootanimation show in it
+            pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
+        }
+    } else {
+        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_SWTICH, "0x10001");
     }
 
     pThiz->setOsdMouse(outputmode);
@@ -1150,7 +1154,7 @@ void DisplayMode::setTVOutputMode(const char* outputmode, bool initState) {
     if (initState)
         startBootanimDetectThread();
     else {
-        pSysWrite->writeSysfs(DISPLAY_LOGO_INDEX, "0");
+        pSysWrite->writeSysfs(DISPLAY_LOGO_INDEX, "-1");
         pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
         //need close fb1, because uboot logo show in fb1
         pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");

@@ -76,6 +76,7 @@ using namespace android;
 
 #define DISPLAY_FB0_FREESCALE_AXIS      "/sys/class/graphics/fb0/free_scale_axis"
 #define DISPLAY_FB0_WINDOW_AXIS         "/sys/class/graphics/fb0/window_axis"
+#define DISPLAY_FB0_FREESCALE_SWTICH    "/sys/class/graphics/fb0/free_scale_switch"
 
 #define DISPLAY_HDMI_HDCP_STOP          "stop14" //stop HDCP authenticate
 #define DISPLAY_HDMI_HDCP_14            "1"
