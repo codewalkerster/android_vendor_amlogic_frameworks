@@ -67,6 +67,8 @@
 #define PICDEC_IOC_FRAME_RENDER     _IOW(PICDEC_IOC_MAGIC, 0x00, FrameInfo_t)
 #define PICDEC_IOC_FRAME_POST       _IOW(PICDEC_IOC_MAGIC, 0x01, unsigned int)
 
+#define VIDEO_ZOOM_SYSFS            "/sys/class/video/zoom"
+
 #define VIDEO_LAYER_FORMAT_RGB      0
 #define VIDEO_LAYER_FORMAT_RGBA     1
 #define VIDEO_LAYER_FORMAT_ARGB     2
@@ -435,6 +437,59 @@ static SkBitmap* cropAndFillBitmap(SkBitmap *srcBitmap, int dstWidth, int dstHei
     return devBitmap;
 }
 
+static SkBitmap* translateAndCropAndFillBitmap(SkBitmap *srcBitmap, int dstWidth, int dstHeight, int tx, int ty) {
+    if (srcBitmap == NULL)
+        return NULL;
+
+    SkBitmap *devBitmap = new SkBitmap();
+    SkCanvas *canvas = NULL;
+    SkColorType colorType = colorTypeForScaledOutput(srcBitmap->colorType());
+    devBitmap->setInfo(SkImageInfo::Make(dstWidth, dstHeight,
+            colorType, srcBitmap->alphaType()));
+    devBitmap->allocPixels();
+    devBitmap->eraseARGB(0, 0, 0, 0);
+
+    canvas = new SkCanvas(*devBitmap);
+
+    int minWidth = Min(srcBitmap->width(), dstWidth);
+    int minHeight = Min(srcBitmap->height(), dstHeight);
+    int srcx = (srcBitmap->width() - minWidth) / 2;
+    int srcy = (srcBitmap->height() - minHeight) / 2;
+    int dstx = (dstWidth - minWidth) / 2;
+    int dsty = (dstHeight - minHeight) / 2;
+
+    ALOGD("translateAndCropAndFillBitmap, minWidth: %d, minHeight: %d, srcx:%d, srcy:%d, dstx:%d, dsty:%d",
+        minWidth, minHeight, srcx, srcy, dstx, dsty);
+
+    int aftertranslatesrcx = srcx + tx;
+    int aftertranslatesrcy = srcy + ty;
+    if (tx > 0 && srcx < tx) {
+        aftertranslatesrcx = srcx * 2;
+    } else if (tx < 0 && srcx < (0 - tx)) {
+        aftertranslatesrcx = 0;
+    }
+
+    if (ty > 0 && srcy < ty) {
+        aftertranslatesrcy = srcy * 2;
+    } else if (ty < 0 && srcy < (0 - ty)) {
+        aftertranslatesrcy = 0;
+    }
+
+    ALOGD("translateAndCropAndFillBitmap, after translate minWidth: %d, minHeight: %d, aftertranslatesrcx:%d, aftertranslatesrcy:%d",
+        minWidth, minHeight, aftertranslatesrcx, aftertranslatesrcy);
+
+    SkPaint paint;
+    //paint.setFilterBitmap(true);
+    SkRect dst = SkRect::MakeXYWH(dstx, dsty, minWidth, minHeight);
+
+    SkIRect src = SkIRect::MakeXYWH(aftertranslatesrcx, aftertranslatesrcy, minWidth, minHeight);
+    canvas->drawBitmapRect(*srcBitmap, &src, dst, &paint);
+
+    delete canvas;
+
+    return devBitmap;
+}
+
 static __inline int RGBToY(uint8_t r, uint8_t g, uint8_t b) {
     return (66 * r + 129 * g +  25 * b + 0x1080) >> 8;
 }
@@ -592,7 +647,9 @@ ImagePlayerService::ImagePlayerService()
     mSampleSize(1), mFileDescription(-1),
     surfaceWidth(SURFACE_4K_WIDTH), surfaceHeight(SURFACE_4K_HEIGHT),
     mScalingDirect(SCALE_NORMAL), mScalingStep(1.0f), mScalingBitmap(NULL),
-    mRotateBitmap(NULL), mMovieImage(false), mMovieTime(0),
+    mRotateBitmap(NULL), mMovieImage(false), mMovieTime(0), mNeedResetHWScale(false),
+    mTranslatingDirect(TRANSLATE_NORMAL), mTranslateImage(false), mTx(0.0f), mTy(0.0f),
+    mTranslateToXLEdge(false), mTranslateToXREdge(false), mTranslateToYTEdge(false), mTranslateToYBEdge(false),
     mMovieDegree(0), mMovieScale(1.0f), mMovieThread(NULL),
     mParameter(NULL), mDisplayFd(-1), mHttpService(NULL) {
 }
@@ -601,10 +658,8 @@ ImagePlayerService::~ImagePlayerService() {
 }
 
 void ImagePlayerService::initVideoAxis() {
-    sp<ISystemControlService> systemControl = interface_cast<ISystemControlService>(
-        defaultServiceManager()->getService(String16("system_control")));
-    if (systemControl != NULL) {
-        systemControl->writeSysfs(String16("/sys/class/video/axis"), String16("0 0  0 0"));
+    if (mSystemControl != NULL) {
+        mSystemControl->writeSysfs(String16("/sys/class/video/axis"), String16("0 0  0 0"));
     }
     else {
         ALOGE("Couldn't get connection to system control\n");
@@ -662,6 +717,8 @@ int ImagePlayerService::init() {
 
     mMovieThread = new MovieThread(this);
     mDeathNotifier = new DeathNotifier(this);
+    mSystemControl = interface_cast<ISystemControlService>(
+            defaultServiceManager()->getService(String16("system_control")));
 
     ALOGI("init success display fd:%d", mDisplayFd);
 
@@ -783,10 +840,13 @@ int ImagePlayerService::setRotate(float degrees, int autoCrop) {
     //reset rotate and scale, because rotate is the always first state
     resetRotateScale();
 
+    resetTranslate();
+
     if (mMovieImage) {
         //reset scale
         mMovieScale = 1.0f;
         mMovieDegree = degrees;
+        mNeedResetHWScale = true;
         return RET_OK;
     }
 
@@ -820,6 +880,8 @@ int ImagePlayerService::setRotate(float degrees, int autoCrop) {
 
 int ImagePlayerService::setScale(float sx, float sy, int autoCrop) {
     Mutex::Autolock autoLock(mLock);
+
+    resetTranslate();
 
     bool isAutoCrop = autoCrop != 0;
     ALOGD("setScale sx:%f, sy:%f, isAutoCrop:%d", sx, sy, isAutoCrop);
@@ -923,6 +985,172 @@ int ImagePlayerService::setScale(float sx, float sy, int autoCrop) {
     return RET_OK;
 }
 
+int ImagePlayerService::setHWScale(float sc) {
+    Mutex::Autolock autoLock(mLock);
+
+    resetTranslate();
+
+    ALOGD("setHWScale sc:%f", sc);
+
+    int zoomValue = 100;
+    if (mSystemControl != NULL) {
+        String16 videoZoomValue;
+        mSystemControl->readSysfs(String16(VIDEO_ZOOM_SYSFS), videoZoomValue);
+        zoomValue = atoi(String8(videoZoomValue).string());
+        ALOGD("setHWScale zoomValue:%d", zoomValue);
+    }
+    else {
+        ALOGE("Couldn't get connection to system control\n");
+        return RET_ERR_INVALID_OPERATION;
+    }
+
+    int scZoomValue = sc * zoomValue;
+    ALOGD("setHWScale sc_zoom_value:%d", scZoomValue);
+
+    if (scZoomValue > 300) {
+        ALOGE("setHWScale max scale up is 300");
+        mSystemControl->writeSysfs(String16(VIDEO_ZOOM_SYSFS), String16("300"));
+        return RET_OK_OPERATION_SCALE_MAX;
+    }
+
+    if (scZoomValue < 26) {
+        ALOGE("setHWScale min scale down is 26");
+        mSystemControl->writeSysfs(String16(VIDEO_ZOOM_SYSFS), String16("26"));
+        return RET_OK_OPERATION_SCALE_MIN;
+    }
+
+    char scValue[32];
+    memset(scValue, '\0', 32);
+    sprintf(scValue, "%d", scZoomValue);
+    mSystemControl->writeSysfs(String16(VIDEO_ZOOM_SYSFS), String16(scValue));
+
+    return RET_OK;
+}
+
+int ImagePlayerService::setTranslate(float tx, float ty) {
+    Mutex::Autolock autoLock(mLock);
+
+    ALOGD("setTranslate tx:%f, ty:%f", tx, ty);
+
+    if (mScalingBitmap == NULL)
+        return RET_ERR_INVALID_OPERATION;
+
+    if (((mScalingBitmap->width() < surfaceWidth) && (ty == 0))
+            || ((tx == 0) && (mScalingBitmap->height() < surfaceHeight))
+            || ((mScalingBitmap->width() < surfaceWidth)
+                && (mScalingBitmap->height() < surfaceHeight))) {
+        return RET_ERR_INVALID_OPERATION;
+    }
+
+    if (mMovieImage) {
+        return RET_OK;
+    }
+
+    mTranslateImage = true;
+
+    int preTranslatingDirect = mTranslatingDirect;
+
+    if (tx > 0 && ty == 0) {
+        mTranslatingDirect = TRANSLATE_RIGHT;
+    } else if (tx < 0 && ty == 0) {
+        mTranslatingDirect = TRANSLATE_LEFT;
+    } else if (ty > 0 && tx == 0) {
+        mTranslatingDirect = TRANSLATE_DOWN;
+    } else if (ty < 0 && tx == 0) {
+        mTranslatingDirect = TRANSLATE_UP;
+    } else if (tx < 0 && ty < 0) {
+        mTranslatingDirect = TRANSLATE_LEFTUP;
+    } else if (tx < 0 && ty > 0) {
+        mTranslatingDirect = TRANSLATE_LEFTDOWN;
+    } else if (tx > 0 && ty < 0) {
+        mTranslatingDirect = TRANSLATE_RIGHTUP;
+    } else if (tx > 0 && ty > 0) {
+        mTranslatingDirect = TRANSLATE_RIGHTDOWN;
+    }
+
+    if (preTranslatingDirect == TRANSLATE_NORMAL) {
+        mTx = tx;
+        mTy = ty;
+        mTranslateToXLEdge = false;
+        mTranslateToXREdge = false;
+        mTranslateToYTEdge = false;
+        mTranslateToYBEdge = false;
+    } else if (mTranslatingDirect == TRANSLATE_LEFT) {
+        if (mTranslateToXLEdge) {
+            return RET_OK;
+        }
+        mTx = mTx + tx;
+    } else if (mTranslatingDirect == TRANSLATE_RIGHT) {
+        if (mTranslateToXREdge) {
+            return RET_OK;
+        }
+        mTx = mTx + tx;
+    } else if (mTranslatingDirect == TRANSLATE_UP) {
+        if (mTranslateToYTEdge) {
+            return RET_OK;
+        }
+        mTy = mTy + ty;
+    } else if (mTranslatingDirect == TRANSLATE_DOWN) {
+        if (mTranslateToYBEdge) {
+            return RET_OK;
+        }
+        mTy = mTy + ty;
+    } else if (mTranslatingDirect == TRANSLATE_LEFTUP) {
+        if (mTranslateToXLEdge && mTranslateToYTEdge) {
+            return RET_OK;
+        } else if (mTranslateToXLEdge && !mTranslateToYTEdge) {
+            mTy = mTy + ty;
+        } else if (!mTranslateToXLEdge && mTranslateToYTEdge) {
+            mTx = mTx + tx;
+        } else {
+            mTx = mTx + tx;
+            mTy = mTy + ty;
+        }
+    } else if (mTranslatingDirect == TRANSLATE_LEFTDOWN) {
+        if (mTranslateToXLEdge && mTranslateToYBEdge) {
+            return RET_OK;
+        } else if (mTranslateToXLEdge && !mTranslateToYBEdge) {
+            mTy = mTy + ty;
+        } else if (!mTranslateToXLEdge && mTranslateToYBEdge) {
+            mTx = mTx + tx;
+        } else {
+            mTx = mTx + tx;
+            mTy = mTy + ty;
+        }
+    } else if (mTranslatingDirect == TRANSLATE_RIGHTUP) {
+        if (mTranslateToXREdge && mTranslateToYTEdge) {
+            return RET_OK;
+        } else if (mTranslateToXREdge && !mTranslateToYTEdge) {
+            mTy = mTy + ty;
+        } else if (!mTranslateToXREdge && mTranslateToYTEdge) {
+            mTx = mTx + tx;
+        } else {
+            mTx = mTx + tx;
+            mTy = mTy + ty;
+        }
+    } else if (mTranslatingDirect == TRANSLATE_RIGHTDOWN) {
+        if (mTranslateToXREdge && mTranslateToYBEdge) {
+            return RET_OK;
+        } else if (mTranslateToXREdge && !mTranslateToYBEdge) {
+            mTy = mTy + ty;
+        } else if (!mTranslateToXREdge && mTranslateToYBEdge) {
+            mTx = mTx + tx;
+        } else {
+            mTx = mTx + tx;
+            mTy = mTy + ty;
+        }
+    }
+
+    float realScale = 1.0f;
+    realScale = mScalingStep*1.0f;
+    if (mScalingBitmap != NULL)
+        delete mScalingBitmap;
+    mScalingBitmap = scaleStep((mRotateBitmap != NULL)?mRotateBitmap:mBitmap, realScale, realScale);
+    mScalingStep = realScale;
+    renderAndShow(mScalingBitmap);
+    return RET_OK;
+}
+
 int ImagePlayerService::setRotateScale(float degrees, float sx, float sy, int autoCrop) {
     Mutex::Autolock autoLock(mLock);
 
@@ -937,6 +1165,8 @@ int ImagePlayerService::setRotateScale(float degrees, float sx, float sy, int au
     //ratate and scale, always use the origin bitmap
     //reset rotate and scale, because rotate is the always first state
     resetRotateScale();
+
+    resetTranslate();
 
     if (mMovieImage) {
         mMovieDegree = degrees;
@@ -1070,6 +1300,8 @@ int ImagePlayerService::release() {
     }
 
     resetRotateScale();
+    resetTranslate();
+    resetHWScale();
     return RET_OK;
 }
 
@@ -1459,6 +1691,7 @@ int ImagePlayerService::prepare() {
     }
 
     resetRotateScale();
+    resetTranslate();
     render(VIDEO_LAYER_FORMAT_RGBA, mBitmap);
     ALOGI("prepare render is OK");
     return RET_OK;
@@ -1580,6 +1813,7 @@ int ImagePlayerService::showBuf() {
         return RET_ERR_BAD_VALUE;
     }
     resetRotateScale();
+    resetTranslate();
 
     render(VIDEO_LAYER_FORMAT_RGBA, mBufBitmap);
     post();
@@ -1658,6 +1892,8 @@ int ImagePlayerService::post() {
         return RET_ERR_BAD_VALUE;
     }
 
+    resetHWScale();
+
     ALOGI("post picture to display fd:%d", mDisplayFd);
     ioctl(mDisplayFd, PICDEC_IOC_FRAME_POST, NULL);
     return RET_OK;
@@ -1695,6 +1931,77 @@ void ImagePlayerService::resetRotateScale() {
     if (NULL != mRotateBitmap) {
         delete mRotateBitmap;
         mRotateBitmap = NULL;
+    }
+}
+
+void ImagePlayerService::resetHWScale() {
+    if (mSystemControl != NULL) {
+        mSystemControl->writeSysfs(String16(VIDEO_ZOOM_SYSFS), String16("100"));
+    }
+    else {
+        ALOGE("Couldn't get connection to system control\n");
+    }
+}
+
+void ImagePlayerService::resetTranslate() {
+    mTranslatingDirect = TRANSLATE_NORMAL;
+    mTx = 0;
+    mTy = 0;
+    mTranslateToXLEdge = false;
+    mTranslateToXREdge = false;
+    mTranslateToYTEdge = false;
+    mTranslateToYBEdge = false;
+}
+
+void ImagePlayerService::isTranslateToEdge(SkBitmap *srcBitmap, int dstWidth, int dstHeight, int tx, int ty) {
+    if (srcBitmap == NULL)
+        return;
+    int minWidth = Min(srcBitmap->width(), dstWidth);
+    int minHeight = Min(srcBitmap->height(), dstHeight);
+    int srcx = (srcBitmap->width() - minWidth) / 2;
+    int srcy = (srcBitmap->height() - minHeight) / 2;
+    int dstx = (dstWidth - minWidth) / 2;
+    int dsty = (dstHeight - minHeight) / 2;
+
+    ALOGD("isTranslateToEdge, minWidth: %d, minHeight: %d, srcx:%d, srcy:%d, dstx:%d, dsty:%d",
+        minWidth, minHeight, srcx, srcy, dstx, dsty);
+
+    int aftertranslatesrcx = srcx + tx;
+    int aftertranslatesrcy = srcy + ty;
+    if (tx > 0) {
+        if (srcx < tx) {
+            aftertranslatesrcx = srcx * 2;
+            mTranslateToXREdge = true;
+        } else {
+            mTranslateToXREdge = false;
+        }
+        mTranslateToXLEdge = false;
+    } else if (tx < 0) {
+        if (srcx < (0 - tx)) {
+            aftertranslatesrcx = 0;
+            mTranslateToXLEdge = true;
+        } else {
+            mTranslateToXLEdge = false;
+        }
+        mTranslateToXREdge = false;
+    }
+
+    if (ty > 0) {
+        if (srcy < ty) {
+            aftertranslatesrcy = srcy * 2;
+            mTranslateToYBEdge = true;
+        } else {
+            mTranslateToYBEdge = false;
+        }
+        mTranslateToYTEdge = false;
+    } else if (ty < 0) {
+        if (srcy < (0 - ty)) {
+            aftertranslatesrcy = 0;
+            mTranslateToYTEdge = true;
+        } else {
+            mTranslateToYTEdge = false;
+        }
+        mTranslateToYBEdge = false;
     }
 }
 
@@ -1763,10 +2070,22 @@ SkBitmap* ImagePlayerService::scaleAndCrop(SkBitmap *srcBitmap, float sx, float 
         return NULL;
 
     SkBitmap *retBitmap = scale(srcBitmap, sx, sy);
+    if (retBitmap == NULL)
+        return NULL;
 
     ALOGD("scaleAndCrop, after scale, Width: %d, Height: %d, surface w:%d, h:%d",
         retBitmap->width(), retBitmap->height(), surfaceWidth, surfaceHeight);
     if ((retBitmap->width() > surfaceWidth) || (retBitmap->height() > surfaceHeight)) {
+        if (mTranslateImage) {
+            SkBitmap *dstCrop = translateAndCropAndFillBitmap(retBitmap, surfaceWidth, surfaceHeight, mTx, mTy);
+            isTranslateToEdge(retBitmap, surfaceWidth, surfaceHeight, mTx, mTy);
+            if (NULL != dstCrop) {
+                delete retBitmap;
+                retBitmap = dstCrop;
+            }
+            mTranslateImage = false;
+            return retBitmap;
+        }
         SkBitmap *dstCrop = cropAndFillBitmap(retBitmap, surfaceWidth, surfaceHeight);
         if (NULL != dstCrop) {
             delete retBitmap;
@@ -2042,6 +2361,10 @@ void ImagePlayerService::MovieRenderPost(SkBitmap *bitmap) {
 
     ioctl(mDisplayFd, PICDEC_IOC_FRAME_RENDER, &info);
     bitmap->unlockPixels();
+    if (mNeedResetHWScale) {
+        resetHWScale();
+        mNeedResetHWScale = false;
+    }
     //post to screen
     ioctl(mDisplayFd, PICDEC_IOC_FRAME_POST, NULL);
 }

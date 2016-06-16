@@ -30,6 +30,7 @@
 #include <SkMovie.h>
 //#include <binder/MemoryDealer.h>
 #include <IImagePlayerService.h>
+#include "ISystemControlService.h"
 #include <binder/Binder.h>
 
 #define MAX_FILE_PATH_LEN           1024
@@ -59,6 +60,8 @@ struct InitParameter {
 };
 
 enum RetType {
+    RET_OK_OPERATION_SCALE_MIN      = 2,
+    RET_OK_OPERATION_SCALE_MAX      = 1,
     RET_OK                          = 0,
     RET_ERR_OPEN_SYSFS              = -1,
     RET_ERR_OPEN_FILE               = -2,
@@ -73,6 +76,18 @@ enum ScaleDirect {
     SCALE_NORMAL                    = 0,
     SCALE_UP                        = 1,
     SCALE_DOWN                      = 2,
+};
+
+enum TranslateDirect {
+    TRANSLATE_NORMAL                    = 0,
+    TRANSLATE_LEFT                      = 1,
+    TRANSLATE_RIGHT                     = 2,
+    TRANSLATE_UP                        = 3,
+    TRANSLATE_DOWN                      = 4,
+    TRANSLATE_LEFTUP                    = 5,
+    TRANSLATE_LEFTDOWN                  = 6,
+    TRANSLATE_RIGHTUP                   = 7,
+    TRANSLATE_RIGHTDOWN                 = 8,
 };
 
 /*
@@ -101,6 +116,8 @@ class ImagePlayerService :  public BnImagePlayerService {
     virtual int setSampleSurfaceSize(int sampleSize, int surfaceW, int surfaceH);
     virtual int setRotate(float degrees, int autoCrop) ;
     virtual int setScale(float sx, float sy, int autoCrop);
+    virtual int setHWScale(float sc);
+    virtual int setTranslate(float tx, float ty);
     virtual int setRotateScale(float degrees, float sx, float sy, int autoCrop);
     virtual int setCropRect(int cropX, int cropY, int cropWidth, int cropHeight);
     virtual int prepareBuf(const char *uri);
@@ -138,6 +155,9 @@ class ImagePlayerService :  public BnImagePlayerService {
     bool renderAndShow(SkBitmap *bitmap);
     bool showBitmapRect(SkBitmap *bitmap, int cropX, int cropY, int cropWidth, int cropHeight);
     void resetRotateScale();
+    void resetTranslate();
+    void resetHWScale();
+    void isTranslateToEdge(SkBitmap *srcBitmap, int dstWidth, int dstHeight, int tx, int ty);
     SkBitmap* scaleStep(SkBitmap *srcBitmap, float sx, float sy);
     SkBitmap* scaleAndCrop(SkBitmap *srcBitmap, float sx, float sy);
     SkBitmap* fillSurface(SkBitmap *bitmap);
@@ -167,6 +187,16 @@ class ImagePlayerService :  public BnImagePlayerService {
     bool mMovieImage;
     int mMovieTime;
     int mMovieDegree;
+    bool mNeedResetHWScale;
+    //0:normal 1: translate left 2:translate right 3: translate up 4:translate down
+    int mTranslatingDirect;
+    bool mTranslateImage;
+    bool mTranslateToXLEdge;  //Translate To X Left Edge
+    bool mTranslateToXREdge;  //Translate To X Right Edge
+    bool mTranslateToYTEdge;  //Translate To Y Top Edge
+    bool mTranslateToYBEdge;  //Translate To Y Bottom Edge
+    int mTx;
+    int mTy;
     float mMovieScale;
     sp<MovieThread> mMovieThread;
 
@@ -177,6 +207,7 @@ class ImagePlayerService :  public BnImagePlayerService {
 
     sp<IMediaHTTPService> mHttpService;
     sp<DeathNotifier> mDeathNotifier;
+    sp<ISystemControlService> mSystemControl;
 };
 
 class MovieThread : public Thread {

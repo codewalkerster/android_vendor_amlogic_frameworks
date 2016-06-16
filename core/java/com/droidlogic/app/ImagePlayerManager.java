@@ -31,6 +31,8 @@ public class ImagePlayerManager {
     int TRANSACTION_SHOW_BUF                        = IBinder.FIRST_CALL_TRANSACTION + 12;
     int TRANSACTION_SET_DATA_SOURCE_URL             = IBinder.FIRST_CALL_TRANSACTION + 13;
     int TRANSACTION_NOTIFY_PROCESSDIED              = IBinder.FIRST_CALL_TRANSACTION + 14;
+    int TRANSACTION_SET_TRANSLATE                   = IBinder.FIRST_CALL_TRANSACTION + 15;
+    int TRANSACTION_SET_HWSCALE                     = IBinder.FIRST_CALL_TRANSACTION + 16;
 
     private Context mContext;
     private IBinder mIBinder = null;
@@ -237,6 +239,48 @@ public class ImagePlayerManager {
             }
         } catch (RemoteException ex) {
             Log.e(TAG, "setScale: ImagePlayerService is dead!:" + ex);
+        }
+
+        return REMOTE_EXCEPTION;
+    }
+
+    public int setHWScale(float sc) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(IMAGE_TOKEN);
+                data.writeFloat(sc);
+                mIBinder.transact(TRANSACTION_SET_HWSCALE, data, reply, 0);
+                int result = reply.readInt();
+                reply.recycle();
+                data.recycle();
+                return result;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "setHWScale: ImagePlayerService is dead!:" + ex);
+        }
+
+        return REMOTE_EXCEPTION;
+    }
+
+    public int setTranslate (float tx, float ty) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(IMAGE_TOKEN);
+                data.writeFloat(tx);
+                data.writeFloat(ty);
+                mIBinder.transact(TRANSACTION_SET_TRANSLATE,
+                                        data, reply, 0);
+                int result = reply.readInt();
+                reply.recycle();
+                data.recycle();
+                return result;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "setTranslate: ImagePlayerService is dead!:" + ex);
         }
 
         return REMOTE_EXCEPTION;

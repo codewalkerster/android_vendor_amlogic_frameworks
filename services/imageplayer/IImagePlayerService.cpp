@@ -120,6 +120,16 @@ public:
         return NO_ERROR;
     }
 
+    virtual int setHWScale(float sc)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(IImagePlayerService::getInterfaceDescriptor());
+
+        data.writeFloat(sc);
+        remote()->transact(BnImagePlayerService::IMAGE_SET_HWSCALE, data, &reply);
+        return NO_ERROR;
+    }
+
     virtual int setRotateScale(float degrees, float sx, float sy, int autoCrop)
     {
         Parcel data, reply;
@@ -132,6 +142,17 @@ public:
         remote()->transact(BnImagePlayerService::IMAGE_SET_ROTATE_SCALE, data, &reply);
         return NO_ERROR;
     }
+
+    virtual int setTranslate(float tx, float ty)
+        {
+            Parcel data, reply;
+            data.writeInterfaceToken(IImagePlayerService::getInterfaceDescriptor());
+
+            data.writeFloat(tx);
+            data.writeFloat(ty);
+            remote()->transact(BnImagePlayerService::IMAGE_SET_TRANSLATE, data, &reply);
+            return NO_ERROR;
+        }
 
     virtual int setCropRect(int cropX, int cropY, int cropWidth, int cropHeight)
     {
@@ -236,9 +257,21 @@ status_t BnImagePlayerService::onTransact(
             reply->writeInt32(result);
             return NO_ERROR;
         }
+        case IMAGE_SET_HWSCALE: {
+            CHECK_INTERFACE(IImagePlayerService, data, reply);
+            int result = setHWScale(data.readFloat());
+            reply->writeInt32(result);
+            return NO_ERROR;
+        }
         case IMAGE_SET_ROTATE_SCALE: {
             CHECK_INTERFACE(IImagePlayerService, data, reply);
             int result = setRotateScale(data.readFloat(), data.readFloat(), data.readFloat(), data.readInt32());
+            reply->writeInt32(result);
+            return NO_ERROR;
+        }
+        case IMAGE_SET_TRANSLATE: {
+            CHECK_INTERFACE(IImagePlayerService, data, reply);
+            int result = setTranslate(data.readFloat(), data.readFloat());
             reply->writeInt32(result);
             return NO_ERROR;
         }
