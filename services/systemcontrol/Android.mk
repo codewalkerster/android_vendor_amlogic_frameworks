@@ -44,6 +44,7 @@ LOCAL_SRC_FILES:= \
   SysWrite.cpp \
   SystemControl.cpp \
   DisplayMode.cpp \
+  Dimension.cpp \
   SysTokenizer.cpp \
   HDCPKey/hdcp22_key.cpp \
   HDCPKey/HdcpRx22Key.cpp \
