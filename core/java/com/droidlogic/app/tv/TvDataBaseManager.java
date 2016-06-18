@@ -109,7 +109,7 @@ public class TvDataBaseManager {
                         && originalNetworkId == channel.getOriginalNetworkId()
                         && transportStreamId == channel.getTransportStreamId()
                         && frequency == channel.getFrequency()
-                        && name.equals(channel.getDisplayName()))
+                        && TextUtils.equals(name, channel.getDisplayName()))
                         found = true;
                 } else if (rowId == channel.getId()) {
                     found = true;
@@ -127,6 +127,7 @@ public class TvDataBaseManager {
                 ret = cursor.getCount();
         } catch (Exception e) {
             //TODO
+            e.printStackTrace();
         } finally {
             if (cursor != null) {
                 cursor.close();
