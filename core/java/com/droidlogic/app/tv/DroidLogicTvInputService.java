@@ -749,8 +749,11 @@ public class DroidLogicTvInputService extends TvInputService implements
             mChannelsOld = mTvDataBaseManager.getChannelList(InputId, Channels.SERVICE_TYPE_AUDIO_VIDEO);
             mChannelsOld.addAll(mTvDataBaseManager.getChannelList(InputId, Channels.SERVICE_TYPE_AUDIO));
 
+            //do not count service_other.
             c_displayNum = mChannelsOld.size() + 1;
             Log.d(TAG, "Store> channel next:" + c_displayNum);
+
+            mChannelsOld.addAll(mTvDataBaseManager.getChannelList(InputId, Channels.SERVICE_TYPE_OTHER));
         }
     }
 
