@@ -29,6 +29,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     private static final boolean DEBUG = true;
     private static final String TAG = "TvInputBaseSession";
     private static final int MSG_DO_TUNE = 0;
+    private static final int MSG_DO_SET_SURFACE = 3;
     private static final int MSG_DO_PRI_CMD = 9;
     private static final int RETUNE_TIMEOUT = 20; // 1 second
 
@@ -168,6 +169,8 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
             Log.d(TAG, "surface is null, so stop TV play");
             stopTvPlay();
         }
+        if (surface == null)
+            selectHdmiDevice(TV_SOURCE_INTERNAL);
     }
 
     @Override
@@ -177,9 +180,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
 
     @Override
     public boolean onSetSurface(Surface surface) {
-        doSetSurface(surface);
-        if (surface == null)
-            selectHdmiDevice(TV_SOURCE_INTERNAL);
+        mSessionHandler.obtainMessage(MSG_DO_SET_SURFACE, surface).sendToTarget();
         return false;
     }
 
@@ -235,6 +236,9 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
             case MSG_DO_TUNE:
                 mSessionHandler.removeMessages(MSG_DO_TUNE);
                 doTune((Uri)msg.obj);
+                break;
+            case MSG_DO_SET_SURFACE:
+                doSetSurface((Surface)msg.obj);
                 break;
             case MSG_DO_PRI_CMD:
                 doAppPrivateCmd((String)msg.obj, msg.getData());
