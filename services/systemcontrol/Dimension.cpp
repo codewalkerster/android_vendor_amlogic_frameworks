@@ -98,10 +98,8 @@ int32_t Dimension::set3DMode(const char* mode3d) {
     strcpy(mMode3d, mode3d);
     mode3DImpl(mode3d);
 
-    if (0 != pDisplayMode->pthreadIdHdcp) {
-        pDisplayMode->hdcpTxThreadExit(pDisplayMode->pthreadIdHdcp);
-        pDisplayMode->pthreadIdHdcp = 0;
-    }
+    pDisplayMode->hdcpTxThreadExit();
+
     pDisplayMode->hdcpTxThreadStart();
     return 0;
 }
