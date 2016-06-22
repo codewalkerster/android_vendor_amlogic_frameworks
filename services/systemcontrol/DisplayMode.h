@@ -78,7 +78,8 @@ using namespace android;
 #define DISPLAY_FB0_WINDOW_AXIS         "/sys/class/graphics/fb0/window_axis"
 #define DISPLAY_FB0_FREESCALE_SWTICH    "/sys/class/graphics/fb0/free_scale_switch"
 
-#define DISPLAY_HDMI_HDCP_STOP          "stop14" //stop HDCP authenticate
+#define DISPLAY_HDMI_HDCP14_STOP          "stop14" //stop HDCP1.4 authenticate
+#define DISPLAY_HDMI_HDCP22_STOP          "stop22" //stop HDCP2.2 authenticate
 #define DISPLAY_HDMI_HDCP_14            "1"
 #define DISPLAY_HDMI_HDCP_22            "2"
 #define DISPLAY_HDMI_HDCP_VER           "/sys/class/amhdmitx/amhdmitx0/hdcp_ver"//RX support HDCP version
@@ -101,15 +102,25 @@ using namespace android;
 #define AV_HDMI_CONFIG                  "/sys/class/amhdmitx/amhdmitx0/config"
 #define AV_HDMI_3D_SUPPORT              "/sys/class/amhdmitx/amhdmitx0/support_3d"
 
-#define HDMI_UEVENT                     "DEVPATH=/devices/virtual/switch/hdmi"
-#define HDMI_POWER_UEVENT               "DEVPATH=/devices/virtual/switch/hdmi_power"
+#define HDMI_TX_PLUG_UEVENT    "DEVPATH=/devices/virtual/switch/hdmi"
+#define HDMI_TX_POWER_UEVENT    "DEVPATH=/devices/virtual/switch/hdmi_power"
+#define HDMI_TX_PLUG_STATE    "/sys/devices/virtual/switch/hdmi/state"
+
+#define HDMI_TX_PLUG_OUT    "0"
+#define HDMI_TX_PLUG_IN    "1"
+#define HDMI_TX_SUSPEND    "0"
+#define HDMI_TX_RESUME    "1"
 
 //HDCP RX
-#define HDMI_RX_PLUG_IN                 "2"
-#define HDMI_RX_PLUG_OUT                "0"
-//if state = 2 means ok, if state = 0 plug out
-#define HDMI_RX_PLUG_UEVENT             "DEVPATH=/devices/virtual/switch/hdmirx/state"
-//1:plugin 0:plug out
+#define HDMI_RX_PLUG_UEVENT    "DEVPATH=/devices/virtual/switch/hdmirx_hpd"    //1:plugin 0:plug out
+#define HDMI_RX_AUTH_UEVENT    "DEVPATH=/devices/virtual/switch/hdmirx_hdcp_auth"    //0:FAIL 1:HDCP14 2:HDCP22
+
+#define HDMI_RX_PLUG_OUT    "0"
+#define HDMI_RX_PLUG_IN    "1"
+#define HDMI_RX_AUTH_FAIL    "0"
+#define HDMI_RX_AUTH_HDCP14    "1"
+#define HDMI_RX_AUTH_HDCP22   "2"
+
 #define HDMI_RX_HPD_STATE               "/sys/module/tvin_hdmirx/parameters/hpd_to_esm"
 #define HDMI_RX_KEY_COMBINE             "/sys/module/tvin_hdmirx/parameters/hdcp22_firmware_ok_flag"
 
@@ -336,19 +347,26 @@ public:
     void setNativeWindowRect(int x, int y, int w, int h);
     void setVideoPlayingAxis();
 
+    void hdcpRxStartSvc();
+    void hdcpRxStopSvc();
+    void hdcpRxForceFlushVideoLayer();
+    void hdcpTxStart22();
+    void hdcpTxStart14();
+    void hdcpTxStartSvc();
     void hdcpTxStop();
+    void hdcpTxStopSvc();
     void hdcpTxSuspend();
-
     void hdcpSwitch();
-    int hdcpTxThreadStart();
-    int hdcpTxThreadExit(pthread_t thread_id);
 
+    int hdcpTxThreadStart();
+    int hdcpTxThreadExit();
 #ifndef RECOVERY_MODE
     void notifyEvent(int event);
     void setListener(const sp<ISystemControlNotify>& listener);
 #endif
 
-    pthread_t pthreadIdHdcp;
+    int mRxSupportHdcpAuth;
+
 private:
 
     bool getBootEnv(const char* key, char* value);
@@ -371,12 +389,13 @@ private:
     int modeToIndex(const char *mode);
     void startHdmiPlugDetectThread();
     void startBootanimDetectThread();
-    static void* HdmiPlugDetectThread(void* data);
+    static void* HdmiUenventThreadLoop(void* data);
     void setTVDisplay(bool initState);
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
-
     int getBootenvInt(const char* key, int defaultVal);
+
     bool hdcpTxInit(bool *pHdcp22, bool *pHdcp14);
+    void hdcpRxInit();
     void hdcpTxAuthenticate(bool useHdcp22, bool useHdcp14);
     static void* hdcpTxThreadLoop(void* data);
     static void* hdcpRxThreadLoop(void* data);
@@ -405,11 +424,14 @@ private:
     char mSocType[MAX_STR_LEN];
     char mDefaultUI[MAX_STR_LEN];//this used for mbox
     int mLogLevel;
+    int mLastVideoState;
     SysWrite *pSysWrite = NULL;
 
-    pthread_mutex_t pthreadMutex;
-    sem_t pthreadSem;
-    bool mExitHdcpThread;
+    pthread_mutex_t pthreadTxMutex/*, pthreadRxMutex*/;
+    sem_t pthreadTxSem/*, pthreadRxSem*/;
+    pthread_t pthreadIdHdcpTx/*, pthreadIdHdcpRx*/;
+    bool mExitHdcpTxThread/*, mExitHdcpRxThread*/;
+
     sem_t pthreadBootDetectSem;
     bool mBootAnimDetectFinished;
 
