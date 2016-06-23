@@ -175,9 +175,6 @@ public class HdmiCecExtend {
                 mPlayback.oneTouchPlay(mOneTouchPlay);
                 mVendorId = nativeGetVendorId();
                 Slog.d(TAG, "vendorId:" + mVendorId);
-                if (mLanguangeChanged == false) {
-                    mHandler.postDelayed(mDelayedRun, 100);
-                }
             }
             mControl.addHotplugEventListener(new HdmiControlManager.HotplugEventListener() {
                     @Override
