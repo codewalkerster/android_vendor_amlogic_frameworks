@@ -31,6 +31,10 @@ LOCAL_SRC_FILES:= \
   DisplayMode.cpp \
   SysTokenizer.cpp
 
+ifeq ($(TARGET_PRODUCT), odroidc)
+LOCAL_CFLAGS += -DODROIDC
+endif
+
 LOCAL_SHARED_LIBRARIES := \
   libsystemcontrolservice \
   libcutils \
@@ -66,6 +70,10 @@ LOCAL_SRC_FILES:= \
 	DisplayMode.cpp \
 	SysTokenizer.cpp
 
+ifeq ($(TARGET_PRODUCT), odroidc)
+LOCAL_CFLAGS += -DODROIDC
+endif
+
 LOCAL_STATIC_LIBRARIES := \
 	libcutils \
 	liblog \
@@ -96,6 +104,10 @@ LOCAL_SRC_FILES:= \
 	SysWrite.cpp \
 	DisplayMode.cpp \
 	SysTokenizer.cpp
+
+ifeq ($(TARGET_PRODUCT), odroidc)
+LOCAL_CFLAGS += -DODROIDC
+endif
 
 LOCAL_STATIC_LIBRARIES := \
 	libcutils \
