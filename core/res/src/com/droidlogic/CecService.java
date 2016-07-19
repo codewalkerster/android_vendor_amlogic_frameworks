@@ -16,22 +16,15 @@
 
 package com.droidlogic;
 
-import android.app.ActivityManager;
-import android.app.ActivityManager.RunningServiceInfo;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.res.Configuration;
 import android.os.UEventObserver;
 import android.os.IBinder;
 import android.util.Log;
-
 import java.io.File;
-import java.util.Locale;
-import java.lang.reflect.Method;
 
-import com.droidlogic.app.SystemControlManager;
+import com.droidlogic.app.HdmiCecManager;
 
 /**
  * Stub implementation of (@link android.media.tv.TvInputService}.
@@ -39,22 +32,13 @@ import com.droidlogic.app.SystemControlManager;
 public class CecService extends Service {
     private static final boolean DEBUG = true;
     private static final String TAG = "HdmiCecOutput";
-    private static final String SWITCH_STATE = "SWITCH_STATE";
-    private static final String PREFERENCE_BOX_SETTING = "preference_box_settings";
-    private static final String CEC_SYS = "/sys/class/amhdmitx/amhdmitx0/cec_config";
-    private static final String CEC_DEVICE_FILE = "/sys/devices/virtual/switch/lang_config/state";
-    private static final String SWITCH_AUTO_CHANGE_LANGUAGE = "switch_auto_change_languace";
-    private static final String SWITCH_ON = "true";
-    private static final String SWITCH_OFF = "false";
 
-    private static final int MASK_FUN_CEC = 0x01;                   // bit 0
-    private static final int MASK_ONE_KEY_PLAY = 0x02;              // bit 1
-    private static final int MASK_ONE_KEY_STANDBY = 0x04;           // bit 2
-    private static final int MASK_AUTO_CHANGE_LANGUAGE = 0x20;      // bit 5
-    private static final int MASK_ALL = 0x2f;                       // all mask
+    //For uevent
+    private static final String SWITCH_STATE = "SWITCH_STATE";
+    private static final String CEC_CONFIG_PATH = "/sys/devices/virtual/switch/lang_config/state";
 
     private boolean startObServing = false;
-    private String cec_config_path = "DEVPATH=/devices/virtual/switch/lang_config";
+    private HdmiCecManager mHdmiCecManager;
 
     public CecService() {
     }
@@ -78,18 +62,16 @@ public class CecService extends Service {
     }
 
     public void startListenCecDev(String action) {
-        boolean exist = new File(CEC_DEVICE_FILE).exists();
+        boolean exist = new File(HdmiCecManager.CEC_DEVICE_FILE).exists();
         Log.d(TAG, "startListenCecDev(), action:" + action);
         if (action.equals("CEC_LANGUAGE_AUTO_SWITCH")) {
             if (exist) {
                 // update current language
-                SystemControlManager systemControlManager = new SystemControlManager(this);
-                String curLanguage = systemControlManager.readSysFs(CEC_DEVICE_FILE);
-                updateCECLanguage(curLanguage);
+                updateCECLanguage(mHdmiCecManager.getCurLanguage());
             }
         }
         if (exist && !startObServing) {
-            mCedObserver.startObserving(cec_config_path);
+            mCedObserver.startObserving(CEC_CONFIG_PATH);
             startObServing = true;
         }
     }
@@ -107,75 +89,24 @@ public class CecService extends Service {
     private void updateCECLanguage(String lan) {
         if (DEBUG) Log.d(TAG, "get the language code is : " + lan);
 
-        if (!isChangeLanguageOpen()) {
+        if (lan == null)
+            return;
+
+        if (!mHdmiCecManager.isChangeLanguageOpen()) {
             if (DEBUG) Log.d(TAG, "cec language not open");
             return;
         }
-        int i = -1;
+
         String[] cec_language_list = getResources().getStringArray(R.array.cec_language);
-        for (int j = 0; j < cec_language_list.length; j++) {
-            if (lan != null && lan.trim().equals(cec_language_list[j])) {
-                i = j;
-                break;
-            }
-        }
-        if (i >= 0) {
-            String able = getResources().getConfiguration().locale.getCountry();
-            String[] language_list = getResources().getStringArray(R.array.language);
-            String[] country_list = getResources().getStringArray(R.array.country);
-            if (able.equals(country_list[i])) {
-                if (DEBUG) Log.d(TAG, "no need to change language");
-                return;
-            } else {
-                Locale l = new Locale(language_list[i], country_list[i]);
-                if (DEBUG) Log.d(TAG, "change the language right now !!!");
-                updateLanguage(l);
-            }
-        } else {
-            Log.d(TAG, "the language code is not support right now !!!");
-        }
+        String[] language_list = getResources().getStringArray(R.array.language);
+        String[] country_list = getResources().getStringArray(R.array.country);
+        mHdmiCecManager.setLanguageList(cec_language_list, language_list, country_list);
+        mHdmiCecManager.doUpdateCECLanguage(lan);
     }
 
     public void initCecFun() {
-        SystemControlManager systemControlManager = new SystemControlManager(this);
-        String fun = systemControlManager.readSysFs(CEC_SYS);
-        if (systemControlManager != null) {
-            Log.d(TAG, "set cec fun = " + fun);
-            systemControlManager.writeSysFs(CEC_SYS, fun);
-        }
-    }
-
-    public void updateLanguage(Locale locale) {
-        try {
-            Object objIActMag;
-            Class clzIActMag = Class.forName("android.app.IActivityManager");
-            Class clzActMagNative = Class.forName("android.app.ActivityManagerNative");
-            Method mtdActMagNative$getDefault = clzActMagNative.getDeclaredMethod("getDefault");
-
-            objIActMag = mtdActMagNative$getDefault.invoke(clzActMagNative);
-            Method mtdIActMag$getConfiguration = clzIActMag.getDeclaredMethod("getConfiguration");
-            Configuration config = (Configuration) mtdIActMag$getConfiguration.invoke(objIActMag);
-            config.locale = locale;
-
-            Class[] clzParams = { Configuration.class };
-            Method mtdIActMag$updateConfiguration = clzIActMag.getDeclaredMethod("updateConfiguration", clzParams);
-            mtdIActMag$updateConfiguration.invoke(objIActMag, config);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public boolean isChangeLanguageOpen() {
-        boolean exist = new File(CEC_SYS).exists();
-        if (exist) {
-            SystemControlManager systemControlManager = new SystemControlManager(this);
-            String cec_cfg = systemControlManager.readSysFs(CEC_SYS);
-            int value = Integer.valueOf(cec_cfg.substring(2, cec_cfg.length()), 16);
-            Log.d(TAG, "cec_cfg:" + cec_cfg + ", value:" + value);
-            return (value & MASK_AUTO_CHANGE_LANGUAGE) != 0;
-        } else {
-            return false;
-        }
+        mHdmiCecManager = new HdmiCecManager(this);
+        mHdmiCecManager.initCec();
     }
 
     @Override
