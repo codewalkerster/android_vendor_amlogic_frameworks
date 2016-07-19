@@ -30,7 +30,7 @@
 #define NOTICE(x...)    SYS_LOGV(x)
 #define INFO(x...)      SYS_LOGI(x)
 #ifdef ODROIDC
-#define ENV_BLK_START   0x80000
+#define ENV_BLK_START   0xB4000
 #endif
 
 char BootenvPartitionName[32]={0};
