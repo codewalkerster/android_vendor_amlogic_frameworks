@@ -104,6 +104,8 @@ DisplayMode::DisplayMode(const char *path)
     mFb1Height(-1),
     mFb1FbBits(-1),
     mFb1TripleEnable(true),
+    mDisplayWidth(FULL_WIDTH_1080),
+    mDisplayHeight(FULL_HEIGHT_1080),
     mLogLevel(LOG_LEVEL_DEFAULT) {
 
     if (NULL == path) {
@@ -113,7 +115,9 @@ DisplayMode::DisplayMode(const char *path)
         pConfigPath = path;
     }
 
+#if !defined(ODROIDC)
     SYS_LOGI("display mode config path: %s", pConfigPath);
+#endif
 
     pSysWrite = new SysWrite();
     initDisplay = true;
@@ -123,6 +127,9 @@ DisplayMode::~DisplayMode() {
 }
 
 void DisplayMode::init() {
+#if defined(ODROIDC)
+    setMboxDisplay(NULL);
+#else
     parseConfigFile();
 
     SYS_LOGI("display mode init type: %d [0:none 1:tablet 2:mbox 3:tv]", mDisplayType);
@@ -137,6 +144,7 @@ void DisplayMode::init() {
         setTVDisplay();
     }
     initDisplay = false;
+#endif
 }
 
 void DisplayMode:: getDisplayInfo(int &type, char* socType, char* defaultUI) {
@@ -251,6 +259,30 @@ int DisplayMode::parseConfigFile(){
     return status;
 }
 
+void DisplayMode::fbset(int width, int height, int bits)
+{
+    struct fb_var_screeninfo var_set;
+
+    mFb0Width = width;
+    mFb0Height = height;
+    mFb0FbBits = bits;
+
+    var_set.xres = mFb0Width;
+    var_set.yres = mFb0Height;
+    var_set.xres_virtual = mFb0Width;
+    var_set.yres_virtual = mFb0Height * (mFb0TripleEnable ? 3 : 2);
+    var_set.bits_per_pixel = mFb0FbBits;
+    setFbParameter(DISPLAY_FB0, var_set);
+
+    pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
+    var_set.xres = mFb1Width;
+    var_set.yres = mFb1Height;
+    var_set.xres_virtual = mFb1Width;
+    var_set.yres_virtual = mFb1Height * (mFb1TripleEnable ? 3 : 2);
+    var_set.bits_per_pixel = mFb1FbBits;
+    setFbParameter(DISPLAY_FB1, var_set);
+}
+
 void DisplayMode::setTabletDisplay() {
     struct fb_var_screeninfo var_set;
 
@@ -309,6 +341,49 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
 
     strcpy(current_mode, data->current_mode);
 
+#if defined(ODROIDC)
+    getBootEnv(UBOOTENV_HDMIMODE, data->ubootenv_hdmimode);
+
+    if (!strncmp(data->ubootenv_hdmimode, "1080", 3))
+        fbset(1920, 1080, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "640x480", 7))
+        fbset(640, 480, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "800x600", 7))
+        fbset(800, 600, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "800x480", 7))
+        fbset(800, 480, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "1024x600", 8))
+        fbset(1024, 600, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "1024x768", 8))
+        fbset(1024, 768, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "1280x800", 8))
+        fbset(1280, 800, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "1280x1024", 9))
+        fbset(1280, 1024, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "1360x768", 8))
+        fbset(1360, 768, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "1366x768", 8))
+        fbset(1366, 768, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "1440x900", 8))
+        fbset(1440, 900, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "1600x900", 8))
+        fbset(1600, 900, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "1680x1050", 9))
+        fbset(1680, 1050, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "1920x1200", 9))
+        fbset(1920, 1200, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "480p", 4))
+        fbset(720, 480, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "576p", 4))
+        fbset(720, 576, 32);
+    else
+        fbset(1280, 720, 32);
+
+    strcpy(outputmode, data->ubootenv_hdmimode);
+    strcpy(mDefaultUI, outputmode);
+
+#else
+
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
         if (!strcmp(hpdstate, "1")){
             if ((!strcmp(current_mode, MODE_480CVBS) || !strcmp(current_mode, MODE_576CVBS))
@@ -336,24 +411,67 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
             strcpy(outputmode, MODE_576CVBS);
         }
     }
+#endif
 
     SYS_LOGI("init mbox display hpdstate:%s, old outputmode:%s, new outputmode:%s\n",
         hpdstate,
         current_mode,
         outputmode);
 
+    if (strlen(outputmode) == 0)
+        strcpy(outputmode, mDefaultUI);
+
     if (!strncmp(mDefaultUI, "720", 3)) {
-        source_output_width = 1280;
-        source_output_height = 720;
-        pSysWrite->setProperty(PROP_LCD_DENSITY, "160");
+        mDisplayWidth = FULL_WIDTH_720;
+        mDisplayHeight = FULL_HEIGHT_720;
+    } else if (!strncmp(mDefaultUI, "480", 3)) {
+        mDisplayWidth = 720;
+        mDisplayHeight = 480;
+    } else if (!strncmp(mDefaultUI, "576", 3)) {
+        mDisplayWidth = 720;
+        mDisplayHeight = 576;
     } else if (!strncmp(mDefaultUI, "1080", 4)) {
-        source_output_width = 1920;
-        source_output_height = 1080;
-        pSysWrite->setProperty(PROP_LCD_DENSITY, "240");
-    } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
-        source_output_width = 3840;
-        source_output_height = 2160;
-        pSysWrite->setProperty(PROP_LCD_DENSITY, "480");
+        mDisplayWidth = FULL_WIDTH_1080;
+        mDisplayHeight = FULL_HEIGHT_1080;
+    } else if (!strncmp(mDefaultUI, "640x480", 7)) {
+        mDisplayWidth = 640;
+        mDisplayHeight = 480;
+    } else if (!strncmp(mDefaultUI, "800x600", 7)) {
+        mDisplayWidth = 800;
+        mDisplayHeight = 600;
+    } else if (!strncmp(mDefaultUI, "800x480", 7)) {
+        mDisplayWidth = 800;
+        mDisplayHeight = 480;
+    } else if (!strncmp(mDefaultUI, "1024x600", 8)) {
+        mDisplayWidth = 1024;
+        mDisplayHeight = 600;
+    } else if (!strncmp(mDefaultUI, "1024x768", 8)) {
+        mDisplayWidth = 1024;
+        mDisplayHeight = 768;
+    } else if (!strncmp(mDefaultUI, "1280x800", 8)) {
+        mDisplayWidth = 1280;
+        mDisplayHeight = 800;
+    } else if (!strncmp(mDefaultUI, "1280x1024", 9)) {
+        mDisplayWidth = 1280;
+        mDisplayHeight = 1024;
+    } else if (!strncmp(mDefaultUI, "1360x768", 8)) {
+        mDisplayWidth = 1360;
+        mDisplayHeight = 768;
+    } else if (!strncmp(mDefaultUI, "1366x768", 8)) {
+        mDisplayWidth = 1366;
+        mDisplayHeight = 768;
+    } else if (!strncmp(mDefaultUI, "1440x900", 8)) {
+        mDisplayWidth = 1440;
+        mDisplayHeight = 900;
+    } else if (!strncmp(mDefaultUI, "1600x900", 8)) {
+        mDisplayWidth = 1600;
+        mDisplayHeight = 900;
+    } else if (!strncmp(mDefaultUI, "1680x1050", 9)) {
+        mDisplayWidth = 1680;
+        mDisplayHeight = 1050;
+    } else if (!strncmp(mDefaultUI, "1920x1200", 9)) {
+        mDisplayWidth = 1920;
+        mDisplayHeight = 1200;
     }
 
     char value[MAX_STR_LEN] = {0};
@@ -576,8 +694,17 @@ void* DisplayMode::startHdmiPlugDetectLoop(void* data){
 }
 
 bool DisplayMode::isBestOutputmode() {
+#if defined(ODROIDC)
+	/*
+	 * FIXME: Don't we discover best output mode from EDID?
+	 * Currently return 'false' will force the output resolution as hdmi
+	 * mode in 'boot.ini'
+	 */
+	return false;
+#else
     char isBestMode[MAX_STR_LEN] = {0};
     return !getBootEnv(UBOOTENV_ISBESTMODE, isBestMode) || strcmp(isBestMode, "true") == 0;
+#endif
 }
 
 void DisplayMode::setTVDisplay() {
@@ -622,13 +749,44 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
     SYS_LOGI("set osd mouse x:%d y:%d w:%d h:%d", x, y, w, h);
 
     const char* displaySize = "1920 1080";
-    if (!strncmp(mDefaultUI, "720", 3)) {
+    if (!strncmp(mDefaultUI, "720", 3))
         displaySize = "1280 720";
-    } else if (!strncmp(mDefaultUI, "1080", 4)) {
+    else if (!strncmp(mDefaultUI, "480", 3))
+        displaySize = "720 480";
+    else if (!strncmp(mDefaultUI, "576", 3))
+        displaySize = "720 576";
+    else if (!strncmp(mDefaultUI, "1080", 4))
         displaySize = "1920 1080";
-    } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
+    else if (!strncmp(mDefaultUI, "4k2k", 4))
         displaySize = "3840 2160";
-    }
+    else if (!strncmp(mDefaultUI, "640x480", 7))
+        displaySize = "640 480";
+    else if (!strncmp(mDefaultUI, "800x600", 7))
+        displaySize = "800 600";
+    else if (!strncmp(mDefaultUI, "800x480", 7))
+        displaySize = "800 480";
+    else if (!strncmp(mDefaultUI, "1024x600", 8))
+        displaySize = "1024 600";
+    else if (!strncmp(mDefaultUI, "1024x768", 8))
+        displaySize = "1024 768";
+    else if (!strncmp(mDefaultUI, "1280x800", 8))
+        displaySize = "1280 800";
+    else if (!strncmp(mDefaultUI, "1280x1024", 9))
+        displaySize = "1280 1024";
+    else if (!strncmp(mDefaultUI, "1360x768", 8))
+        displaySize = "1360 768";
+    else if (!strncmp(mDefaultUI, "1366x768", 8))
+        displaySize = "1366 768";
+    else if (!strncmp(mDefaultUI, "1440x900", 8))
+        displaySize = "1440 900";
+    else if (!strncmp(mDefaultUI, "1600x900", 8))
+        displaySize = "1600 900";
+    else if (!strncmp(mDefaultUI, "1680x1050", 9))
+        displaySize = "1680 1050";
+    else if (!strncmp(mDefaultUI, "1920x1200", 9))
+        displaySize = "1920 1200";
+    else if (!strncmp(mDefaultUI, "4k2k", 4))
+        displaySize = "3840 2160";
 
     char cur_mode[MAX_STR_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, cur_mode);

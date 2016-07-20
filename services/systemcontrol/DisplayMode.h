@@ -194,6 +194,7 @@ private:
     void getCurrentHdmiData(mbox_data_t* data);
     void startHdmiPlugDetectThread();
     void setTVDisplay();
+    void fbset(int width, int height, int bits);
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
 
     int getBootenvInt(const char* key, int defaultVal);
@@ -209,6 +210,9 @@ private:
     int mFb1Height;
     int mFb1FbBits;
     bool mFb1TripleEnable;//Triple Buffer enable or not
+
+    int mDisplayWidth;
+    int mDisplayHeight;
 
     char mSocType[MAX_STR_LEN];
     char mDefaultUI[MAX_STR_LEN];//this used for mbox
