@@ -282,8 +282,8 @@ void DisplayMode::fbset(int width, int height, int bits)
     var_set.bits_per_pixel = mFb1FbBits;
     setFbParameter(DISPLAY_FB1, var_set);
 
-	mDisplayWidth = width;
-	mDisplayHeight = height;
+    mDisplayWidth = width;
+    mDisplayHeight = height;
 }
 
 void DisplayMode::setTabletDisplay() {
@@ -336,9 +336,6 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
         getCurrentHdmiData(data);
     }
 
-    int source_output_width = 1920;
-    int source_output_height = 1080;
-
     char current_mode[MAX_STR_LEN] = {0};
     char outputmode[MAX_STR_LEN] = {0};
 
@@ -385,6 +382,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     strcpy(outputmode, data->ubootenv_hdmimode);
     strcpy(mDefaultUI, outputmode);
 
+    setBootEnv(UBOOTENV_OUTPUTMODE, outputmode);
 #else
 
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
@@ -455,8 +453,8 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
 
     //init osd mouse
-    setOsdMouse(outputmode);
-    setOverscan(outputmode);
+    setOsdMouse(current_mode);
+    setOverscan(current_mode);
 
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
@@ -711,7 +709,7 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
         displaySize = "1024 600";
     else if (!strncmp(mDefaultUI, "1024x768", 8))
         displaySize = "1024 768";
-    else if (!strncmp(mDefaultUI, "800", 8))
+    else if (!strncmp(mDefaultUI, "800", 3))
         displaySize = "1280 800";
     else if (!strncmp(mDefaultUI, "1280x1024", 9))
         displaySize = "1280 1024";
