@@ -52,6 +52,8 @@
 #define DISPLAY_FB0_FREESCALE_AXIS      "/sys/class/graphics/fb0/free_scale_axis"
 #define DISPLAY_FB0_WINDOW_AXIS         "/sys/class/graphics/fb0/window_axis"
 
+#define DISPLAY_PPMGR                   "/sys/class/ppmgr/ppscaler"
+
 #define DISPLAY_HPD_STATE               "/sys/class/amhdmitx/amhdmitx0/hpd_state"
 #define DISPLAY_HDMI_EDID               "/sys/class/amhdmitx/amhdmitx0/disp_cap"
 
@@ -107,6 +109,11 @@
 #define ENV_4K2KSMPTE_W                 "ubootenv.var.4k2ksmpte_w"
 #define ENV_4K2KSMPTE_H                 "ubootenv.var.4k2ksmpte_h"
 
+#define UBOOTENV_OVERSCAN_LEFT          "ubootenv.var.overscan_left"
+#define UBOOTENV_OVERSCAN_TOP           "ubootenv.var.overscan_top"
+#define UBOOTENV_OVERSCAN_RIGHT         "ubootenv.var.overscan_right"
+#define UBOOTENV_OVERSCAN_BOTTOM        "ubootenv.var.overscan_bottom"
+
 #define FULL_WIDTH_480                  720
 #define FULL_HEIGHT_480                 480
 #define FULL_WIDTH_576                  720
@@ -155,6 +162,13 @@ typedef struct mbox_data {
     char current_mode[MAX_STR_LEN];
     char ubootenv_hdmimode[MAX_STR_LEN];
 }mbox_data_t;
+
+typedef struct overscan_data {
+    char left[5];
+    char top[5];
+    char right[5];
+    char bottom[5];
+}overscan_data_t;
 
 // ----------------------------------------------------------------------------
 

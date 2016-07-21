@@ -281,6 +281,9 @@ void DisplayMode::fbset(int width, int height, int bits)
     var_set.yres_virtual = mFb1Height * (mFb1TripleEnable ? 3 : 2);
     var_set.bits_per_pixel = mFb1FbBits;
     setFbParameter(DISPLAY_FB1, var_set);
+
+	mDisplayWidth = width;
+	mDisplayHeight = height;
 }
 
 void DisplayMode::setTabletDisplay() {
@@ -356,7 +359,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
         fbset(1024, 600, 32);
     else if (!strncmp(data->ubootenv_hdmimode, "1024x768", 8))
         fbset(1024, 768, 32);
-    else if (!strncmp(data->ubootenv_hdmimode, "1280x800", 8))
+    else if (!strncmp(data->ubootenv_hdmimode, "800", 3))
         fbset(1280, 800, 32);
     else if (!strncmp(data->ubootenv_hdmimode, "1280x1024", 9))
         fbset(1280, 1024, 32);
@@ -421,88 +424,21 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     if (strlen(outputmode) == 0)
         strcpy(outputmode, mDefaultUI);
 
-    if (!strncmp(mDefaultUI, "720", 3)) {
-        mDisplayWidth = FULL_WIDTH_720;
-        mDisplayHeight = FULL_HEIGHT_720;
-    } else if (!strncmp(mDefaultUI, "480", 3)) {
-        mDisplayWidth = 720;
-        mDisplayHeight = 480;
-    } else if (!strncmp(mDefaultUI, "576", 3)) {
-        mDisplayWidth = 720;
-        mDisplayHeight = 576;
-    } else if (!strncmp(mDefaultUI, "1080", 4)) {
-        mDisplayWidth = FULL_WIDTH_1080;
-        mDisplayHeight = FULL_HEIGHT_1080;
-    } else if (!strncmp(mDefaultUI, "640x480", 7)) {
-        mDisplayWidth = 640;
-        mDisplayHeight = 480;
-    } else if (!strncmp(mDefaultUI, "800x600", 7)) {
-        mDisplayWidth = 800;
-        mDisplayHeight = 600;
-    } else if (!strncmp(mDefaultUI, "800x480", 7)) {
-        mDisplayWidth = 800;
-        mDisplayHeight = 480;
-    } else if (!strncmp(mDefaultUI, "1024x600", 8)) {
-        mDisplayWidth = 1024;
-        mDisplayHeight = 600;
-    } else if (!strncmp(mDefaultUI, "1024x768", 8)) {
-        mDisplayWidth = 1024;
-        mDisplayHeight = 768;
-    } else if (!strncmp(mDefaultUI, "1280x800", 8)) {
-        mDisplayWidth = 1280;
-        mDisplayHeight = 800;
-    } else if (!strncmp(mDefaultUI, "1280x1024", 9)) {
-        mDisplayWidth = 1280;
-        mDisplayHeight = 1024;
-    } else if (!strncmp(mDefaultUI, "1360x768", 8)) {
-        mDisplayWidth = 1360;
-        mDisplayHeight = 768;
-    } else if (!strncmp(mDefaultUI, "1366x768", 8)) {
-        mDisplayWidth = 1366;
-        mDisplayHeight = 768;
-    } else if (!strncmp(mDefaultUI, "1440x900", 8)) {
-        mDisplayWidth = 1440;
-        mDisplayHeight = 900;
-    } else if (!strncmp(mDefaultUI, "1600x900", 8)) {
-        mDisplayWidth = 1600;
-        mDisplayHeight = 900;
-    } else if (!strncmp(mDefaultUI, "1680x1050", 9)) {
-        mDisplayWidth = 1680;
-        mDisplayHeight = 1050;
-    } else if (!strncmp(mDefaultUI, "1920x1200", 9)) {
-        mDisplayWidth = 1920;
-        mDisplayHeight = 1200;
-    }
-
     char value[MAX_STR_LEN] = {0};
-    int outputx = 0;
-    int outputy = 0;
-    int outputwidth = 0;
-    int outputheight = 0;
-    int position[4] = { 0, 0, 0, 0 };
-
-    getPosition(outputmode, position);
-    outputx = position[0];
-    outputy = position[1];
-    outputwidth = position[2];
-    outputheight = position[3];
 
     if ((!strcmp(outputmode, MODE_480I) || !strcmp(outputmode, MODE_576I)) &&
         (pSysWrite->getPropertyBoolean(PROP_HAS_CVBS_MODE, false))) {
         const char *mode = "";
         if (!strcmp(outputmode, MODE_480I)) {
             mode = MODE_480CVBS;
-        }
-        else if (!strcmp(outputmode, MODE_576I)) {
+        } else if (!strcmp(outputmode, MODE_576I)) {
             mode = MODE_576CVBS;
         }
 
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, mode);
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE2, "null");
-    }
-    else
+    } else
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
-
 
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_MODE, "1");
     if (initDisplay) {
@@ -512,11 +448,21 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
 
     char axis[MAX_STR_LEN] = {0};
     sprintf(axis, "%d %d %d %d",
-        0, 0, source_output_width - 1, source_output_height - 1);
+        0, 0, mDisplayWidth - 1, mDisplayHeight - 1);
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_AXIS, axis);
 
+    overscan_data_t overscan_data;
+    memset(&overscan_data, 0, sizeof(overscan_data_t));
+    getBootEnv(UBOOTENV_OVERSCAN_LEFT, overscan_data.left);
+    getBootEnv(UBOOTENV_OVERSCAN_TOP, overscan_data.top);
+    getBootEnv(UBOOTENV_OVERSCAN_RIGHT, overscan_data.right);
+    getBootEnv(UBOOTENV_OVERSCAN_BOTTOM, overscan_data.bottom);
+
     sprintf(axis, "%d %d %d %d",
-        outputx, outputy, outputx + outputwidth - 1, outputy + outputheight -1);
+        0 + atoi(overscan_data.left), 0 + atoi(overscan_data.top), 
+        mDisplayWidth - atoi(overscan_data.right) - atoi(overscan_data.left) - 1,
+        mDisplayHeight - atoi(overscan_data.bottom) - atoi(overscan_data.top) - 1);
+
     pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, axis);
     pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
 
@@ -539,11 +485,11 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     }
     pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, audiovalue);
 
-    //init osd mouse
-    setOsdMouse(outputmode);
-
     free(data);
     data = NULL;
+
+    pSysWrite->writeSysfs(DISPLAY_PPMGR, "0");
+    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
 }
 
 //get the best hdmi mode by edid
