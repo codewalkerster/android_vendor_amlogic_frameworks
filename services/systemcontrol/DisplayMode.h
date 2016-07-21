@@ -189,6 +189,7 @@ public:
 
     void setOsdMouse(const char* curMode);
     void setOsdMouse(int x, int y, int w, int h);
+    void setOverscan(const char* curMode);
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
     static void* startHdmiPlugDetectLoop(void *data);

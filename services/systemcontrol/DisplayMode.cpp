@@ -451,20 +451,12 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
         0, 0, mDisplayWidth - 1, mDisplayHeight - 1);
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_AXIS, axis);
 
-    overscan_data_t overscan_data;
-    memset(&overscan_data, 0, sizeof(overscan_data_t));
-    getBootEnv(UBOOTENV_OVERSCAN_LEFT, overscan_data.left);
-    getBootEnv(UBOOTENV_OVERSCAN_TOP, overscan_data.top);
-    getBootEnv(UBOOTENV_OVERSCAN_RIGHT, overscan_data.right);
-    getBootEnv(UBOOTENV_OVERSCAN_BOTTOM, overscan_data.bottom);
+    pSysWrite->writeSysfs(DISPLAY_PPMGR, "0");
+    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
 
-    sprintf(axis, "%d %d %d %d",
-        0 + atoi(overscan_data.left), 0 + atoi(overscan_data.top), 
-        mDisplayWidth - atoi(overscan_data.right) - atoi(overscan_data.left) - 1,
-        mDisplayHeight - atoi(overscan_data.bottom) - atoi(overscan_data.top) - 1);
-
-    pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, axis);
-    pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
+    //init osd mouse
+    setOsdMouse(outputmode);
+    setOverscan(outputmode);
 
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
@@ -487,9 +479,6 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
 
     free(data);
     data = NULL;
-
-    pSysWrite->writeSysfs(DISPLAY_PPMGR, "0");
-    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
 }
 
 //get the best hdmi mode by edid
@@ -686,9 +675,16 @@ int DisplayMode::getBootenvInt(const char* key, int defaultVal) {
 void DisplayMode::setOsdMouse(const char* curMode) {
     //SYS_LOGI("set osd mouse mode: %s", curMode);
 
-    int position[4] = { 0, 0, 0, 0 };
-    getPosition(curMode, position);
-    setOsdMouse(position[0], position[1], position[2], position[3]);
+    overscan_data_t overscan_data;
+    memset(&overscan_data, 0, sizeof(overscan_data_t));
+    getBootEnv(UBOOTENV_OVERSCAN_LEFT, overscan_data.left);
+    getBootEnv(UBOOTENV_OVERSCAN_TOP, overscan_data.top);
+    getBootEnv(UBOOTENV_OVERSCAN_RIGHT, overscan_data.right);
+    getBootEnv(UBOOTENV_OVERSCAN_BOTTOM, overscan_data.bottom);
+
+    setOsdMouse(0 + atoi(overscan_data.left), 0 + atoi(overscan_data.top),
+        mDisplayWidth - atoi(overscan_data.right) - atoi(overscan_data.left) - 1,
+        mDisplayHeight - atoi(overscan_data.bottom) - atoi(overscan_data.top) - 1);
 }
 
 void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
@@ -715,7 +711,7 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
         displaySize = "1024 600";
     else if (!strncmp(mDefaultUI, "1024x768", 8))
         displaySize = "1024 768";
-    else if (!strncmp(mDefaultUI, "1280x800", 8))
+    else if (!strncmp(mDefaultUI, "800", 8))
         displaySize = "1280 800";
     else if (!strncmp(mDefaultUI, "1280x1024", 9))
         displaySize = "1280 1024";
@@ -750,6 +746,31 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
     sprintf(axis, "%s %d %d", displaySize, w, h);
     pSysWrite->writeSysfs(DISPLAY_FB1_SCALE_AXIS, axis);
     pSysWrite->writeSysfs(DISPLAY_FB1_SCALE, "0x10001");
+}
+
+void DisplayMode::setOverscan(const char* curMode) {
+    overscan_data_t data;
+    memset(&data, 0, sizeof(overscan_data_t));
+    getBootEnv(UBOOTENV_OVERSCAN_LEFT, data.left);
+    getBootEnv(UBOOTENV_OVERSCAN_TOP, data.top);
+    getBootEnv(UBOOTENV_OVERSCAN_RIGHT, data.right);
+    getBootEnv(UBOOTENV_OVERSCAN_BOTTOM, data.bottom);
+
+    if (strlen(data.left) == 0 || strlen(data.top) == 0 || strlen(data.right) == 0
+            || strlen(data.bottom) == 0) {
+        SYS_LOGI("overscan values is N/A");
+        return;
+    }
+
+    char overscan[32] = {0};
+    sprintf(overscan, "%d %d %d %d", 0 + atoi(data.left), 0 + atoi(data.top),
+            mDisplayWidth - 1 - atoi(data.right), mDisplayHeight - 1 - atoi(data.bottom));
+
+    SYS_LOGI("overscan value : %s\n", overscan);
+
+    pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, overscan);
+    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+    return;
 }
 
 void DisplayMode::getPosition(const char* curMode, int *position) {
