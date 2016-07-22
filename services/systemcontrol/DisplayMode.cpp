@@ -733,12 +733,15 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
 
     char cur_mode[MAX_STR_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, cur_mode);
+
+#if !defined(ODROIDC)
     if (!strcmp(cur_mode, DISPLAY_MODE_LIST[0]) || !strcmp(cur_mode, DISPLAY_MODE_LIST[2]) ||
         !strcmp(cur_mode, DISPLAY_MODE_LIST[5]) || !strcmp(cur_mode, DISPLAY_MODE_LIST[8]) ||
         !strcmp(cur_mode, DISPLAY_MODE_LIST[10]) || !strcmp(cur_mode, DISPLAY_MODE_LIST[11])) {
         y /= 2;
         h /= 2;
     }
+#endif
 
     char axis[512] = {0};
     sprintf(axis, "%d %d %s %d %d 18 18", x, y, displaySize, x, y);
