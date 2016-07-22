@@ -475,6 +475,9 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     }
     pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, audiovalue);
 
+    pSysWrite->writeSysfs(DISPLAY_PPMGR, "0");
+    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
+
     free(data);
     data = NULL;
 }
