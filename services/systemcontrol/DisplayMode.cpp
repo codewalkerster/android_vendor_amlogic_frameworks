@@ -35,7 +35,6 @@
 #include <sys/types.h>
 #include <linux/netlink.h>
 
-#include <cutils/properties.h>
 #include "ubootenv.h"
 #include "DisplayMode.h"
 #include "SysTokenizer.h"
@@ -237,18 +236,12 @@ static bool isMatch(const char* buffer, size_t length, char* switch_state, char*
 static void* HdmiPlugDetectThread(void* data) {
     DisplayMode *pThiz = (DisplayMode*)data;
 
-    char status[PROPERTY_VALUE_MAX] = {0};
 #if 0
     char oldHpdstate[MAX_STR_LEN] = {0};
     char currentHpdstate[MAX_STR_LEN] = {0};
 
     pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, oldHpdstate);
     while (1) {
-        if (property_get("instaboot.status", status, "completed") &&
-           !strcmp("booting", status)){
-            usleep(2000000);
-            continue;
-        }
 
         pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, currentHpdstate);
         if (strcmp(oldHpdstate, currentHpdstate)) {
@@ -267,12 +260,6 @@ static void* HdmiPlugDetectThread(void* data) {
     char switch_state[128] = {0};
     int fd = uevent_init();
     while (fd >= 0) {
-        if (property_get("instaboot.status", status, "completed") &&
-           !strcmp("booting", status)){
-            usleep(2000000);
-            continue;
-        }
-
         int length = uevent_next_event(fd, buffer, sizeof(buffer) - 1);
         if (length <= 0)
             continue;
