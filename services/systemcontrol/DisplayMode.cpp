@@ -73,6 +73,7 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_1366X768P60HZ,
     MODE_1440X900P60HZ,
     MODE_1600X900P60HZ,
+    MODE_1600X1200P60HZ,
     MODE_1680X1050P60HZ,
     MODE_1920X1200P60HZ,
     MODE_2560X1440P60HZ,
@@ -555,6 +556,8 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
 	    fbset(1440, 900, 32);
     else if (!strncmp(data.ubootenv_hdmimode, "1600x900", 8))
 	    fbset(1600, 900, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1600x1200", 9))
+	    fbset(1600, 1200, 32);
     else if (!strncmp(data.ubootenv_hdmimode, "1680x1050", 9))
 	    fbset(1680, 1050, 32);
     else if (!strncmp(data.ubootenv_hdmimode, "1920x1200", 9))
@@ -696,6 +699,11 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
             mDisplayHeight = 900;
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1600");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "900");
+	} else if (!strncmp(mDefaultUI, "1600x1200", 9)) {
+            mDisplayWidth = 1600;
+            mDisplayHeight = 1200;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1600");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1200");
 	} else if (!strncmp(mDefaultUI, "1680x1050", 9)) {
             mDisplayWidth = 1680;
             mDisplayHeight = 1050;
@@ -1441,6 +1449,8 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
 	    displaySize = "1440 900";
     else if (!strncmp(mDefaultUI, "1600x900", 8))
 	    displaySize = "1600 900";
+    else if (!strncmp(mDefaultUI, "1600x1200", 9))
+	    displaySize = "1600 1200";
     else if (!strncmp(mDefaultUI, "1680x1050", 9))
 	    displaySize = "1680 1050";
     else if (!strncmp(mDefaultUI, "1920x1200", 9))
@@ -1630,6 +1640,12 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
             position[1] = 0;
             position[2] = 1600;
             position[3] = 900;
+	    break;
+	case DISPLAY_MODE_1600X1200P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1600;
+            position[3] = 1200;
 	    break;
 	case DISPLAY_MODE_1680X1050P60HZ:
             position[0] = 0;
