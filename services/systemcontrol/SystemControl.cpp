@@ -223,10 +223,6 @@ void SystemControl::getPosition(const String16& mode, int &x, int &y, int &w, in
     }
 }
 
-void SystemControl::reInit() {
-    bootenv_reinit();
-}
-
 void SystemControl::setNativeWindowRect(int x, int y, int w, int h) {
     if (mLogLevel > LOG_LEVEL_1) {
         ALOGI("set native window rect x:%d y:%d w:%d h:%d", x, y, w, h);
