@@ -152,6 +152,8 @@
 #define UBOOTENV_OVERSCAN_TOP           "ubootenv.var.overscan_top"
 #define UBOOTENV_OVERSCAN_RIGHT         "ubootenv.var.overscan_right"
 #define UBOOTENV_OVERSCAN_BOTTOM        "ubootenv.var.overscan_bottom"
+#define UBOOTENV_CUSTOMWIDTH		"ubootenv.var.customwidth"
+#define UBOOTENV_CUSTOMHEIGHT		"ubootenv.var.customheight"
 
 #define FULL_WIDTH_480                  720
 #define FULL_HEIGHT_480                 480
@@ -212,6 +214,7 @@ enum {
 #define MODE_2560X1600P60HZ		"2560x1600p60hz"
 #define MODE_2560X1080P60HZ		"2560x1080p60hz"
 #define MODE_3440X1440P60HZ		"3440x1440p60hz"
+#define MODE_CUSTOMBUILT		"custombuilt"
 
 enum {
     DISPLAY_MODE_480I                   = 0,
@@ -253,7 +256,8 @@ enum {
     DISPLAY_MODE_2560X1600P60HZ		= 36,
     DISPLAY_MODE_2560X1080P60HZ		= 37,
     DISPLAY_MODE_3440X1440P60HZ		= 38,
-    DISPLAY_MODE_TOTAL                  = 39
+    DISPLAY_MODE_CUSTOMBUILT		= 39,
+    DISPLAY_MODE_TOTAL                  = 40
 };
 
 typedef struct hdmi_data {
@@ -261,6 +265,8 @@ typedef struct hdmi_data {
     char hpd_state[10];//"0" or "1", hdmi pluged or not
     char current_mode[MODE_LEN];
     char ubootenv_hdmimode[MODE_LEN];
+    char custom_width[5];
+    char custom_height[5];
 }hdmi_data_t;
 
 typedef struct overscan_data {

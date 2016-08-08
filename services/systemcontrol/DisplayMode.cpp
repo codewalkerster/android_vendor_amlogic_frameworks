@@ -78,7 +78,8 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_2560X1440P60HZ,
     MODE_2560X1600P60HZ,
     MODE_2560X1080P60HZ,
-    MODE_3440X1440P60HZ
+    MODE_3440X1440P60HZ,
+    MODE_CUSTOMBUILT,
 };
 
 /**
@@ -508,11 +509,15 @@ void DisplayMode::setTabletDisplay() {
 void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
     hdmi_data_t data;
     char outputmode[MODE_LEN] = {0};
+    unsigned int custom_width, custom_height;
     memset(&data, 0, sizeof(hdmi_data_t));
 
     initHdmiData(&data, hpdstate);
 #if defined(ODROIDC2)
     getBootEnv(UBOOTENV_HDMIMODE, data.ubootenv_hdmimode);
+
+    getBootEnv(UBOOTENV_CUSTOMWIDTH, data.custom_width);
+    getBootEnv(UBOOTENV_CUSTOMHEIGHT, data.custom_height);
 
     if (!strncmp(data.ubootenv_hdmimode, "2160", 3)) {
 	    /* FIXME: real 4K framebuffer is too slow, so using 1080p
@@ -562,7 +567,11 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
 	    fbset(720, 480, 32);
     else if (!strncmp(data.ubootenv_hdmimode, "576p", 4))
 	    fbset(720, 576, 32);
-    else
+    else if (!strncmp(data.ubootenv_hdmimode, "custombuilt",11)) {
+	    custom_width = atoi(data.custom_width);
+	    custom_height = atoi(data.custom_height);
+	    fbset(custom_width, custom_height, 32);
+    } else
 	    fbset(1280, 720, 32);
 
     strcpy(outputmode, data.ubootenv_hdmimode);
@@ -726,7 +735,12 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
             mDisplayHeight = FULL_HEIGHT_4K2K;
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "3840");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "2160");
-        }
+        } else if (!strncmp(mDefaultUI, "custombuilt", 11)) {
+            mDisplayWidth = atoi(data.custom_width);
+            mDisplayHeight = atoi(data.custom_height);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, data.custom_width);
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, data.custom_height);
+	}
     }
 
     //output mode not the same
@@ -1160,6 +1174,9 @@ void DisplayMode::initHdmiData(hdmi_data_t* data, char* hpdstate){
     }
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, data->current_mode);
     getBootEnv(UBOOTENV_HDMIMODE, data->ubootenv_hdmimode);
+
+    getBootEnv(UBOOTENV_CUSTOMWIDTH, data->custom_width);
+    getBootEnv(UBOOTENV_CUSTOMHEIGHT, data->custom_height);
 }
 
 void DisplayMode::startBootanimDetectThread() {
@@ -1450,6 +1467,15 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
 	    displaySize = "2560 1080";
     else if (!strncmp(mDefaultUI, "3440x1440", 9))
 	    displaySize = "3440 1440";
+    else if (!strncmp(mDefaultUI, "custombuilt", 11))
+    {
+	    int w,h;
+	    char disp[10];
+	    w = getBootenvInt(UBOOTENV_CUSTOMWIDTH, 1920);
+	    h = getBootenvInt(UBOOTENV_CUSTOMHEIGHT, 1080);
+	    sprintf(disp, "%d %d", w, h);
+	    displaySize = &disp[0];
+    }
 
     char cur_mode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, cur_mode);
@@ -1669,6 +1695,12 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
             position[1] = 0;
             position[2] = 3440;
             position[3] = 1440;
+	    break;
+	case DISPLAY_MODE_CUSTOMBUILT:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = getBootenvInt(UBOOTENV_CUSTOMWIDTH, 1920);
+            position[3] = getBootenvInt(UBOOTENV_CUSTOMHEIGHT, 1080);
 	    break;
         default: //1080p
             position[0] = getBootenvInt(ENV_1080P_X, 0);
