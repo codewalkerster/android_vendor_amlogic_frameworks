@@ -261,6 +261,7 @@ int DisplayMode::parseConfigFile(){
 
 void DisplayMode::fbset(int width, int height, int bits)
 {
+    SYS_LOGI("width = %d, height = %d, bits = %d", width, height, bits);
     struct fb_var_screeninfo var_set;
 
     mFb0Width = width;
@@ -344,9 +345,12 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
 #if defined(ODROIDC)
     getBootEnv(UBOOTENV_HDMIMODE, data->ubootenv_hdmimode);
 
+
+    SYS_LOGI("hdmimode = %s", data->ubootenv_hdmimode);
+
     if (!strncmp(data->ubootenv_hdmimode, "1080", 3))
         fbset(1920, 1080, 32);
-    else if (!strncmp(data->ubootenv_hdmimode, "640x480", 7))
+    else if (!strncmp(data->ubootenv_hdmimode, "vga", 3))
         fbset(640, 480, 32);
     else if (!strncmp(data->ubootenv_hdmimode, "800x600", 7))
         fbset(800, 600, 32);
@@ -358,7 +362,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
         fbset(1024, 768, 32);
     else if (!strncmp(data->ubootenv_hdmimode, "800", 3))
         fbset(1280, 800, 32);
-    else if (!strncmp(data->ubootenv_hdmimode, "1280x1024", 9))
+    else if (!strncmp(data->ubootenv_hdmimode, "sxga", 4))
         fbset(1280, 1024, 32);
     else if (!strncmp(data->ubootenv_hdmimode, "1360x768", 8))
         fbset(1360, 768, 32);
@@ -389,8 +393,8 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
         if (!strcmp(hpdstate, "1")){
             if ((!strcmp(current_mode, MODE_480CVBS) || !strcmp(current_mode, MODE_576CVBS))
                     && initDisplay) {
-                pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
                 pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+                pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
             }
 
             getHdmiMode(outputmode, data);
@@ -438,26 +442,27 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     } else
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
 
-    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_MODE, "1");
     if (initDisplay) {
         pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE_MODE, "1");
         pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
     }
+
+    pSysWrite->writeSysfs(DISPLAY_PPMGR, "0");
+    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
+    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_MODE, "1");
 
     char axis[MAX_STR_LEN] = {0};
     sprintf(axis, "%d %d %d %d",
         0, 0, mDisplayWidth - 1, mDisplayHeight - 1);
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_AXIS, axis);
 
-    pSysWrite->writeSysfs(DISPLAY_PPMGR, "0");
-    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
-
     //init osd mouse
     setOsdMouse(current_mode);
     setOverscan(current_mode);
 
-    pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+    pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
+
     if (initDisplay)
         pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
 
@@ -702,7 +707,7 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
         displaySize = "1920 1080";
     else if (!strncmp(mDefaultUI, "4k2k", 4))
         displaySize = "3840 2160";
-    else if (!strncmp(mDefaultUI, "640x480", 7))
+    else if (!strncmp(mDefaultUI, "vga", 3))
         displaySize = "640 480";
     else if (!strncmp(mDefaultUI, "800x600", 7))
         displaySize = "800 600";
@@ -714,7 +719,7 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
         displaySize = "1024 768";
     else if (!strncmp(mDefaultUI, "800", 3))
         displaySize = "1280 800";
-    else if (!strncmp(mDefaultUI, "1280x1024", 9))
+    else if (!strncmp(mDefaultUI, "sxga", 4))
         displaySize = "1280 1024";
     else if (!strncmp(mDefaultUI, "1360x768", 8))
         displaySize = "1360 768";
@@ -743,13 +748,17 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
     }
 #endif
 
-    char axis[512] = {0};
-    sprintf(axis, "%d %d %s %d %d 18 18", x, y, displaySize, x, y);
-    pSysWrite->writeSysfs(SYSFS_DISPLAY_AXIS, axis);
+    //char axis[512] = {0};
+    //sprintf(axis, "%d %d %s %d %d 18 18", x, y, displaySize, x, y);
+    //pSysWrite->writeSysfs(SYSFS_DISPLAY_AXIS, axis);
 
-    sprintf(axis, "%s %d %d", displaySize, w, h);
-    pSysWrite->writeSysfs(DISPLAY_FB1_SCALE_AXIS, axis);
-    pSysWrite->writeSysfs(DISPLAY_FB1_SCALE, "0x10001");
+    //sprintf(axis, "%s %d %d", displaySize, w, h);
+    //pSysWrite->writeSysfs(DISPLAY_FB0_SCALE, axis);
+
+    char axis[MAX_STR_LEN] = {0};
+    sprintf(axis, "%d %d %d %d",
+        0, 0, mDisplayWidth - 1, mDisplayHeight - 1);
+    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, axis);
 }
 
 void DisplayMode::setOverscan(const char* curMode) {
@@ -773,7 +782,6 @@ void DisplayMode::setOverscan(const char* curMode) {
     SYS_LOGI("overscan value : %s\n", overscan);
 
     pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, overscan);
-    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
     return;
 }
 
