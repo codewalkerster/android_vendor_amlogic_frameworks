@@ -479,7 +479,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     setOverscan(current_mode);
 
     pSysWrite->writeSysfs(DISPLAY_PPMGR, "0");
-    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
 
     free(data);
     data = NULL;
