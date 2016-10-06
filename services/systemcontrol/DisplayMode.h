@@ -228,6 +228,10 @@ private:
 
     int mDisplayWidth;
     int mDisplayHeight;
+    int mOverscanLeft;
+    int mOverscanTop;
+    int mOverscanRight;
+    int mOverscanBottom;
 
     char mSocType[MAX_STR_LEN];
     char mDefaultUI[MAX_STR_LEN];//this used for mbox

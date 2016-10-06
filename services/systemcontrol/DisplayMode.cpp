@@ -362,6 +362,8 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
         fbset(1024, 768, 32);
     else if (!strncmp(data->ubootenv_hdmimode, "800", 3))
         fbset(1280, 800, 32);
+    else if (!strncmp(data->ubootenv_hdmimode, "720", 3))
+        fbset(1280, 720, 32);
     else if (!strncmp(data->ubootenv_hdmimode, "sxga", 4))
         fbset(1280, 1024, 32);
     else if (!strncmp(data->ubootenv_hdmimode, "1360x768", 8))
@@ -442,12 +444,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     } else
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
 
-
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_MODE, "1");
-    if (initDisplay) {
-        pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE_MODE, "1");
-        pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
-    }
 
     char axis[MAX_STR_LEN] = {0};
     sprintf(axis, "%d %d %d %d",
@@ -455,12 +452,17 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_AXIS, axis);
     SYS_LOGI("%s > %s", axis, DISPLAY_FB0_FREESCALE_AXIS);
 
-    setOsdMouse(current_mode);
+    pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, axis);
+    SYS_LOGI("%s > %s", axis, SYSFS_VIDEO_AXIS);
+
+    pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
+    SYS_LOGI("%s > %s", axis, DISPLAY_FB0_WINDOW_AXIS);
 
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-    if (initDisplay)
-        pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
+
+    pSysWrite->writeSysfs(DISPLAY_PPMGR, "0");
+    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
 
     //audio
     getBootEnv(UBOOTENV_DIGITAUDIO, value);
@@ -476,10 +478,10 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     }
     pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, audiovalue);
 
-    setOverscan(current_mode);
+    setOsdMouse(current_mode);
 
-    pSysWrite->writeSysfs(DISPLAY_PPMGR, "0");
-    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
+    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+    pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
 
     free(data);
     data = NULL;
@@ -686,6 +688,11 @@ void DisplayMode::setOsdMouse(const char* curMode) {
     getBootEnv(UBOOTENV_OVERSCAN_RIGHT, overscan_data.right);
     getBootEnv(UBOOTENV_OVERSCAN_BOTTOM, overscan_data.bottom);
 
+    mOverscanLeft = atoi(overscan_data.left);
+    mOverscanTop = atoi(overscan_data.top);
+    mOverscanRight = atoi(overscan_data.right);
+    mOverscanBottom = atoi(overscan_data.bottom);
+
     setOsdMouse(0 + atoi(overscan_data.left), 0 + atoi(overscan_data.top),
         mDisplayWidth - atoi(overscan_data.right) - atoi(overscan_data.left) - 1,
         mDisplayHeight - atoi(overscan_data.bottom) - atoi(overscan_data.top) - 1);
@@ -747,42 +754,13 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
 #endif
 
     char axis[512] = {0};
-    sprintf(axis, "%d %d %s %d %d 18 18", x, y, displaySize, x, y);
+    //sprintf(axis, "%d %d %s %d %d 18 18", x, y, displaySize, x, y);
+    sprintf(axis, "%d %d %d %d %d %d 18 18", mOverscanLeft, mOverscanTop,
+            mDisplayWidth - mOverscanLeft - mOverscanRight,
+            mDisplayHeight - mOverscanTop - mOverscanBottom,
+            mOverscanLeft, mOverscanTop);
     pSysWrite->writeSysfs(SYSFS_DISPLAY_AXIS, axis);
     SYS_LOGI("%s > %s", axis, SYSFS_DISPLAY_AXIS);
-
-    sprintf(axis, "%s %d %d", displaySize, w, h);
-    pSysWrite->writeSysfs(DISPLAY_FB1_SCALE_AXIS, axis);
-    SYS_LOGI("%s > %s", axis, DISPLAY_FB1_SCALE_AXIS);
-    pSysWrite->writeSysfs(DISPLAY_FB1_SCALE, "0x10001");
-}
-
-void DisplayMode::setOverscan(const char* curMode) {
-    overscan_data_t data;
-    memset(&data, 0, sizeof(overscan_data_t));
-    getBootEnv(UBOOTENV_OVERSCAN_LEFT, data.left);
-    getBootEnv(UBOOTENV_OVERSCAN_TOP, data.top);
-    getBootEnv(UBOOTENV_OVERSCAN_RIGHT, data.right);
-    getBootEnv(UBOOTENV_OVERSCAN_BOTTOM, data.bottom);
-
-    if (strlen(data.left) == 0 || strlen(data.top) == 0 || strlen(data.right) == 0
-            || strlen(data.bottom) == 0) {
-        SYS_LOGI("overscan values is N/A");
-        return;
-    }
-
-    char overscan[32] = {0};
-    sprintf(overscan, "%d %d %d %d", 0 + atoi(data.left), 0 + atoi(data.top),
-            mDisplayWidth - 1 - atoi(data.right), mDisplayHeight - 1 - atoi(data.bottom));
-
-    SYS_LOGI("overscan value : %s\n", overscan);
-
-    pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, overscan);
-    SYS_LOGI("%s > %s", overscan, SYSFS_VIDEO_AXIS);
-    pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, overscan);
-    SYS_LOGI("%s > %s", overscan, DISPLAY_FB0_WINDOW_AXIS);
-    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-    return;
 }
 
 void DisplayMode::getPosition(const char* curMode, int *position) {
