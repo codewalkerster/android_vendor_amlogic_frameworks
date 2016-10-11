@@ -99,11 +99,11 @@ DisplayMode::DisplayMode(const char *path)
     mFb0Width(-1),
     mFb0Height(-1),
     mFb0FbBits(-1),
-    mFb0TripleEnable(true),
+    mFb0TripleEnable(false),
     mFb1Width(-1),
     mFb1Height(-1),
     mFb1FbBits(-1),
-    mFb1TripleEnable(true),
+    mFb1TripleEnable(false),
     mDisplayWidth(FULL_WIDTH_1080),
     mDisplayHeight(FULL_HEIGHT_1080),
     mLogLevel(LOG_LEVEL_DEFAULT) {
