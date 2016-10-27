@@ -160,7 +160,7 @@ public class HdmiCecExtend {
 
     public HdmiCecExtend(Context ctx) {
         Slog.d(TAG, "HdmiCecExtend start");
-        System.load("/system/lib/hw/hdmi_cec.amlogic.so");
+        System.load("/system/lib/hw/hdmi_cec.odroidc2.so");
         nativeInit(this);
         Slog.d(TAG, "nativeInit:" + this);
         mContext = ctx;
