@@ -563,9 +563,9 @@ void DisplayMode::setMboxDisplay(char* hpdstate, bool initState) {
     else if (!strncmp(data.ubootenv_hdmimode, "3440x1440", 9)) {
 	    /* 3440x1440 - scaling with 21:9 ratio */
 	    fbset(2560, 1080, 32);
-    } else if (!strncmp(data.ubootenv_hdmimode, "480p", 4))
+    } else if (!strncmp(data.ubootenv_hdmimode, "480", 3))
 	    fbset(720, 480, 32);
-    else if (!strncmp(data.ubootenv_hdmimode, "576p", 4))
+    else if (!strncmp(data.ubootenv_hdmimode, "576", 3))
 	    fbset(720, 576, 32);
     else if (!strncmp(data.ubootenv_hdmimode, "custombuilt",11)) {
 	    custom_width = atoi(data.custom_width);
