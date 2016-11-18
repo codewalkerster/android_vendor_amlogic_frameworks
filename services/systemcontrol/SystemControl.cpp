@@ -340,7 +340,7 @@ void SystemControl::reInit() {
 }
 
 void SystemControl::instabootResetDisplay() {
-    pDisplayMode->reInit();
+    //pDisplayMode->reInit();
 }
 
 

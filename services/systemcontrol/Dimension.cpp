@@ -78,7 +78,9 @@ int32_t Dimension::set3DMode(const char* mode3d) {
 
     pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
     usleep(100 * 1000);
+#if !defined(ODROIDC2)
     pDisplayMode->hdcpTxStop();
+#endif
 
     char curDisplayMode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
@@ -98,9 +100,11 @@ int32_t Dimension::set3DMode(const char* mode3d) {
     strcpy(mMode3d, mode3d);
     mode3DImpl(mode3d);
 
+#if !defined(ODROIDC2)
     pDisplayMode->hdcpTxThreadExit();
 
     pDisplayMode->hdcpTxThreadStart();
+#endif
     return 0;
 }
 

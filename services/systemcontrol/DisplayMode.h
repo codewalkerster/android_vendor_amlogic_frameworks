@@ -22,15 +22,13 @@
 #ifndef ANDROID_DISPLAY_MODE_H
 #define ANDROID_DISPLAY_MODE_H
 
+#include <linux/fb.h>
 #include "SysWrite.h"
 #include "common.h"
 
 #include <map>
 #include <cmath>
 #include <string>
-#include <pthread.h>
-#include <linux/fb.h>
-#include <semaphore.h>
 
 #ifndef RECOVERY_MODE
 #include "ISystemControlNotify.h"
@@ -38,15 +36,10 @@
 using namespace android;
 #endif
 
-//#define USE_BEST_MODE
 
 #define DEVICE_STR_MID                  "MID"
 #define DEVICE_STR_MBOX                 "MBOX"
 #define DEVICE_STR_TV                   "TV"
-
-#define DESITY_720P                     "160"
-#define DESITY_1080P                    "240"
-#define DESITY_2160P                    "480"
 
 #define DEFAULT_EDID_CRCHEAD            "checkvalue: "
 #define DEFAULT_OUTPUT_MODE             "720p60hz"
@@ -55,16 +48,12 @@ using namespace android;
 #define DISPLAY_FB1                     "/dev/graphics/fb1"
 #define SYSFS_DISPLAY_MODE              "/sys/class/display/mode"
 #define SYSFS_DISPLAY_MODE2             "/sys/class/display2/mode"
-//when close freescale, will enable display axis, cut framebuffer output
-//when open freescale, will enable window axis, scale framebuffer output
 #define SYSFS_DISPLAY_AXIS              "/sys/class/display/axis"
 #define SYSFS_VIDEO_AXIS                "/sys/class/video/axis"
-#define SYSFS_BOOT_TYPE                 "/sys/power/boot_type"
 #define SYSFS_VIDEO_LAYER_STATE         "/sys/class/video/video_layer1_state"
 #define DISPLAY_FB0_BLANK               "/sys/class/graphics/fb0/blank"
 #define DISPLAY_FB1_BLANK               "/sys/class/graphics/fb1/blank"
 #define DISPLAY_LOGO_INDEX              "/sys/module/fb/parameters/osd_logo_index"
-#define SYS_DISABLE_VIDEO               "/sys/class/video/disable_video"
 
 #define DISPLAY_FB0_FREESCALE           "/sys/class/graphics/fb0/free_scale"
 #define DISPLAY_FB1_FREESCALE           "/sys/class/graphics/fb1/free_scale"
@@ -76,10 +65,8 @@ using namespace android;
 
 #define DISPLAY_FB0_FREESCALE_AXIS      "/sys/class/graphics/fb0/free_scale_axis"
 #define DISPLAY_FB0_WINDOW_AXIS         "/sys/class/graphics/fb0/window_axis"
-#define DISPLAY_FB0_FREESCALE_SWTICH    "/sys/class/graphics/fb0/free_scale_switch"
 
-#define DISPLAY_HDMI_HDCP14_STOP          "stop14" //stop HDCP1.4 authenticate
-#define DISPLAY_HDMI_HDCP22_STOP          "stop22" //stop HDCP2.2 authenticate
+#define DISPLAY_HDMI_HDCP_STOP          "stop14" //stop HDCP authenticate
 #define DISPLAY_HDMI_HDCP_14            "1"
 #define DISPLAY_HDMI_HDCP_22            "2"
 #define DISPLAY_HDMI_HDCP_VER           "/sys/class/amhdmitx/amhdmitx0/hdcp_ver"//RX support HDCP version
@@ -87,13 +74,9 @@ using namespace android;
 #define DISPLAY_HDMI_HDCP_AUTH          "/sys/module/hdmitx20/parameters/hdmi_authenticated"//HDCP Authentication
 #define DISPLAY_HDMI_HDCP_CONF          "/sys/class/amhdmitx/amhdmitx0/hdcp_ctrl" //HDCP config
 #define DISPLAY_HDMI_HDCP_KEY           "/sys/class/amhdmitx/amhdmitx0/hdcp_lstore"//TX have 22 or 14 or none key
-#define DISPLAY_HDMI_HDCP_POWER          "/sys/class/amhdmitx/amhdmitx0/hdcp_pwr"//write to 1, force hdcp_tx22 quit safely
 
 #define DISPLAY_HPD_STATE               "/sys/class/amhdmitx/amhdmitx0/hpd_state"
 #define DISPLAY_HDMI_EDID               "/sys/class/amhdmitx/amhdmitx0/disp_cap"//RX support display mode
-#define DISPLAY_HDMI_DEEP_COLOR         "/sys/class/amhdmitx/amhdmitx0/dc_cap"//RX supoort deep color
-#define DISPLAY_HDMI_MIC                "/sys/class/amhdmitx/amhdmitx0/vic"//if switch between 8bit and 10bit, clear mic first
-
 #define DISPLAY_HDMI_AVMUTE             "/sys/devices/virtual/amhdmitx/amhdmitx0/avmute"
 #define DISPLAY_EDID_VALUE              "/sys/class/amhdmitx/amhdmitx0/edid"
 #define DISPLAY_HDMI_PHY                "/sys/class/amhdmitx/amhdmitx0/phy"
@@ -102,29 +85,8 @@ using namespace android;
 #define AV_HDMI_CONFIG                  "/sys/class/amhdmitx/amhdmitx0/config"
 #define AV_HDMI_3D_SUPPORT              "/sys/class/amhdmitx/amhdmitx0/support_3d"
 
-#define HDMI_TX_PLUG_UEVENT    "DEVPATH=/devices/virtual/switch/hdmi"
-#define HDMI_TX_POWER_UEVENT    "DEVPATH=/devices/virtual/switch/hdmi_power"
-#define HDMI_TX_PLUG_STATE    "/sys/devices/virtual/switch/hdmi/state"
-
-#define HDMI_TX_PLUG_OUT    "0"
-#define HDMI_TX_PLUG_IN    "1"
-#define HDMI_TX_SUSPEND    "0"
-#define HDMI_TX_RESUME    "1"
-
-//HDCP RX
-#define HDMI_RX_PLUG_UEVENT    "DEVPATH=/devices/virtual/switch/hdmirx_hpd"    //1:plugin 0:plug out
-#define HDMI_RX_AUTH_UEVENT    "DEVPATH=/devices/virtual/switch/hdmirx_hdcp_auth"    //0:FAIL 1:HDCP14 2:HDCP22
-
-#define HDMI_RX_PLUG_OUT    "0"
-#define HDMI_RX_PLUG_IN    "1"
-#define HDMI_RX_AUTH_FAIL    "0"
-#define HDMI_RX_AUTH_HDCP14    "1"
-#define HDMI_RX_AUTH_HDCP22   "2"
-
-#define HDMI_RX_HPD_STATE               "/sys/module/tvin_hdmirx/parameters/hpd_to_esm"
-#define HDMI_RX_KEY_COMBINE             "/sys/module/tvin_hdmirx/parameters/hdcp22_firmware_ok_flag"
-
-#define VIDEO_LAYER1_UEVENT             "DEVPATH=/devices/virtual/switch/video_layer1"
+#define HDMI_UEVENT                     "DEVPATH=/devices/virtual/switch/hdmi"
+#define HDMI_POWER_UEVENT               "DEVPATH=/devices/virtual/switch/hdmi_power"
 
 #define PROP_HDMIONLY                   "ro.platform.hdmionly"
 #define PROP_LCD_DENSITY                "ro.sf.lcd_density"
@@ -136,7 +98,7 @@ using namespace android;
 #define PROP_FS_MODE                    "const.filesystem.mode"
 #define PROP_BOOTANIM_DELAY             "const.bootanim.delay"
 #define PROP_BOOTVIDEO_SERVICE          "service.bootvideo"
-#define PROP_DEEPCOLOR                  "sys.open.deepcolor" //default close this function, when reboot
+
 
 #define ENV_480I_X                      "ubootenv.var.480i_x"
 #define ENV_480I_Y                      "ubootenv.var.480i_y"
@@ -191,17 +153,18 @@ using namespace android;
 #define ENV_4K2KSMPTE_W                 "ubootenv.var.4k2ksmpte_w"
 #define ENV_4K2KSMPTE_H                 "ubootenv.var.4k2ksmpte_h"
 
-#define SUFFIX_10BIT                    "10bit"
-#define SUFFIX_12BIT                    "12bit"
-#define SUFFIX_14BIT                    "14bit"
-#define SUFFIX_RGB                      "rgb"
-
 #define UBOOTENV_DIGITAUDIO             "ubootenv.var.digitaudiooutput"
 #define UBOOTENV_HDMIMODE               "ubootenv.var.hdmimode"
 #define UBOOTENV_CVBSMODE               "ubootenv.var.cvbsmode"
 #define UBOOTENV_OUTPUTMODE             "ubootenv.var.outputmode"
 #define UBOOTENV_ISBESTMODE             "ubootenv.var.is.bestmode"
 #define UBOOTENV_EDIDCRCVALUE           "ubootenv.var.edid.crcvalue"
+#define UBOOTENV_OVERSCAN_LEFT          "ubootenv.var.overscan_left"
+#define UBOOTENV_OVERSCAN_TOP           "ubootenv.var.overscan_top"
+#define UBOOTENV_OVERSCAN_RIGHT         "ubootenv.var.overscan_right"
+#define UBOOTENV_OVERSCAN_BOTTOM        "ubootenv.var.overscan_bottom"
+#define UBOOTENV_CUSTOMWIDTH		"ubootenv.var.customwidth"
+#define UBOOTENV_CUSTOMHEIGHT		"ubootenv.var.customheight"
 
 #define FULL_WIDTH_480                  720
 #define FULL_HEIGHT_480                 480
@@ -215,11 +178,6 @@ using namespace android;
 #define FULL_HEIGHT_4K2K                2160
 #define FULL_WIDTH_4K2KSMPTE            4096
 #define FULL_HEIGHT_4K2KSMPTE           2160
-
-enum {
-    EVENT_OUTPUT_MODE_CHANGE            = 0,
-    EVENT_DIGITAL_MODE_CHANGE           = 1,
-};
 
 enum {
     DISPLAY_TYPE_NONE                   = 0,
@@ -246,16 +204,28 @@ enum {
 #define MODE_4K2K30HZ                   "2160p30hz"
 #define MODE_4K2K50HZ                   "2160p50hz"
 #define MODE_4K2K50HZ420                "2160p50hz420"
-#define MODE_4K2K50HZ422                "2160p50hz422"
 #define MODE_4K2K60HZ                   "2160p60hz"
 #define MODE_4K2K60HZ420                "2160p60hz420"
-#define MODE_4K2K60HZ422                "2160p60hz422"
 #define MODE_4K2KSMPTE                  "smpte24hz"
-#define MODE_4K2KSMPTE30HZ              "smpte30hz"
-#define MODE_4K2KSMPTE50HZ              "smpte50hz"
-#define MODE_4K2KSMPTE50HZ420           "smpte50hz420"
-#define MODE_4K2KSMPTE60HZ              "smpte60hz"
-#define MODE_4K2KSMPTE60HZ420           "smpte60hz420"
+#define MODE_640X480P60HZ		"640x480p60hz"
+#define MODE_800X600P60HZ		"800x600p60hz"
+#define MODE_800X480P60HZ		"800x480p60hz"
+#define MODE_1024X600P60HZ		"1024x600p60hz"
+#define MODE_1024X768P60HZ		"1024x768p60hz"
+#define MODE_1280X800P60HZ		"1280x800p60hz"
+#define MODE_1280X1024P60HZ		"1280x1024p60hz"
+#define MODE_1360X768P60HZ		"1360x768p60hz"
+#define MODE_1366X768P60HZ		"1366x768p60hz"
+#define MODE_1440X900P60HZ		"1440x900p60hz"
+#define MODE_1600X900P60HZ		"1600x900p60hz"
+#define MODE_1600X1200P60HZ		"1600x1200p60hz"
+#define MODE_1680X1050P60HZ		"1680x1050p60hz"
+#define MODE_1920X1200P60HZ		"1920x1200p60hz"
+#define MODE_2560X1440P60HZ		"2560x1440p60hz"
+#define MODE_2560X1600P60HZ		"2560x1600p60hz"
+#define MODE_2560X1080P60HZ		"2560x1080p60hz"
+#define MODE_3440X1440P60HZ		"3440x1440p60hz"
+#define MODE_CUSTOMBUILT		"custombuilt"
 
 enum {
     DISPLAY_MODE_480I                   = 0,
@@ -276,32 +246,46 @@ enum {
     DISPLAY_MODE_4K2K30HZ               = 15,
     DISPLAY_MODE_4K2K50HZ               = 16,
     DISPLAY_MODE_4K2K50HZ420            = 17,
-    DISPLAY_MODE_4K2K50HZ422            = 18,
-    DISPLAY_MODE_4K2K60HZ               = 19,
-    DISPLAY_MODE_4K2K60HZ420            = 20,
-    DISPLAY_MODE_4K2K60HZ422            = 21,
-    DISPLAY_MODE_4K2KSMPTE              = 22,
-    DISPLAY_MODE_4K2KSMPTE30HZ          = 23,
-    DISPLAY_MODE_4K2KSMPTE50HZ          = 24,
-    DISPLAY_MODE_4K2KSMPTE50HZ420       = 25,
-    DISPLAY_MODE_4K2KSMPTE60HZ          = 26,
-    DISPLAY_MODE_4K2KSMPTE60HZ420       = 27,
-    DISPLAY_MODE_TOTAL                  = 28
+    DISPLAY_MODE_4K2K60HZ               = 18,
+    DISPLAY_MODE_4K2K60HZ420            = 19,
+    DISPLAY_MODE_4K2KSMPTE              = 20,
+    DISPLAY_MODE_640X480P60HZ		= 21,
+    DISPLAY_MODE_800X600P60HZ		= 22,
+    DISPLAY_MODE_800X480P60HZ		= 23,
+    DISPLAY_MODE_1024X600P60HZ		= 24,
+    DISPLAY_MODE_1024X768P60HZ		= 25,
+    DISPLAY_MODE_1280X800P60HZ		= 26,
+    DISPLAY_MODE_1280X1024P60HZ		= 27,
+    DISPLAY_MODE_1360X768P60HZ		= 28,
+    DISPLAY_MODE_1366X768P60HZ		= 29,
+    DISPLAY_MODE_1440X900P60HZ		= 30,
+    DISPLAY_MODE_1600X900P60HZ		= 31,
+    DISPLAY_MODE_1600X1200P60HZ		= 32,
+    DISPLAY_MODE_1680X1050P60HZ		= 33,
+    DISPLAY_MODE_1920X1200P60HZ		= 34,
+    DISPLAY_MODE_2560X1440P60HZ		= 35,
+    DISPLAY_MODE_2560X1600P60HZ		= 36,
+    DISPLAY_MODE_2560X1080P60HZ		= 37,
+    DISPLAY_MODE_3440X1440P60HZ		= 38,
+    DISPLAY_MODE_CUSTOMBUILT		= 39,
+    DISPLAY_MODE_TOTAL                  = 40
 };
-
-typedef enum {
-    OUPUT_MODE_STATE_INIT               = 0,
-    OUPUT_MODE_STATE_POWER              = 1,
-    OUPUT_MODE_STATE_SWITCH             = 2,
-    OUPUT_MODE_STATE_RESERVE            = 3
-}output_mode_state;
 
 typedef struct hdmi_data {
     char edid[MAX_STR_LEN];
     char hpd_state[10];//"0" or "1", hdmi pluged or not
     char current_mode[MODE_LEN];
     char ubootenv_hdmimode[MODE_LEN];
+    char custom_width[5];
+    char custom_height[5];
 }hdmi_data_t;
+
+typedef struct overscan_data {
+    char left[5];
+    char top[5];
+    char right[5];
+    char bottom[5];
+}overscan_data_t;
 
 typedef struct axis_s {
     int x;
@@ -309,13 +293,6 @@ typedef struct axis_s {
     int w;
     int h;
 } axis_t;
-
-typedef struct uevent_data {
-    int len;
-    char buf[1024];
-    char name[128];
-    char state[128];
-} uevent_data_t;
 
 // ----------------------------------------------------------------------------
 
@@ -326,7 +303,6 @@ public:
     ~DisplayMode();
 
     void init();
-    void reInit();
 
     void getDisplayInfo(int &type, char* socType, char* defaultUI);
     void getFbInfo(int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
@@ -338,34 +314,24 @@ public:
     void setDigitalMode(const char* mode);
     void setOsdMouse(const char* curMode);
     void setOsdMouse(int x, int y, int w, int h);
+    void setOverscan(const char* curMode);
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
     static void* bootanimDetect(void *data);
+    static void* tmpDisableOsd(void *data);
 
-    void setMboxDisplay(char* hpdstate, output_mode_state state);
+    void setMboxDisplay(char* hpdstate, bool initState);
 
     void setNativeWindowRect(int x, int y, int w, int h);
     void setVideoPlayingAxis();
+    void setVideoPlaying(bool playing);
 
-    void hdcpRxStartSvc();
-    void hdcpRxStopSvc();
-    void hdcpRxForceFlushVideoLayer();
-    void hdcpTxStart22();
-    void hdcpTxStart14();
-    void hdcpTxStartSvc();
-    void hdcpTxStop();
-    void hdcpTxStopSvc();
-    void hdcpTxSuspend();
     void hdcpSwitch();
 
-    int hdcpTxThreadStart();
-    int hdcpTxThreadExit();
 #ifndef RECOVERY_MODE
     void notifyEvent(int event);
     void setListener(const sp<ISystemControlNotify>& listener);
 #endif
-
-    int mRxSupportHdcpAuth;
 
 private:
 
@@ -375,31 +341,32 @@ private:
     int parseConfigFile();
     void setTabletDisplay();
     void getBestHdmiMode(char * mode, hdmi_data_t* data);
-    void getHighestHdmiMode(char* mode, hdmi_data_t* data);
     void filterHdmiMode(char * mode, hdmi_data_t* data);
-    void standardMode(char* mode);
-    void addSuffixForMode(char* mode);
     void getHdmiOutputMode(char *mode, hdmi_data_t* data);
     bool isEdidChange();
     bool isBestOutputmode();
-    bool isDeepColor();
     void initHdmiData(hdmi_data_t* data, char* hpdstate);
-    void setMboxOutputMode(const char* outputmode, output_mode_state state);
-    void setTVOutputMode(const char* outputmode, bool initState);
+    void setMboxOutputMode(const char* outputmode, bool initState);
+    void setTVOutputMode(const char* outputmode);
     int modeToIndex(const char *mode);
     void startHdmiPlugDetectThread();
     void startBootanimDetectThread();
-    static void* HdmiUenventThreadLoop(void* data);
-    void setTVDisplay(bool initState);
+    void startDisableOsdThread();
+    void setTVDisplay();
+    void fbset(int width, int height, int bits);
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
-    int getBootenvInt(const char* key, int defaultVal);
+    void setVideoAxis(const char *preMode, const char *mode);
+    void calcVideoAxis(const axis_t *prePosition, const axis_t *position,
+            const axis_t *axis, axis_t *videoAxis);
+    bool axisValid(const axis_t *axis);
+    bool axisEqual(int value1, int value2);
+    bool checkAxisSame(const axis_t *axis1, const axis_t *axis2);
+    void axisStr(const axis_t *axis, char *str);
 
-    bool hdcpTxInit(bool *pHdcp22, bool *pHdcp14);
-    void hdcpRxInit();
-    void hdcpTxAuthenticate(bool useHdcp22, bool useHdcp14);
-    static void* hdcpTxThreadLoop(void* data);
-    static void* hdcpRxThreadLoop(void* data);
-    void hdcpRxAuthenticate(bool plugIn);
+    int getBootenvInt(const char* key, int defaultVal);
+    void hdcpAuthenticate();
+
+    std::map<std::string, axis_t> mVideoAxisMap;
 
     const char* pConfigPath;
     int mDisplayType;
@@ -424,20 +391,12 @@ private:
     char mSocType[MAX_STR_LEN];
     char mDefaultUI[MAX_STR_LEN];//this used for mbox
     int mLogLevel;
-    int mLastVideoState;
     SysWrite *pSysWrite = NULL;
-
-    pthread_mutex_t pthreadTxMutex/*, pthreadRxMutex*/;
-    sem_t pthreadTxSem/*, pthreadRxSem*/;
-    pthread_t pthreadIdHdcpTx/*, pthreadIdHdcpRx*/;
-    bool mExitHdcpTxThread/*, mExitHdcpRxThread*/;
-
-    sem_t pthreadBootDetectSem;
-    bool mBootAnimDetectFinished;
 
 #ifndef RECOVERY_MODE
     sp<ISystemControlNotify> mNotifyListener;
 #endif
+
 };
 
 #endif // ANDROID_DISPLAY_MODE_H
