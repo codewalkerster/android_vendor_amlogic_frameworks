@@ -50,6 +50,7 @@ public class BootComplete extends BroadcastReceiver {
             new PlayBackManager(context).initHdmiSelfadaption();
 
             new HdmiCecExtend(context);
+            cecLanguageCheck(context);
 
             if (sm.getPropertyBoolean("ro.platform.has.tvuimode", false)) {
                 new HdrManager(context).initHdrMode();
@@ -60,6 +61,12 @@ public class BootComplete extends BroadcastReceiver {
 
             initDefaultAnimationSettings(context);
         }
+    }
+
+    public void cecLanguageCheck(Context context){
+        Intent serviceIntent = new Intent(context, CecService.class);
+        serviceIntent.setAction("CEC_LANGUAGE_AUTO_SWITCH");
+        context.startService(serviceIntent);
     }
 
     //this function fix setting database not load AnimationSettings bug
