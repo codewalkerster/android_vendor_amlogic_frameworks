@@ -527,16 +527,6 @@ public:
         ALOGV("get position x:%d, y:%d, w:%d, h:%d\n", x, y, w, h);
     }
 
-    virtual void reInit(void) {
-        Parcel data, reply;
-        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
-
-        if (remote()->transact(REINIT, data, &reply) != NO_ERROR) {
-            ALOGE("reInit could not contact remote\n");
-            return;
-        }
-    }
-
     virtual void setNativeWindowRect(int x, int y, int w, int h)
     {
         Parcel data, reply;
@@ -748,11 +738,6 @@ status_t BnISystemControlService::onTransact(
             reply->writeInt32(y);
             reply->writeInt32(w);
             reply->writeInt32(h);
-            return NO_ERROR;
-        }
-        case REINIT: {
-            CHECK_INTERFACE(ISystemControlService, data, reply);
-            reInit();
             return NO_ERROR;
         }
         case SET_NATIVE_WIN_RECT:{

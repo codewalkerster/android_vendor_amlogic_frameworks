@@ -51,7 +51,6 @@ public class SystemControlManager {
     private static final int SET_POSITION           = IBinder.FIRST_CALL_TRANSACTION + 15;
     private static final int GET_POSITION           = IBinder.FIRST_CALL_TRANSACTION + 16;
 
-    private static final int REINIT                 = IBinder.FIRST_CALL_TRANSACTION + 17;
     private static final int SET_NATIVE_WIN_RECT     = IBinder.FIRST_CALL_TRANSACTION + 18;
     private static final int SET_VIDEO_PLAYING       = IBinder.FIRST_CALL_TRANSACTION + 19;
     private static final int SET_POWER_MODE          = IBinder.FIRST_CALL_TRANSACTION + 20;
