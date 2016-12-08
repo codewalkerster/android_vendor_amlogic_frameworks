@@ -366,16 +366,6 @@ public:
         }
     }
 
-    virtual void instabootResetDisplay(void) {
-        Parcel data, reply;
-        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
-
-        if (remote()->transact(INSTABOOT_RESET_DISPLAY, data, &reply) != NO_ERROR) {
-            ALOGE("instabootResetDisplay could not contact remote\n");
-            return;
-        }
-    }
-
     virtual void setNativeWindowRect(int x, int y, int w, int h)
     {
         Parcel data, reply;
@@ -592,11 +582,6 @@ status_t BnISystemControlService::onTransact(
         case REINIT: {
             CHECK_INTERFACE(ISystemControlService, data, reply);
             reInit();
-            return NO_ERROR;
-        }
-        case INSTABOOT_RESET_DISPLAY: {
-            CHECK_INTERFACE(ISystemControlService, data, reply);
-            instabootResetDisplay();
             return NO_ERROR;
         }
         case SET_NATIVE_WIN_RECT:{
