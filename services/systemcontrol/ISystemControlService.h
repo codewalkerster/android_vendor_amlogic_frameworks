@@ -53,8 +53,6 @@ enum {
     SET_POSITION            = IBinder::FIRST_CALL_TRANSACTION + 15,
     GET_POSITION            = IBinder::FIRST_CALL_TRANSACTION + 16,
 
-    REINIT                  = IBinder::FIRST_CALL_TRANSACTION + 17,
-
     //used by video playback
     SET_NATIVE_WIN_RECT     = IBinder::FIRST_CALL_TRANSACTION + 18,
     SET_VIDEO_PLAYING       = IBinder::FIRST_CALL_TRANSACTION + 19,
@@ -100,8 +98,6 @@ public:
     virtual void setOsdMousePara(int x, int y, int w, int h) = 0;
     virtual void setPosition(int left, int top, int width, int height) = 0;
     virtual void getPosition(const String16& mode, int &x, int &y, int &w, int &h) = 0;
-    virtual void reInit(void) = 0;
-    virtual void instabootResetDisplay(void) = 0;
 
     virtual void setNativeWindowRect(int x, int y, int w, int h) = 0;
     virtual void setVideoPlayingAxis(void) = 0;
