@@ -55,7 +55,6 @@ public class SystemControlManager {
     private static final int SET_NATIVE_WIN_RECT     = IBinder.FIRST_CALL_TRANSACTION + 18;
     private static final int SET_VIDEO_PLAYING       = IBinder.FIRST_CALL_TRANSACTION + 19;
     private static final int SET_POWER_MODE          = IBinder.FIRST_CALL_TRANSACTION + 20;
-    private static final int INSTABOOT_RESET_DISPLAY = IBinder.FIRST_CALL_TRANSACTION + 21;
     private static final int SET_DIGITAL_MODE        = IBinder.FIRST_CALL_TRANSACTION + 22;
     private static final int SET_3D_MODE             = IBinder.FIRST_CALL_TRANSACTION + 23;
     private static final int SET_LISTENER            = IBinder.FIRST_CALL_TRANSACTION + 24;
