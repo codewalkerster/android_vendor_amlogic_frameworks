@@ -285,6 +285,14 @@ void DisplayMode::fbset(int width, int height, int bits)
 
     mDisplayWidth = width;
     mDisplayHeight = height;
+
+    char axis[512] = {0};
+    sprintf(axis, "%d %d %d %d %d %d %d %d",
+        0, 0, mFb0Width, mFb0Height, 0, 0, mFb1Width, mFb1Height);
+
+    pSysWrite->writeSysfs(SYSFS_DISPLAY_AXIS, axis);
+
+    pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
 }
 
 void DisplayMode::setTabletDisplay() {
@@ -455,14 +463,8 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, axis);
     SYS_LOGI("%s > %s", axis, SYSFS_VIDEO_AXIS);
 
-    pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
-    SYS_LOGI("%s > %s", axis, DISPLAY_FB0_WINDOW_AXIS);
-
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-
-    pSysWrite->writeSysfs(DISPLAY_PPMGR, "0");
-    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0");
 
     //audio
     getBootEnv(UBOOTENV_DIGITAUDIO, value);
@@ -479,9 +481,6 @@ void DisplayMode::setMboxDisplay(char* hpdstate) {
     pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, audiovalue);
 
     setOsdMouse(current_mode);
-
-    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-    pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
 
     free(data);
     data = NULL;
@@ -741,9 +740,6 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
     else if (!strncmp(mDefaultUI, "4k2k", 4))
         displaySize = "3840 2160";
 
-    char cur_mode[MAX_STR_LEN] = {0};
-    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, cur_mode);
-
 #if !defined(ODROIDC)
     if (!strcmp(cur_mode, DISPLAY_MODE_LIST[0]) || !strcmp(cur_mode, DISPLAY_MODE_LIST[2]) ||
         !strcmp(cur_mode, DISPLAY_MODE_LIST[5]) || !strcmp(cur_mode, DISPLAY_MODE_LIST[8]) ||
@@ -754,11 +750,18 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
 #endif
 
     char axis[512] = {0};
-    //sprintf(axis, "%d %d %s %d %d 18 18", x, y, displaySize, x, y);
-    sprintf(axis, "%d %d %d %d %d %d 18 18", mOverscanLeft, mOverscanTop,
-            mDisplayWidth - mOverscanLeft - mOverscanRight,
-            mDisplayHeight - mOverscanTop - mOverscanBottom,
-            mOverscanLeft, mOverscanTop);
+    sprintf(axis, "%d %d %d %d", mOverscanLeft, mOverscanTop,
+            mDisplayWidth - mOverscanLeft - 1,
+            mDisplayHeight - mOverscanTop - 1);
+    pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
+    SYS_LOGI("%s > %s", axis, DISPLAY_FB0_WINDOW_AXIS);
+
+    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+    SYS_LOGI("%s > %s", "0x10001", DISPLAY_FB0_FREESCALE);
+
+    sprintf(axis, "%d %d %d %d %d %d 18 18", 0, 0,
+            mDisplayWidth, mDisplayHeight,
+            0, 0);
     pSysWrite->writeSysfs(SYSFS_DISPLAY_AXIS, axis);
     SYS_LOGI("%s > %s", axis, SYSFS_DISPLAY_AXIS);
 }
