@@ -334,7 +334,7 @@ void DigManager::handleCacheRo() {
     if (isRebooting())
         return;
 
-    char cache_dev[] = "/dev/block/mmcblk0p3";
+    char cache_dev[] = "/dev/block/cache";
     char target[] = "/cache";
 
     if (isFileExist(cache_dev) == 0) {
@@ -364,7 +364,7 @@ void DigManager::handleCacheNull() {
     if (isRebooting())
         return;
 
-    char cache_dev[] = "/dev/block/mmcblk0p3";
+    char cache_dev[] = "/dev/block/cache";
     char target[] = "/cache";
 
     if (isFileExist(cache_dev) == 0) {
@@ -580,7 +580,7 @@ bool DigManager::isRebooting() {
 }
 
 int DigManager::doMount(char *name, char *device) {
-    const char *file = "/fstab.odroidc2";
+    const char *file = "/fstab.amlogic";
     pid_t pid;
     int ret = -1;
     int child_ret = -1;
