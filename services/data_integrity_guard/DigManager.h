@@ -47,13 +47,6 @@
 #define DATA_RO_COUNT_MAX_PROP "ro.dig.dataro_count_max"
 #define DATA_RO_COUNT_MAX_DEFAULT "5"
 
-// data remount as read only by kernel
-#define DIG_REPORT_DATA_READ_ONLY 680
-// data can' t mount
-#define DIG_REPORT_DATA_CRASH 681
-// system file change
-#define DIG_REPORT_SYSTEM_CHANGED 682
-
 class DigManager {
 private:
     static DigManager *sInstance;
@@ -67,7 +60,6 @@ private:
     int mDataRoCountMax;
     int mCheckInterval;
     int mCheckSystemCount;
-    bool mConnected;
 
 public:
     virtual ~DigManager();
@@ -79,17 +71,11 @@ public:
     SocketListener *getBroadcaster() { return mBroadcaster; }
 
     static DigManager *Instance();
-    static void StartDig();
-    void setConnect(bool status) { mConnected = status; }
-    bool isConnected() { return mConnected; }
 
 private:
     DigManager();
     void* workThread(void);
     static void* _workThread(void *cookie);
-    void startListener();
-    bool waitForConnected();
-    void sendBroadcast(int code, const char *msg, bool addErrno);
 
     int isFileExist(const char* path);
     int isSupportSystemBak();
