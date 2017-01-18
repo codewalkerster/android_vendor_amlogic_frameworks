@@ -56,8 +56,8 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_576I,
     MODE_576P,
     MODE_576CVBS,
-    MODE_720P,
     MODE_720P50HZ,
+    MODE_720P,
     MODE_1080P24HZ,
     MODE_1080I50HZ,
     MODE_1080P50HZ,
@@ -70,7 +70,26 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_4K2K50HZ420,
     MODE_4K2K60HZ,
     MODE_4K2K60HZ420,
-    MODE_4K2KSMPTE
+    MODE_4K2KSMPTE,
+    MODE_640X480P60HZ,
+    MODE_800X600P60HZ,
+    MODE_800X480P60HZ,
+    MODE_1024X600P60HZ,
+    MODE_1024X768P60HZ,
+    MODE_1280X800P60HZ,
+    MODE_1280X1024P60HZ,
+    MODE_1360X768P60HZ,
+    MODE_1366X768P60HZ,
+    MODE_1440X900P60HZ,
+    MODE_1600X900P60HZ,
+    MODE_1600X1200P60HZ,
+    MODE_1680X1050P60HZ,
+    MODE_1920X1200P60HZ,
+    MODE_2560X1440P60HZ,
+    MODE_2560X1600P60HZ,
+    MODE_2560X1080P60HZ,
+    MODE_3440X1440P60HZ,
+    MODE_CUSTOMBUILT,
 };
 
 static const char* VIDEO_3D_MODE_LIST[VIDEO_3D_MODE_TOTAL] = {
@@ -321,7 +340,9 @@ DisplayMode::DisplayMode(const char *path)
         pConfigPath = path;
     }
 
+#if !defined(ODROIDC2)
     SYS_LOGI("display mode config path: %s", pConfigPath);
+#endif
 
     strcpy(mMode3d, VIDEO_3D_OFF);
     pSysWrite = new SysWrite();
@@ -339,6 +360,9 @@ void DisplayMode::init() {
         exit(0);
     }
 
+#if defined(ODROIDC2)
+    setMboxDisplay(NULL, OUPUT_MODE_STATE_INIT);
+#else
     parseConfigFile();
 
     SYS_LOGI("display mode init type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s, default UI:%s",
@@ -364,6 +388,7 @@ void DisplayMode::init() {
             SYS_LOGE("Create hdcpRxThreadLoop error!\n");
         }
     }
+#endif
 }
 
 void DisplayMode::reInit() {
@@ -510,6 +535,30 @@ int DisplayMode::parseConfigFile(){
     return status;
 }
 
+void DisplayMode::fbset(int width, int height, int bits)
+{
+    struct fb_var_screeninfo var_set;
+
+    mFb0Width = width;
+    mFb0Height = height;
+    mFb0FbBits = bits;
+
+    var_set.xres = mFb0Width;
+    var_set.yres = mFb0Height;
+    var_set.xres_virtual = mFb0Width;
+    var_set.yres_virtual = mFb0Height * (mFb0TripleEnable ? 3 : 2);
+    var_set.bits_per_pixel = mFb0FbBits;
+    setFbParameter(DISPLAY_FB0, var_set);
+
+    pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
+    var_set.xres = mFb1Width;
+    var_set.yres = mFb1Height;
+    var_set.xres_virtual = mFb1Width;
+    var_set.yres_virtual = mFb1Height * (mFb1TripleEnable ? 3 : 2);
+    var_set.bits_per_pixel = mFb1FbBits;
+    setFbParameter(DISPLAY_FB1, var_set);
+}
+
 void DisplayMode::setTabletDisplay() {
     struct fb_var_screeninfo var_set;
 
@@ -627,9 +676,80 @@ void DisplayMode::mode3DImpl() {
 void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
     hdmi_data_t data;
     char outputmode[MODE_LEN] = {0};
+    unsigned int custom_width, custom_height;
     memset(&data, 0, sizeof(hdmi_data_t));
 
     initHdmiData(&data, hpdstate);
+#if defined(ODROIDC2)
+    getBootEnv(UBOOTENV_HDMIMODE, data.ubootenv_hdmimode);
+
+    getBootEnv(UBOOTENV_CUSTOMWIDTH, data.custom_width);
+    getBootEnv(UBOOTENV_CUSTOMHEIGHT, data.custom_height);
+
+    if (!strncmp(data.ubootenv_hdmimode, "2160", 3)) {
+        /* FIXME: real 4K framebuffer is too slow, so using 1080p
+         * fbset(3840, 2160, 32);
+         */
+        fbset(1920, 1080, 32);
+    } else if (!strncmp(data.ubootenv_hdmimode, "1080", 3))
+        fbset(1920, 1080, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "640x480", 7))
+        fbset(640, 480, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "800x600", 7))
+        fbset(800, 600, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "800x480", 7))
+        fbset(800, 480, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1024x600", 8))
+        fbset(1024, 600, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1024x768", 8))
+        fbset(1024, 768, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1280x800", 8))
+        fbset(1280, 800, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1280x1024", 9))
+        fbset(1280, 1024, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1360x768", 8))
+        fbset(1360, 768, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1366x768", 8))
+        fbset(1366, 768, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1440x900", 8))
+        fbset(1440, 900, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1600x900", 8))
+        fbset(1600, 900, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1600x1200", 9))
+        fbset(1600, 1200, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1680x1050", 9))
+        fbset(1680, 1050, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "1920x1200", 9))
+        fbset(1920, 1200, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "2560x1440", 9))
+        fbset(2560, 1440, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "2560x1600", 9))
+        fbset(2560, 1600, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "2560x1080", 9))
+        fbset(2560, 1080, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "3440x1440", 9)) {
+        /* 3440x1440 - scaling with 21:9 ratio */
+        fbset(2560, 1080, 32);
+    } else if (!strncmp(data.ubootenv_hdmimode, "480", 3))
+        fbset(720, 480, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "576", 3))
+        fbset(720, 576, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "custombuilt",11)) {
+        custom_width = atoi(data.custom_width);
+        custom_height = atoi(data.custom_height);
+        fbset(custom_width, custom_height, 32);
+    } else
+        fbset(1280, 720, 32);
+
+    strcpy(outputmode, data.ubootenv_hdmimode);
+    if (!strncmp(data.ubootenv_hdmimode, "2160", 3))
+        strcpy(mDefaultUI, "1080p60hz");
+    else if (!strncmp(data.ubootenv_hdmimode, "3440", 4))
+        strcpy(mDefaultUI, "2560x1080p60hz");
+    else
+        strcpy(mDefaultUI, outputmode);
+#else
+
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
         if (!strcmp(data.hpd_state, "1")) {
             if ((!strcmp(data.current_mode, MODE_480CVBS) || !strcmp(data.current_mode, MODE_576CVBS))
@@ -657,6 +777,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
             strcpy(outputmode, MODE_576CVBS);
         }
     }
+#endif
 
     SYS_LOGI("init mbox display hpdstate:%s, old outputmode:%s, new outputmode:%s\n",
             data.hpd_state,
@@ -665,6 +786,131 @@ void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
     if (strlen(outputmode) == 0)
         strcpy(outputmode, mDefaultUI);
 
+    if (state == OUPUT_MODE_STATE_INIT) {
+        if (!strncmp(mDefaultUI, "720", 3)) {
+            mDisplayWidth= FULL_WIDTH_720;
+            mDisplayHeight = FULL_HEIGHT_720;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "720");
+        } else if (!strncmp(mDefaultUI, "480", 3)) {
+            mDisplayWidth = 720;
+            mDisplayHeight = 480;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "720");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "480");
+        } else if (!strncmp(mDefaultUI, "576", 3)) {
+            mDisplayWidth = 720;
+            mDisplayHeight = 576;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "720");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "576");
+        } else if (!strncmp(mDefaultUI, "1080", 4)) {
+            mDisplayWidth = FULL_WIDTH_1080;
+            mDisplayHeight = FULL_HEIGHT_1080;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
+    } else if (!strncmp(mDefaultUI, "640x480", 7)) {
+            mDisplayWidth = 640;
+            mDisplayHeight = 480;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "640");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "480");
+    } else if (!strncmp(mDefaultUI, "800x600", 7)) {
+            mDisplayWidth = 800;
+            mDisplayHeight = 600;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "800");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "600");
+    } else if (!strncmp(mDefaultUI, "800x480", 7)) {
+            mDisplayWidth = 800;
+            mDisplayHeight = 480;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "800");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "480");
+    } else if (!strncmp(mDefaultUI, "1024x600", 8)) {
+            mDisplayWidth = 1024;
+            mDisplayHeight = 600;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1024");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "600");
+    } else if (!strncmp(mDefaultUI, "1024x768", 8)) {
+            mDisplayWidth = 1024;
+            mDisplayHeight = 768;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1024");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "768");
+    } else if (!strncmp(mDefaultUI, "1280x800", 8)) {
+            mDisplayWidth = 1280;
+            mDisplayHeight = 800;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "800");
+    } else if (!strncmp(mDefaultUI, "1280x1024", 9)) {
+            mDisplayWidth = 1280;
+            mDisplayHeight = 1024;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1024");
+    } else if (!strncmp(mDefaultUI, "1360x768", 8)) {
+            mDisplayWidth = 1360;
+            mDisplayHeight = 768;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1360");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "768");
+    } else if (!strncmp(mDefaultUI, "1366x768", 8)) {
+            mDisplayWidth = 1366;
+            mDisplayHeight = 768;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1366");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "768");
+    } else if (!strncmp(mDefaultUI, "1440x900", 8)) {
+            mDisplayWidth = 1440;
+            mDisplayHeight = 900;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1440");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "900");
+    } else if (!strncmp(mDefaultUI, "1600x900", 8)) {
+            mDisplayWidth = 1600;
+            mDisplayHeight = 900;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1600");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "900");
+    } else if (!strncmp(mDefaultUI, "1600x1200", 9)) {
+            mDisplayWidth = 1600;
+            mDisplayHeight = 1200;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1600");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1200");
+    } else if (!strncmp(mDefaultUI, "1680x1050", 9)) {
+            mDisplayWidth = 1680;
+            mDisplayHeight = 1050;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1680");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1050");
+    } else if (!strncmp(mDefaultUI, "1920x1200", 9)) {
+            mDisplayWidth = 1920;
+            mDisplayHeight = 1200;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1920");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1200");
+    } else if (!strncmp(mDefaultUI, "2560x1440", 9)) {
+            mDisplayWidth = 2560;
+            mDisplayHeight = 1440;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "2560");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1440");
+    } else if (!strncmp(mDefaultUI, "2560x1600", 9)) {
+            mDisplayWidth = 2560;
+            mDisplayHeight = 1600;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "2560");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1600");
+    } else if (!strncmp(mDefaultUI, "2560x1080", 9)) {
+            mDisplayWidth = 2560;
+            mDisplayHeight = 1080;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "2560");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1080");
+    } else if (!strncmp(mDefaultUI, "3440x1440", 9)) {
+            mDisplayWidth = 3440;
+            mDisplayHeight = 1440;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "3440");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "1440");
+        } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
+            mDisplayWidth = FULL_WIDTH_4K2K;
+            mDisplayHeight = FULL_HEIGHT_4K2K;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "3840");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "2160");
+        } else if (!strncmp(mDefaultUI, "custombuilt", 11)) {
+            mDisplayWidth = atoi(data.custom_width);
+            mDisplayHeight = atoi(data.custom_height);
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, data.custom_width);
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, data.custom_height);
+        }
+    }
+
+    /*
     if (OUPUT_MODE_STATE_INIT == state) {
         if (!strncmp(mDefaultUI, "720", 3)) {
             mDisplayWidth= FULL_WIDTH_720;
@@ -686,6 +932,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
             //pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "2160");
         }
     }
+    */
 
     //output mode not the same
     if (strcmp(data.current_mode, outputmode)) {
@@ -1081,6 +1328,7 @@ void* DisplayMode::bootanimDetect(void* data) {
     }
 
     pThiz->setOsdMouse(outputmode);
+    pThiz->setOverscan(outputmode);
     return NULL;
 }
 
@@ -1244,6 +1492,35 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
     } else {
         pSysWrite->writeSysfs(DISPLAY_FB1_SCALE, "0x10001");
     }
+}
+
+void DisplayMode::setOverscan(const char* curMode) {
+    SYS_LOGI("%s", __func__);
+    overscan_data_t data;
+    memset(&data, 0, sizeof(overscan_data_t));
+    getBootEnv(UBOOTENV_OVERSCAN_LEFT, data.left);
+    getBootEnv(UBOOTENV_OVERSCAN_TOP, data.top);
+    getBootEnv(UBOOTENV_OVERSCAN_RIGHT, data.right);
+    getBootEnv(UBOOTENV_OVERSCAN_BOTTOM, data.bottom);
+
+    if (strlen(data.left) == 0 || strlen(data.top) == 0 || strlen(data.right) == 0
+            || strlen(data.bottom) == 0) {
+        SYS_LOGI("overscan values is N/A");
+        return;
+    }
+
+    int position[4] = { 0, 0, 0, 0 };
+    getPosition(curMode, position);
+
+    char overscan[32] = {0};
+    sprintf(overscan, "%d %d %d %d", position[0] + atoi(data.left), position[1] + atoi(data.top),
+            position[2] - 1 - atoi(data.right), position[3] - 1 - atoi(data.bottom));
+
+    SYS_LOGI("overscan value : %s\n", overscan);
+
+    pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, overscan);
+    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+    return;
 }
 
 void DisplayMode::getPosition(const char* curMode, int *position) {

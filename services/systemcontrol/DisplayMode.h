@@ -181,6 +181,13 @@ using namespace android;
 #define UBOOTENV_ISBESTMODE             "ubootenv.var.is.bestmode"
 #define UBOOTENV_EDIDCRCVALUE           "ubootenv.var.edid.crcvalue"
 
+#define UBOOTENV_OVERSCAN_LEFT          "ubootenv.var.overscan_left"
+#define UBOOTENV_OVERSCAN_TOP           "ubootenv.var.overscan_top"
+#define UBOOTENV_OVERSCAN_RIGHT         "ubootenv.var.overscan_right"
+#define UBOOTENV_OVERSCAN_BOTTOM        "ubootenv.var.overscan_bottom"
+#define UBOOTENV_CUSTOMWIDTH            "ubootenv.var.customwidth"
+#define UBOOTENV_CUSTOMHEIGHT           "ubootenv.var.customheight"
+
 #define FULL_WIDTH_480                  720
 #define FULL_HEIGHT_480                 480
 #define FULL_WIDTH_576                  720
@@ -243,6 +250,25 @@ enum {
 #define MODE_4K2K60HZ                   "2160p60hz"
 #define MODE_4K2K60HZ420                "2160p60hz420"
 #define MODE_4K2KSMPTE                  "smpte24hz"
+#define MODE_640X480P60HZ               "640x480p60hz"
+#define MODE_800X600P60HZ               "800x600p60hz"
+#define MODE_800X480P60HZ               "800x480p60hz"
+#define MODE_1024X600P60HZ              "1024x600p60hz"
+#define MODE_1024X768P60HZ              "1024x768p60hz"
+#define MODE_1280X800P60HZ              "1280x800p60hz"
+#define MODE_1280X1024P60HZ             "1280x1024p60hz"
+#define MODE_1360X768P60HZ              "1360x768p60hz"
+#define MODE_1366X768P60HZ              "1366x768p60hz"
+#define MODE_1440X900P60HZ              "1440x900p60hz"
+#define MODE_1600X900P60HZ              "1600x900p60hz"
+#define MODE_1600X1200P60HZ             "1600x1200p60hz"
+#define MODE_1680X1050P60HZ             "1680x1050p60hz"
+#define MODE_1920X1200P60HZ             "1920x1200p60hz"
+#define MODE_2560X1440P60HZ             "2560x1440p60hz"
+#define MODE_2560X1600P60HZ             "2560x1600p60hz"
+#define MODE_2560X1080P60HZ             "2560x1080p60hz"
+#define MODE_3440X1440P60HZ             "3440x1440p60hz"
+#define MODE_CUSTOMBUILT                "custombuilt"
 
 enum {
     DISPLAY_MODE_480I                   = 0,
@@ -266,7 +292,26 @@ enum {
     DISPLAY_MODE_4K2K60HZ               = 18,
     DISPLAY_MODE_4K2K60HZ420            = 19,
     DISPLAY_MODE_4K2KSMPTE              = 20,
-    DISPLAY_MODE_TOTAL                  = 21
+    DISPLAY_MODE_640X480P60HZ           = 21,
+    DISPLAY_MODE_800X600P60HZ           = 22,
+    DISPLAY_MODE_800X480P60HZ           = 23,
+    DISPLAY_MODE_1024X600P60HZ          = 24,
+    DISPLAY_MODE_1024X768P60HZ          = 25,
+    DISPLAY_MODE_1280X800P60HZ          = 26,
+    DISPLAY_MODE_1280X1024P60HZ         = 27,
+    DISPLAY_MODE_1360X768P60HZ          = 28,
+    DISPLAY_MODE_1366X768P60HZ          = 29,
+    DISPLAY_MODE_1440X900P60HZ          = 30,
+    DISPLAY_MODE_1600X900P60HZ          = 31,
+    DISPLAY_MODE_1600X1200P60HZ         = 32,
+    DISPLAY_MODE_1680X1050P60HZ         = 33,
+    DISPLAY_MODE_1920X1200P60HZ         = 34,
+    DISPLAY_MODE_2560X1440P60HZ         = 35,
+    DISPLAY_MODE_2560X1600P60HZ         = 36,
+    DISPLAY_MODE_2560X1080P60HZ         = 37,
+    DISPLAY_MODE_3440X1440P60HZ         = 38,
+    DISPLAY_MODE_CUSTOMBUILT            = 39,
+    DISPLAY_MODE_TOTAL                  = 40
 };
 
 typedef enum {
@@ -281,7 +326,16 @@ typedef struct hdmi_data {
     char hpd_state[10];//"0" or "1", hdmi pluged or not
     char current_mode[MODE_LEN];
     char ubootenv_hdmimode[MODE_LEN];
+    char custom_width[5];
+    char custom_height[5];
 }hdmi_data_t;
+
+typedef struct overscan_data {
+    char left[5];
+    char top[5];
+    char right[5];
+    char bottom[5];
+}overscan_data_t;
 
 typedef struct axis_s {
     int x;
@@ -319,6 +373,7 @@ public:
     void setDigitalMode(const char* mode);
     void setOsdMouse(const char* curMode);
     void setOsdMouse(int x, int y, int w, int h);
+    void setOverscan(const char* curMode);
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
     static void* bootanimDetect(void *data);
@@ -354,6 +409,7 @@ private:
     void startHdmiPlugDetectThread();
     void startBootanimDetectThread();
     void setTVDisplay(bool initState);
+    void fbset(int width, int height, int bits);
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
 
     int getBootenvInt(const char* key, int defaultVal);
