@@ -1457,19 +1457,78 @@ void DisplayMode::setOsdMouse(const char* curMode) {
 
     int position[4] = { 0, 0, 0, 0 };
     getPosition(curMode, position);
-    setOsdMouse(position[0], position[1], position[2], position[3]);
+
+    overscan_data_t data;
+    memset(&data, 0, sizeof(overscan_data_t));
+    getBootEnv(UBOOTENV_OVERSCAN_LEFT, data.left);
+    getBootEnv(UBOOTENV_OVERSCAN_TOP, data.top);
+    getBootEnv(UBOOTENV_OVERSCAN_RIGHT, data.right);
+    getBootEnv(UBOOTENV_OVERSCAN_BOTTOM, data.bottom);
+
+    setOsdMouse(position[0] + atoi(data.left),
+            position[1] + atoi(data.top),
+            position[2] - atoi(data.right) - atoi(data.left),
+            position[3] - atoi(data.bottom) - atoi(data.top));
 }
 
 void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
     SYS_LOGI("set osd mouse x:%d y:%d w:%d h:%d", x, y, w, h);
 
     const char* displaySize = "1920 1080";
-    if (!strncmp(mDefaultUI, "720", 3)) {
+    if (!strncmp(mDefaultUI, "720", 3))
         displaySize = "1280 720";
-    } else if (!strncmp(mDefaultUI, "1080", 4)) {
+    else if (!strncmp(mDefaultUI, "480", 3))
+        displaySize = "720 480";
+    else if (!strncmp(mDefaultUI, "576", 3))
+        displaySize = "720 576";
+    else if (!strncmp(mDefaultUI, "1080", 4))
         displaySize = "1920 1080";
-    } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
+    else if (!strncmp(mDefaultUI, "4k2k", 4))
         displaySize = "3840 2160";
+    else if (!strncmp(mDefaultUI, "640x480", 7))
+        displaySize = "640 480";
+    else if (!strncmp(mDefaultUI, "800x600", 7))
+        displaySize = "800 600";
+    else if (!strncmp(mDefaultUI, "800x480", 7))
+        displaySize = "800 480";
+    else if (!strncmp(mDefaultUI, "1024x600", 8))
+        displaySize = "1024 600";
+    else if (!strncmp(mDefaultUI, "1024x768", 8))
+        displaySize = "1024 768";
+    else if (!strncmp(mDefaultUI, "1280x800", 8))
+        displaySize = "1280 800";
+    else if (!strncmp(mDefaultUI, "1280x1024", 9))
+        displaySize = "1280 1024";
+    else if (!strncmp(mDefaultUI, "1360x768", 8))
+        displaySize = "1360 768";
+    else if (!strncmp(mDefaultUI, "1366x768", 8))
+        displaySize = "1366 768";
+    else if (!strncmp(mDefaultUI, "1440x900", 8))
+        displaySize = "1440 900";
+    else if (!strncmp(mDefaultUI, "1600x900", 8))
+        displaySize = "1600 900";
+    else if (!strncmp(mDefaultUI, "1600x1200", 9))
+        displaySize = "1600 1200";
+    else if (!strncmp(mDefaultUI, "1680x1050", 9))
+        displaySize = "1680 1050";
+    else if (!strncmp(mDefaultUI, "1920x1200", 9))
+        displaySize = "1920 1200";
+    else if (!strncmp(mDefaultUI, "2560x1440", 9))
+        displaySize = "2560 1440";
+    else if (!strncmp(mDefaultUI, "2560x1600", 9))
+        displaySize = "2560 1600";
+    else if (!strncmp(mDefaultUI, "2560x1080", 9))
+        displaySize = "2560 1080";
+    else if (!strncmp(mDefaultUI, "3440x1440", 9))
+        displaySize = "3440 1440";
+    else if (!strncmp(mDefaultUI, "custombuilt", 11))
+    {
+        int w,h;
+        char disp[10];
+        w = getBootenvInt(UBOOTENV_CUSTOMWIDTH, 1920);
+        h = getBootenvInt(UBOOTENV_CUSTOMHEIGHT, 1080);
+        sprintf(disp, "%d %d", w, h);
+        displaySize = &disp[0];
     }
 
     char cur_mode[MODE_LEN] = {0};
@@ -1612,6 +1671,120 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
             position[2] = getBootenvInt(ENV_4K2KSMPTE_W, FULL_WIDTH_4K2KSMPTE);
             position[3] = getBootenvInt(ENV_4K2KSMPTE_H, FULL_HEIGHT_4K2KSMPTE);
             break;
+        case DISPLAY_MODE_640X480P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 640;
+            position[3] = 480;
+            break;
+        case DISPLAY_MODE_800X600P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 800;
+            position[3] = 600;
+            break;
+        case DISPLAY_MODE_800X480P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 800;
+            position[3] = 480;
+            break;
+        case DISPLAY_MODE_1024X600P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1024;
+            position[3] = 600;
+            break;
+        case DISPLAY_MODE_1024X768P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1024;
+            position[3] = 768;
+            break;
+        case DISPLAY_MODE_1280X800P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1280;
+            position[3] = 800;
+            break;
+        case DISPLAY_MODE_1280X1024P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1280;
+            position[3] = 1024;
+            break;
+        case DISPLAY_MODE_1360X768P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1360;
+            position[3] = 768;
+            break;
+        case DISPLAY_MODE_1366X768P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1366;
+            position[3] = 768;
+            break;
+        case DISPLAY_MODE_1440X900P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1440;
+            position[3] = 900;
+            break;
+        case DISPLAY_MODE_1600X900P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1600;
+            position[3] = 900;
+            break;
+        case DISPLAY_MODE_1600X1200P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1600;
+            position[3] = 1200;
+            break;
+        case DISPLAY_MODE_1680X1050P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1680;
+            position[3] = 1050;
+            break;
+        case DISPLAY_MODE_1920X1200P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 1920;
+            position[3] = 1200;
+            break;
+        case DISPLAY_MODE_2560X1440P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 2560;
+            position[3] = 1440;
+            break;
+        case DISPLAY_MODE_2560X1600P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 2560;
+            position[3] = 1600;
+            break;
+        case DISPLAY_MODE_2560X1080P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 2560;
+            position[3] = 1080;
+            break;
+        case DISPLAY_MODE_3440X1440P60HZ:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 3440;
+            position[3] = 1440;
+            break;
+        case DISPLAY_MODE_CUSTOMBUILT:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = getBootenvInt(UBOOTENV_CUSTOMWIDTH, 1920);
+            position[3] = getBootenvInt(UBOOTENV_CUSTOMHEIGHT, 1080);
+        break;
         default: //1080p
             position[0] = getBootenvInt(ENV_1080P_X, 0);
             position[1] = getBootenvInt(ENV_1080P_Y, 0);
