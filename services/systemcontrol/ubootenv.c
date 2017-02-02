@@ -375,63 +375,8 @@ int bootenv_init(void) {
     int ret = -1;
     int i = 0;
     int count = 0;
-    /*
-    int id = mtd_name_to_number("ubootenv");
-    if (id >= 0) {
-        sprintf(BootenvPartitionName, "/dev/mtd/mtd%d", id);
-        if ((fd = open (BootenvPartitionName, O_RDWR)) < 0) {
-            ERROR("open device(%s) error : %s \n",BootenvPartitionName,strerror(errno) );
-            return -2;
-        }
-        memset(&info, 0, sizeof(info));
-        err = ioctl(fd, MEMGETINFO, &info);
-        if (err < 0) {
-            ERROR("get MTD info error\n");
-            close(fd);
-            return -3;
-        }
-        ENV_EASER_SIZE = info.erasesize;
-        ENV_PARTITIONS_SIZE = info.size;
-        ENV_SIZE = ENV_PARTITIONS_SIZE - sizeof(long);
-
-    } else */if (!stat("/dev/nand_env", &st)) {
-        sprintf (BootenvPartitionName, "/dev/nand_env");
-        ENV_PARTITIONS_SIZE = 0x8000;
-#if defined(MESON8_ENVSIZE) || defined(GXBABY_ENVSIZE) || defined(GXTVBB_ENVSIZE)
-        ENV_PARTITIONS_SIZE = 0x10000;
-#endif
-        ENV_SIZE = ENV_PARTITIONS_SIZE - sizeof(uint32_t);
-        INFO("[ubootenv] using /dev/nand_env with size(%d)(%d)", ENV_PARTITIONS_SIZE,ENV_SIZE);
-    } else if (!stat("/dev/block/env", &st)) {
-        INFO("[ubootenv] stat /dev/block/env OK\n");
-        sprintf (BootenvPartitionName, "/dev/block/env");
-        ENV_PARTITIONS_SIZE = 0x8000;
-#if defined(MESON8_ENVSIZE) || defined(GXBABY_ENVSIZE) || defined(GXTVBB_ENVSIZE)
-        ENV_PARTITIONS_SIZE = 0x10000;
-#endif
-        ENV_SIZE = ENV_PARTITIONS_SIZE - sizeof(uint32_t);
-        INFO("[ubootenv] using /dev/block/env with size(%d)(%d)", ENV_PARTITIONS_SIZE,ENV_SIZE);
-    } else if (!stat("/dev/block/ubootenv", &st)) {
-        sprintf(BootenvPartitionName, "/dev/block/ubootenv");
-        if ((fd = open(BootenvPartitionName, O_RDWR)) < 0) {
-            ERROR("[ubootenv] open device(%s) error\n",BootenvPartitionName );
-            return -2;
-        }
-
-        memset(&info, 0, sizeof(info));
-        err = ioctl(fd, MEMGETINFO, &info);
-        if (err < 0) {
-            fprintf (stderr,"get MTD info error\n");
-            close(fd);
-            return -3;
-        }
-
-        ENV_EASER_SIZE  = info.erasesize;//0x20000;//128K
-        ENV_PARTITIONS_SIZE = info.size;//0x8000;
-        ENV_SIZE = ENV_PARTITIONS_SIZE - sizeof(long);
-    }
 #ifdef ODROIDC2
-    else if (!stat("/dev/block/mmcblk0", &st)) { /* For ODROID-C2 */
+    if (!stat("/dev/block/mmcblk0", &st)) { /* For ODROID-C2 */
         sprintf(BootenvPartitionName, "/dev/block/mmcblk0");
         if ((fd = open(BootenvPartitionName, O_RDWR)) < 0) {
             ERROR("[ubootenv] open device(%s) error\n",BootenvPartitionName );
