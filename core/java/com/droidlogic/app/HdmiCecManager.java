@@ -25,11 +25,13 @@ public class HdmiCecManager {
     public static final int FUN_ONE_KEY_PLAY = 0x02;
     public static final int FUN_AUTO_CHANGE_LANGUAGE = 0x03;
     public static final int FUN_AUTO_POWER_ON = 0x04;
+    public static final int FUN_ONE_KEY_SHUTDOWN = 0x05;
 
     public static final int MASK_FUN_CEC = 0x01;                   // bit 0
     public static final int MASK_ONE_KEY_PLAY = 0x02;              // bit 1
     public static final int MASK_ONE_KEY_STANDBY = 0x04;           // bit 2
     public static final int MASK_AUTO_POWER_ON = 0x08;
+    public static final int MASK_ONE_KEY_SHUTDOWN = 0x10;           // bit 4
     public static final int MASK_AUTO_CHANGE_LANGUAGE = 0x20;      // bit 5
     public static final int MASK_ALL = 0x2f;                       // all mask
 
@@ -197,6 +199,12 @@ public class HdmiCecManager {
                 cec_cfg_value |= MASK_AUTO_CHANGE_LANGUAGE;
             } else {
                 cec_cfg_value &= ~MASK_AUTO_CHANGE_LANGUAGE;
+            }
+        } else if (fun == FUN_ONE_KEY_SHUTDOWN) {
+            if (isOn) {
+                cec_cfg_value |= MASK_ONE_KEY_SHUTDOWN;
+            } else {
+                cec_cfg_value &= ~MASK_ONE_KEY_SHUTDOWN;
             }
         }
         writeConfig = CEC_TAG + Integer.toHexString(cec_cfg_value);
