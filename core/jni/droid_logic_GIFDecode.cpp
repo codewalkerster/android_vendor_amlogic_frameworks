@@ -48,7 +48,7 @@ namespace android
 
         if (DGifSlurp(fGIF) != GIF_OK)
         {
-            DGifCloseFile(fGIF);
+            DGifCloseFile(fGIF, NULL);
             fGIF = NULL;
         }
         fCurrIndex = -1;
@@ -58,7 +58,7 @@ namespace android
     void GIFDestructor()
     {
         if (fGIF)
-            DGifCloseFile(fGIF);
+            DGifCloseFile(fGIF, NULL);
     }
 
     static SkMSec savedimage_duration(const SavedImage* image)
