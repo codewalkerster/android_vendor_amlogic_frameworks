@@ -71,6 +71,7 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_4K2K60HZ,
     MODE_4K2K60HZ420,
     MODE_4K2KSMPTE,
+    MODE_480X320P60HZ,
     MODE_640X480P60HZ,
     MODE_800X600P60HZ,
     MODE_800X480P60HZ,
@@ -693,6 +694,8 @@ void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
         fbset(1920, 1080, 32);
     } else if (!strncmp(data.ubootenv_hdmimode, "1080", 3))
         fbset(1920, 1080, 32);
+    else if (!strncmp(data.ubootenv_hdmimode, "480x320", 7))
+        fbset(480, 320, 32);
     else if (!strncmp(data.ubootenv_hdmimode, "640x480", 7))
         fbset(640, 480, 32);
     else if (!strncmp(data.ubootenv_hdmimode, "800x600", 7))
@@ -792,6 +795,11 @@ void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
             mDisplayHeight = FULL_HEIGHT_720;
             pSysWrite->setProperty(PROP_WINDOW_WIDTH, "1280");
             pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "720");
+        } else if (!strncmp(mDefaultUI, "480x320", 7)) {
+            mDisplayWidth = 480;
+            mDisplayHeight = 320;
+            pSysWrite->setProperty(PROP_WINDOW_WIDTH, "480");
+            pSysWrite->setProperty(PROP_WINDOW_HEIGHT, "320");
         } else if (!strncmp(mDefaultUI, "480", 3)) {
             mDisplayWidth = 720;
             mDisplayHeight = 480;
@@ -1477,6 +1485,8 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
     const char* displaySize = "1920 1080";
     if (!strncmp(mDefaultUI, "720", 3))
         displaySize = "1280 720";
+    else if (!strncmp(mDefaultUI, "480x320", 7))
+        displaySize = "480 320";
     else if (!strncmp(mDefaultUI, "480", 3))
         displaySize = "720 480";
     else if (!strncmp(mDefaultUI, "576", 3))
@@ -1670,6 +1680,12 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
             position[1] = getBootenvInt(ENV_4K2KSMPTE_Y, 0);
             position[2] = getBootenvInt(ENV_4K2KSMPTE_W, FULL_WIDTH_4K2KSMPTE);
             position[3] = getBootenvInt(ENV_4K2KSMPTE_H, FULL_HEIGHT_4K2KSMPTE);
+            break;
+        case DISPLAY_MODE_480X320P60Hz:
+            position[0] = 0;
+            position[1] = 0;
+            position[2] = 480;
+            position[3] = 320;
             break;
         case DISPLAY_MODE_640X480P60HZ:
             position[0] = 0;
