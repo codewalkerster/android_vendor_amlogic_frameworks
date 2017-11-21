@@ -59,7 +59,7 @@ public class BootComplete extends BroadcastReceiver {
             //start optimization service
             context.startService(new Intent(context, Optimization.class));
 
-            initDefaultAnimationSettings(context);
+            //initDefaultAnimationSettings(context);
         }
     }
 
